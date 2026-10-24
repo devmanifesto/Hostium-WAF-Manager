@@ -135,7 +135,7 @@ Pasada de QA posterior, el mismo 23 de octubre de 2026: `python -m ruff check sr
 
 ## Corrida del 24 de octubre de 2026
 
-Python 3.14.4, ruff 0.17.2, pytest 9.1.1. No se corrió la marca `integration`. Los pedidos al contenedor están en `docs/22-QA-TRES-PASADAS.md`, no en las tablas de arriba.
+Python 3.14.4, ruff 0.17.2, pytest 9.1.1. Esa pasada no corrió la marca `integration`. Los pedidos al contenedor de la mañana están en `docs/22-QA-TRES-PASADAS.md`, no en las tablas de arriba. El cierre de más abajo sí corrió la marca completa.
 
 ```text
 python -m ruff check src tests
@@ -146,6 +146,8 @@ python -m pytest --tb=line -q
 ```
 
 El aviso sigue siendo `Duplicate name: 'hostium/doble.conf'` en el caso que arma un ZIP inválido. `ultima_validacion` sigue en null.
+
+Cierre del mismo día, con la 1.1.2 ya en el árbol: `python -m ruff check src tests` sin hallazgos. `python -m pytest` imprimió `67 passed, 5 deselected, 1 warning in 2.22s`. `python -m pytest -m integration --override-ini="addopts="` imprimió `5 passed, 67 deselected in 36.58s` contra la imagen local Debian. `package verify` de `publish/stable/hostium-1.1.2.zip` imprimió `paquete verificado`. `ultima_validacion` sigue en null.
 
 ## Qué no está probado en cPanel
 
