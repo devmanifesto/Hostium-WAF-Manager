@@ -23,7 +23,7 @@ La salida de `modsec_vendor list` de antes del cambio, y el ZIP de la release an
 
 ### Versionada
 
-1. Elegí la release anterior cuyo ZIP y metadata ya verificaste.
+1. Elegí la release anterior cuyo ZIP y metadata ya verificaste. Para salir de la 1.1.0, el artefacto anterior es `publish/stable/hostium-1.0.0.zip`. No lo regeneres desde este árbol: `package build --version 1.0.0` está rechazado.
 2. MODIFICA el origen: publicá primero ese ZIP, comprobá el hash bajándolo, y después la metadata. El orden está en el documento 08.
 3. Antes de `enable` otra vez, confirmá que una actualización automática no vuelve a traer la versión que acabás de sacar.
 4. La grafía `enable-updates` / `enable_updates` no se usa hasta leer la ayuda del binario en ese servidor.

@@ -31,7 +31,7 @@ La 1.0.0 descrita en el documento 03.
 
 - CRS 4 y ModSecurity 3, cada uno con su clave de motor y sus pruebas.
 - Panel, RBAC y métricas en Prometheus.
-- Virtual patch de un CVE con PoC autorizada, prueba positiva, prueba negativa y limitaciones. El id 5500400 sigue reservado y vacío.
+- Virtual patch de un CVE probado en el motor del piloto. La 1.1.0 trae expresiones para CVE-2026-109618 y CVE-2026-109619, con aproximación en Python y sin corrida de ModSecurity. El id 5500400 sigue vacío. Actualizar PHP sigue siendo el arreglo.
 
 ## Criterio para subir de fase
 

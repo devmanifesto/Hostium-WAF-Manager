@@ -18,9 +18,11 @@ El entorno de `docs/04-INSTALACION-DESARROLLO.md`.
 python -m ruff check src tests
 python -m pytest
 python -m pytest -m integration --override-ini="addopts=" -rs
-python -m hostium_waf package build --version 1.0.0 --engine 2.9.15
-python -m hostium_waf package verify --zip dist/hostium-1.0.0.zip --metadata dist/meta_hostium.yaml
+python -m hostium_waf package build --version 1.1.0 --engine 2.9.15
+python -m hostium_waf package verify --zip dist/hostium-1.1.0.zip --metadata dist/meta_hostium.yaml
 ```
+
+`package build --version 1.0.0` en este árbol termina en error. La 1.0.0 publicada no se reconstruye.
 
 La primera línea es lint. La segunda es la suite unitaria y excluye la marca `integration`. La tercera construye Apache si el demonio de Docker responde.
 
@@ -30,6 +32,10 @@ La primera línea es lint. La segunda es la suite unitaria y excluye la marca `i
 - `tests/unit/test_rutas.py`: aproximación Python de la expresión. No es ModSecurity.
 - `tests/ftw/sensitive-files.yaml`: casos en un formato parecido a go-ftw. El runner no es el binario go-ftw.
 - Integración: Apache con el paquete Debian de ModSecurity, y un segundo caso con la imagen `owasp/modsecurity-crs:3.3.10-apache-202610180210-lts` si descarga. En un positivo, el id de Hostium tiene que aparecer asociado a esa URI. En un negativo, ese id no puede aparecer en esa URI; un 403 de otra regla no falla el caso.
+
+## Reglas 5500600–5500626
+
+La corrida de abajo es la de los ids `5500100` y `5500101`. Los ids de PHP upload progress no están en esa tabla. Su control automático es `tests/unit/test_php_upload_progress.py`, que aplica las expresiones en Python. `apache2ctl configtest` en `modsecurity 2.9.7-1+deb12u2` aceptó el archivo. No hubo un POST de prueba ni un 403 observado para esos ids, y `ultima_validacion` sigue vacía.
 
 ## Resultado de la corrida de cierre
 

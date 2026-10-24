@@ -181,7 +181,16 @@ def _validar_regla(
         issues.append(Issue("fecha", "fecha_de_revision debe ser AAAA-MM-DD", f"{ruta}.fecha_de_revision"))
     if cruda.get("ultima_validacion") is not None and _fecha(cruda.get("ultima_validacion")) is None:
         issues.append(Issue("fecha", "ultima_validacion debe ser AAAA-MM-DD o null", f"{ruta}.ultima_validacion"))
-    issues.extend(_validar_casos(cruda.get("casos_de_prueba_positivos"), f"{ruta}.casos_de_prueba_positivos", True))
+    # Una regla empaquetada que no niega deja seguir la petición: el caso positivo anota 200.
+    paso_sin_deny = cruda.get("modo_por_defecto") in {"log-only", "detection"} and cruda.get("incluir_en_paquete") is True
+    issues.extend(
+        _validar_casos(
+            cruda.get("casos_de_prueba_positivos"),
+            f"{ruta}.casos_de_prueba_positivos",
+            True,
+            paso_sin_deny=paso_sin_deny,
+        )
+    )
     issues.extend(_validar_casos(cruda.get("casos_de_prueba_negativos"), f"{ruta}.casos_de_prueba_negativos", False))
     if cruda.get("incluir_en_paquete") is True:
         for grupo in ("casos_de_prueba_positivos", "casos_de_prueba_negativos"):
@@ -222,7 +231,7 @@ def _lista_textos(cruda: dict[str, Any], clave: str, ruta: str, issues: list[Iss
         issues.append(Issue("tipo_invalido", "debe ser una lista de textos no vacíos", f"{ruta}.{clave}"))
 
 
-def _validar_casos(valor: Any, ruta: str, positivos: bool) -> list[Issue]:
+def _validar_casos(valor: Any, ruta: str, positivos: bool, *, paso_sin_deny: bool = False) -> list[Issue]:
     issues: list[Issue] = []
     if not isinstance(valor, list) or not valor:
         return [Issue("sin_pruebas", "la regla necesita al menos un caso", ruta)]
@@ -250,8 +259,18 @@ def _validar_casos(valor: Any, ruta: str, positivos: bool) -> list[Issue]:
             issues.append(Issue("caso", "un caso positivo debe disparar la regla", f"{actual}.dispara"))
         if not positivos and caso.get("dispara") is not False:
             issues.append(Issue("caso", "un caso negativo no debe disparar la regla", f"{actual}.dispara"))
-        if caso.get("dispara") is True and caso.get("status") != 403:
-            issues.append(Issue("caso", "un caso que dispara debe esperar status 403", f"{actual}.status"))
+        if caso.get("dispara") is True:
+            if paso_sin_deny:
+                if caso.get("status") != 200:
+                    issues.append(
+                        Issue(
+                            "caso",
+                            "una regla empaquetada que no niega documenta status 200",
+                            f"{actual}.status",
+                        )
+                    )
+            elif caso.get("status") != 403:
+                issues.append(Issue("caso", "un caso que dispara debe esperar status 403", f"{actual}.status"))
         headers = caso.get("headers", {})
         if headers is None:
             headers = {}

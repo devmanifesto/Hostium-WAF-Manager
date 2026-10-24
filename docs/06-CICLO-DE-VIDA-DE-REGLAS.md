@@ -41,7 +41,7 @@ Marcar `ultima_validacion` después de un contenedor hace creer que calcium ya p
 
 ## Problemas frecuentes
 
-El build falla con “no se sobrescribe” porque cambiaste una regla y reusaste 1.0.0. Subí a 1.0.1.
+El build falla con “no se sobrescribe” porque cambiaste una regla y reusaste 1.0.0. También falla, con otro mensaje, si pedís 1.0.0 cuando el paquete ya incluye reglas introducidas en 1.1.0. La salida es un SemVer nuevo, no reescribir el ZIP viejo.
 
 ## Referencias
 

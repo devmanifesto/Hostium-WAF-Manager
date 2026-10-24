@@ -138,6 +138,13 @@ def build_package(
     issues.extend(buscar_secretos_en_arbol(candidatos))
     if issues:
         raise HostiumError("El repositorio no pasa la validación", issues=issues)
+    elegidas = seleccionar_reglas(manifiesto, politica)
+    maxima = _version_introduccion_maxima(elegidas)
+    if maxima is not None and _tupla_semver(version) < _tupla_semver(maxima):
+        raise HostiumError(
+            f"No se construye hostium-{version}: el paquete incluye reglas introducidas en {maxima}. "
+            "No se reutiliza una distribution ya publicada para otro contenido."
+        )
     destino = (output if output is not None else root / settings.directorio_salida).resolve()
     return _empaquetar(
         settings,
@@ -147,6 +154,20 @@ def build_package(
         canal_final,
         destino,
     )
+
+
+def _tupla_semver(valor: str) -> tuple[int, int, int]:
+    mayor, menor, parche = (int(parte) for parte in valor.split("."))
+    return mayor, menor, parche
+
+
+def _version_introduccion_maxima(reglas: list[object]) -> str | None:
+    from hostium_waf.models import Regla
+
+    introducidas = [regla.version_de_introduccion for regla in reglas if isinstance(regla, Regla)]
+    if not introducidas:
+        return None
+    return max(introducidas, key=_tupla_semver)
 
 
 def manifiesto_reglas(root: Path, politica: Politica, manifiesto: object) -> list[tuple[str, bytes]]:

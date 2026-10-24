@@ -342,7 +342,9 @@ reglas:
         nota: Reserva documental.
   - id: 5500400
     nombre: Borrador CVE
-    descripcion: INCOMPLETO. No es un virtual patch. No hay CVE seleccionado ni PoC en este repositorio.
+    descripcion: >
+      INCOMPLETO. Este id sigue vacío. PHP2Shell está en el módulo
+      REQUEST-410, ids 5500600-5500626, y tampoco es el parche de PHP.
     categoria: cve
     modulo: REQUEST-400-CVE
     archivo: rules/hostium/REQUEST-400-CVE.conf.example
@@ -389,6 +391,9 @@ reglas:
       - version: "1.0.0"
         fecha: "2026-10-23"
         nota: Reserva documental sin PoC.
+      - version: "1.1.0"
+        fecha: "2026-10-23"
+        nota: El virtual patch de PHP2Shell no usa este id. Sigue en REQUEST-410.
   - id: 5500500
     nombre: Borrador de escáneres
     descripcion: INCOMPLETO. No bloquea user agents desconocidos.
@@ -439,3 +444,1309 @@ reglas:
       - version: "1.0.0"
         fecha: "2026-10-23"
         nota: Reserva documental.
+  - id: 5500600
+    nombre: Cuerpo crudo en multipart
+    descripcion: En fase 1, si el Content-Type es multipart/form-data, activa REQUEST_BODY con ctl:forceRequestBodyVariable.
+      Sin eso el parser de ModSecurity no llena el cuerpo crudo y las reglas de fase 2 no ven el multipart.
+    categoria: php-upload-progress
+    modulo: REQUEST-410-PHP-UPLOAD-PROGRESS
+    archivo: rules/hostium/REQUEST-410-PHP-UPLOAD-PROGRESS.conf
+    version_de_introduccion: 1.1.0
+    autor: Hostium
+    owner: equipo-seguridad-hostium
+    motivacion: Las reglas de amplificación y de filename leen REQUEST_BODY. El manual v2.x dice que esa
+      variable no se llena sola en multipart.
+    tipo_de_ataque: soporte-de-deteccion
+    referencias:
+    - https://github.com/php/php-src/security/advisories/GHSA-w8hw-w9fx-j79w
+    - https://github.com/php/php-src/security/advisories/GHSA-6wmf-4rv5-p3rp
+    - https://github.com/owasp-modsecurity/ModSecurity/wiki/Reference-Manual-(v2.x)
+    falsos_positivos_probables: Cualquier POST multipart legítimo ejecuta el ctl. No niega. Duplica el cuerpo
+      en memoria hasta SecRequestBodyLimit.
+    fase: 1
+    variables_inspeccionadas:
+    - REQUEST_HEADERS:Content-Type
+    operador: '@rx'
+    transformaciones:
+    - t:none
+    accion: pass
+    severidad: NOTICE
+    etiquetas:
+    - hostium-php-upload
+    estado: produccion
+    modo_por_defecto: log-only
+    incluir_en_paquete: true
+    casos_de_prueba_positivos:
+    - titulo: multipart
+      path: /index.php
+      metodo: POST
+      dispara: true
+      ejecucion: automatizada
+      notas: 200 quiere decir que la regla no niega. No es el código final de la aplicación. La aproximación
+        vive en tests/unit/test_php_upload_progress.py y no es el motor ModSecurity.
+      status: 200
+      headers:
+        Content-Type: multipart/form-data; boundary=abc
+    casos_de_prueba_negativos:
+    - titulo: json
+      path: /index.php
+      metodo: POST
+      dispara: false
+      ejecucion: automatizada
+      notas: application/json no pide el cuerpo crudo de multipart.
+      headers:
+        Content-Type: application/json
+    impacto_previsto: No cambia el status. Aumenta la memoria de ModSecurity en cada multipart, acotada
+      por el límite de cuerpo ya configurado. No sube ese límite.
+    fecha_de_revision: '2026-10-23'
+    ultima_validacion: null
+    excepciones: []
+    registro_de_cambio:
+    - version: 1.1.0
+      fecha: '2026-10-23'
+      nota: Alta en 1.1.0. Para salir, sacá el módulo de la política y publicá otra release. No reescribas
+        hostium-1.0.0.zip ni el ZIP de esta versión.
+  - id: 5500601
+    nombre: Multipart con transferencia chunked
+    descripcion: 'Niega un POST cuyo Content-Type es multipart/form-data y cuyo Transfer-Encoding contiene
+      chunked como token. Es una cadena: las dos cabeceras tienen que coincidir. El borrador usaba status
+      406; aquí el status es 403, igual que el resto del ruleset.'
+    categoria: php-upload-progress
+    modulo: REQUEST-410-PHP-UPLOAD-PROGRESS
+    archivo: rules/hostium/REQUEST-410-PHP-UPLOAD-PROGRESS.conf
+    version_de_introduccion: 1.1.0
+    autor: Hostium
+    owner: equipo-seguridad-hostium
+    motivacion: El aviso GHSA-w8hw-w9fx-j79w describe un multipart sin Content-Length usable que pasa el
+      control inicial de post_max_size.
+    tipo_de_ataque: virtual-patch
+    referencias:
+    - https://github.com/php/php-src/security/advisories/GHSA-w8hw-w9fx-j79w
+    - https://github.com/owasp-modsecurity/ModSecurity/wiki/Reference-Manual-(v2.x)
+    falsos_positivos_probables: Un cliente legítimo que sube un multipart con Transfer-Encoding chunked.
+      HTTP/2 no usa esa cabecera; el caso típico es HTTP/1.1.
+    fase: 1
+    variables_inspeccionadas:
+    - REQUEST_HEADERS:Content-Type
+    - REQUEST_HEADERS:Transfer-Encoding
+    operador: '@rx'
+    transformaciones:
+    - t:none
+    accion: deny
+    severidad: CRITICAL
+    etiquetas:
+    - hostium-php-upload
+    - CVE-2026-109618
+    estado: produccion
+    modo_por_defecto: deny
+    incluir_en_paquete: true
+    casos_de_prueba_positivos:
+    - titulo: multipart chunked
+      path: /index.php
+      metodo: POST
+      dispara: true
+      ejecucion: automatizada
+      notas: 403 es el status de esta regla. La aproximación vive en tests/unit/test_php_upload_progress.py
+        y no es el motor ModSecurity.
+      status: 403
+      headers:
+        Content-Type: multipart/form-data; boundary=x
+        Transfer-Encoding: gzip, chunked
+    casos_de_prueba_negativos:
+    - titulo: multipart con longitud
+      path: /index.php
+      metodo: POST
+      dispara: false
+      ejecucion: automatizada
+      notas: Sin chunked no es este vector.
+      headers:
+        Content-Type: multipart/form-data; boundary=x
+    - titulo: json chunked
+      path: /api
+      metodo: POST
+      dispara: false
+      ejecucion: automatizada
+      notas: chunked solo no alcanza.
+      headers:
+        Content-Type: application/json
+        Transfer-Encoding: chunked
+    impacto_previsto: 'Niega la petición antes de PHP. No es el parche: hay que actualizar a 8.2.35, 8.3.36,
+      8.4.27 u 8.5.12. No cubre CVE-2026-115560. ultima_validacion queda vacía hasta un cPanel real.'
+    fecha_de_revision: '2026-10-23'
+    ultima_validacion: null
+    excepciones: []
+    registro_de_cambio:
+    - version: 1.1.0
+      fecha: '2026-10-23'
+      nota: Alta en 1.1.0. Para salir, sacá el módulo de la política y publicá otra release. No reescribas
+        hostium-1.0.0.zip ni el ZIP de esta versión.
+  - id: 5500602
+    nombre: Cabeceras de parte amplificadas
+    descripcion: Niega un cuerpo con 100 o más cabeceras X- seguidas. El aviso dice que representar esas
+      cabeceras en PHP gasta mucha más memoria que el tamaño en el cable.
+    categoria: php-upload-progress
+    modulo: REQUEST-410-PHP-UPLOAD-PROGRESS
+    archivo: rules/hostium/REQUEST-410-PHP-UPLOAD-PROGRESS.conf
+    version_de_introduccion: 1.1.0
+    autor: Hostium
+    owner: equipo-seguridad-hostium
+    motivacion: Una parte multipart con cabeceras custom sin tope es una de las vías de OOM descritas en
+      GHSA-w8hw-w9fx-j79w.
+    tipo_de_ataque: virtual-patch
+    referencias:
+    - https://github.com/php/php-src/security/advisories/GHSA-w8hw-w9fx-j79w
+    - https://github.com/owasp-modsecurity/ModSecurity/wiki/Reference-Manual-(v2.x)
+    falsos_positivos_probables: Un formulario que de verdad envíe 100 cabeceras X- en una parte. No es un
+      patrón de navegador.
+    fase: 2
+    variables_inspeccionadas:
+    - REQUEST_BODY
+    operador: '@rx'
+    transformaciones:
+    - t:none
+    accion: deny
+    severidad: CRITICAL
+    etiquetas:
+    - hostium-php-upload
+    - CVE-2026-109618
+    estado: produccion
+    modo_por_defecto: deny
+    incluir_en_paquete: true
+    casos_de_prueba_positivos:
+    - titulo: cien cabeceras X-
+      path: /index.php
+      metodo: POST
+      dispara: true
+      ejecucion: automatizada
+      notas: Cien repeticiones de CRLF más X-Pad. 403 es el status de esta regla. La aproximación vive en
+        tests/unit/test_php_upload_progress.py y no es el motor ModSecurity.
+      status: 403
+    casos_de_prueba_negativos:
+    - titulo: noventa y nueve cabeceras
+      path: /index.php
+      metodo: POST
+      dispara: false
+      ejecucion: automatizada
+      notas: 99 repeticiones no alcanzan el umbral.
+    impacto_previsto: 'Niega la petición antes de PHP. No es el parche: hay que actualizar a 8.2.35, 8.3.36,
+      8.4.27 u 8.5.12. No cubre CVE-2026-115560. ultima_validacion queda vacía hasta un cPanel real.'
+    fecha_de_revision: '2026-10-23'
+    ultima_validacion: null
+    excepciones: []
+    registro_de_cambio:
+    - version: 1.1.0
+      fecha: '2026-10-23'
+      nota: Alta en 1.1.0. Para salir, sacá el módulo de la política y publicá otra release. No reescribas
+        hostium-1.0.0.zip ni el ZIP de esta versión.
+  - id: 5500603
+    nombre: Nombres con anidación profunda
+    descripcion: 'Niega nombres con 40 o más grupos de corchetes, en el cuerpo crudo o en ARGS_NAMES. PHP
+      acepta hasta max_input_nesting_level 64 por defecto: este corte es más estricto. La letra inicial
+      puede ser mayúscula para cubrir el nombre ya parseado.'
+    categoria: php-upload-progress
+    modulo: REQUEST-410-PHP-UPLOAD-PROGRESS
+    archivo: rules/hostium/REQUEST-410-PHP-UPLOAD-PROGRESS.conf
+    version_de_introduccion: 1.1.0
+    autor: Hostium
+    owner: equipo-seguridad-hostium
+    motivacion: El aviso cita los nombres anidados como multiplicador del trabajo de arrays durante el parseo
+      multipart.
+    tipo_de_ataque: virtual-patch
+    referencias:
+    - https://github.com/php/php-src/security/advisories/GHSA-w8hw-w9fx-j79w
+    - https://github.com/owasp-modsecurity/ModSecurity/wiki/Reference-Manual-(v2.x)
+    falsos_positivos_probables: Una aplicación que publique campos con 40 niveles de corchetes. Los formularios
+      habituales quedan muy por debajo.
+    fase: 2
+    variables_inspeccionadas:
+    - ARGS_NAMES
+    - REQUEST_BODY
+    operador: '@rx'
+    transformaciones:
+    - t:none
+    accion: deny
+    severidad: CRITICAL
+    etiquetas:
+    - hostium-php-upload
+    - CVE-2026-109618
+    estado: produccion
+    modo_por_defecto: deny
+    incluir_en_paquete: true
+    casos_de_prueba_positivos:
+    - titulo: cuarenta niveles
+      path: /index.php
+      metodo: POST
+      dispara: true
+      ejecucion: automatizada
+      notas: a[0] repetido 40 veces y un igual. 403 es el status de esta regla. La aproximación vive en
+        tests/unit/test_php_upload_progress.py y no es el motor ModSecurity.
+      status: 403
+    casos_de_prueba_negativos:
+    - titulo: un nivel
+      path: /index.php
+      metodo: POST
+      dispara: false
+      ejecucion: automatizada
+      notas: nombre=juan no tiene 40 grupos.
+    impacto_previsto: 'Niega la petición antes de PHP. No es el parche: hay que actualizar a 8.2.35, 8.3.36,
+      8.4.27 u 8.5.12. No cubre CVE-2026-115560. ultima_validacion queda vacía hasta un cPanel real.'
+    fecha_de_revision: '2026-10-23'
+    ultima_validacion: null
+    excepciones: []
+    registro_de_cambio:
+    - version: 1.1.0
+      fecha: '2026-10-23'
+      nota: Alta en 1.1.0. Para salir, sacá el módulo de la política y publicá otra release. No reescribas
+        hostium-1.0.0.zip ni el ZIP de esta versión.
+  - id: 5500604
+    nombre: Inundación de filename vacío
+    descripcion: Niega 50 o más partes seguidas con filename vacío, el salto de Content-Type y el siguiente
+      Content-Disposition. Esas partes pueden no contar para max_file_uploads y aun así crear metadatos.
+    categoria: php-upload-progress
+    modulo: REQUEST-410-PHP-UPLOAD-PROGRESS
+    archivo: rules/hostium/REQUEST-410-PHP-UPLOAD-PROGRESS.conf
+    version_de_introduccion: 1.1.0
+    autor: Hostium
+    owner: equipo-seguridad-hostium
+    motivacion: El aviso de OOM nombra los controles de archivo vacíos como vía para saltarse max_file_uploads.
+    tipo_de_ataque: virtual-patch
+    referencias:
+    - https://github.com/php/php-src/security/advisories/GHSA-w8hw-w9fx-j79w
+    - https://github.com/owasp-modsecurity/ModSecurity/wiki/Reference-Manual-(v2.x)
+    falsos_positivos_probables: Un cliente que arme 50 partes con filename vacío en esa forma exacta. Un
+      adjunto con nombre no coincide.
+    fase: 2
+    variables_inspeccionadas:
+    - REQUEST_BODY
+    operador: '@rx'
+    transformaciones:
+    - t:none
+    accion: deny
+    severidad: CRITICAL
+    etiquetas:
+    - hostium-php-upload
+    - CVE-2026-109618
+    estado: produccion
+    modo_por_defecto: deny
+    incluir_en_paquete: true
+    casos_de_prueba_positivos:
+    - titulo: cincuenta filenames vacíos
+      path: /index.php
+      metodo: POST
+      dispara: true
+      ejecucion: automatizada
+      notas: La unidad se repite 50 veces. 403 es el status de esta regla. La aproximación vive en tests/unit/test_php_upload_progress.py
+        y no es el motor ModSecurity.
+      status: 403
+    casos_de_prueba_negativos:
+    - titulo: un archivo con nombre
+      path: /index.php
+      metodo: POST
+      dispara: false
+      ejecucion: automatizada
+      notas: filename="a.txt" no es el molde vacío.
+    impacto_previsto: 'Niega la petición antes de PHP. No es el parche: hay que actualizar a 8.2.35, 8.3.36,
+      8.4.27 u 8.5.12. No cubre CVE-2026-115560. ultima_validacion queda vacía hasta un cPanel real.'
+    fecha_de_revision: '2026-10-23'
+    ultima_validacion: null
+    excepciones: []
+    registro_de_cambio:
+    - version: 1.1.0
+      fecha: '2026-10-23'
+      nota: Alta en 1.1.0. Para salir, sacá el módulo de la política y publicá otra release. No reescribas
+        hostium-1.0.0.zip ni el ZIP de esta versión.
+  - id: 5500605
+    nombre: Demasiadas partes de archivo
+    descripcion: 'Niega cuando la colección FILES llega a 300 elementos. Un filename vacío puede no entrar
+      en esta colección: por eso existe además la regla del cuerpo crudo.'
+    categoria: php-upload-progress
+    modulo: REQUEST-410-PHP-UPLOAD-PROGRESS
+    archivo: rules/hostium/REQUEST-410-PHP-UPLOAD-PROGRESS.conf
+    version_de_introduccion: 1.1.0
+    autor: Hostium
+    owner: equipo-seguridad-hostium
+    motivacion: 300 partes de archivo están muy por encima de max_file_uploads, que en PHP suele ser 20.
+    tipo_de_ataque: virtual-patch
+    referencias:
+    - https://github.com/php/php-src/security/advisories/GHSA-w8hw-w9fx-j79w
+    - https://github.com/owasp-modsecurity/ModSecurity/wiki/Reference-Manual-(v2.x)
+    falsos_positivos_probables: Un flujo legítimo que adjunte 300 archivos en un solo POST. Es un umbral
+      alto, no imposible en un importador.
+    fase: 2
+    variables_inspeccionadas:
+    - '&FILES'
+    operador: '@ge'
+    transformaciones:
+    - t:none
+    accion: deny
+    severidad: CRITICAL
+    etiquetas:
+    - hostium-php-upload
+    - CVE-2026-109618
+    estado: produccion
+    modo_por_defecto: deny
+    incluir_en_paquete: true
+    casos_de_prueba_positivos:
+    - titulo: trescientos archivos
+      path: /index.php
+      metodo: POST
+      dispara: true
+      ejecucion: automatizada
+      notas: El operador es @ge 300. 403 es el status de esta regla. La aproximación vive en tests/unit/test_php_upload_progress.py
+        y no es el motor ModSecurity.
+      status: 403
+    casos_de_prueba_negativos:
+    - titulo: un archivo
+      path: /index.php
+      metodo: POST
+      dispara: false
+      ejecucion: automatizada
+      notas: 299 o menos no dispara.
+    impacto_previsto: 'Niega la petición antes de PHP. No es el parche: hay que actualizar a 8.2.35, 8.3.36,
+      8.4.27 u 8.5.12. No cubre CVE-2026-115560. ultima_validacion queda vacía hasta un cPanel real.'
+    fecha_de_revision: '2026-10-23'
+    ultima_validacion: null
+    excepciones: []
+    registro_de_cambio:
+    - version: 1.1.0
+      fecha: '2026-10-23'
+      nota: Alta en 1.1.0. Para salir, sacá el módulo de la política y publicá otra release. No reescribas
+        hostium-1.0.0.zip ni el ZIP de esta versión.
+  - id: 5500611
+    nombre: Carga serializada en upload progress
+    descripcion: 'Niega si el valor de PHP_SESSION_UPLOAD_PROGRESS trae una etiqueta PHP, un objeto O:,
+      un array a:, un tipo con llave o un pipe seguido de tipo. El valor puede guardarse como clave de sesión.
+      Se aceptan letras de tipo en mayúscula porque O: es la forma de un objeto.'
+    categoria: php-upload-progress
+    modulo: REQUEST-410-PHP-UPLOAD-PROGRESS
+    archivo: rules/hostium/REQUEST-410-PHP-UPLOAD-PROGRESS.conf
+    version_de_introduccion: 1.1.0
+    autor: Hostium
+    owner: equipo-seguridad-hostium
+    motivacion: GHSA-6wmf-4rv5-p3rp describe estado de sesión que sobrevive entre pedidos. Este campo es
+      el que activa el upload progress, prendido por defecto.
+    tipo_de_ataque: virtual-patch
+    referencias:
+    - https://github.com/php/php-src/security/advisories/GHSA-6wmf-4rv5-p3rp
+    - https://github.com/owasp-modsecurity/ModSecurity/wiki/Reference-Manual-(v2.x)
+    falsos_positivos_probables: Un texto legítimo que incluya la secuencia <?php o O:8:" dentro de ese campo.
+      No es un valor de barra de progreso.
+    fase: 2
+    variables_inspeccionadas:
+    - ARGS:PHP_SESSION_UPLOAD_PROGRESS
+    operador: '@rx'
+    transformaciones:
+    - t:none
+    accion: deny
+    severidad: CRITICAL
+    etiquetas:
+    - hostium-php-upload
+    - CVE-2026-109619
+    estado: produccion
+    modo_por_defecto: deny
+    incluir_en_paquete: true
+    casos_de_prueba_positivos:
+    - titulo: objeto serializado
+      path: /index.php
+      metodo: POST
+      dispara: true
+      ejecucion: automatizada
+      notas: El valor contiene O:8:". 403 es el status de esta regla. La aproximación vive en tests/unit/test_php_upload_progress.py
+        y no es el motor ModSecurity.
+      status: 403
+    casos_de_prueba_negativos:
+    - titulo: progreso normal
+      path: /index.php
+      metodo: POST
+      dispara: false
+      ejecucion: automatizada
+      notas: Un identificador opaco sin metacaracteres de serialización.
+    impacto_previsto: 'Niega la petición antes de PHP. No es el parche: hay que actualizar a 8.2.35, 8.3.36,
+      8.4.27 u 8.5.12. No cubre CVE-2026-115560. ultima_validacion queda vacía hasta un cPanel real.'
+    fecha_de_revision: '2026-10-23'
+    ultima_validacion: null
+    excepciones: []
+    registro_de_cambio:
+    - version: 1.1.0
+      fecha: '2026-10-23'
+      nota: Alta en 1.1.0. Para salir, sacá el módulo de la política y publicá otra release. No reescribas
+        hostium-1.0.0.zip ni el ZIP de esta versión.
+  - id: 5500612
+    nombre: Carga en el filename
+    descripcion: 'Niega un filename del cuerpo que, en los primeros 512 caracteres, traiga <?php, <?= o
+      un objeto O: con comillas. FILES_NAMES casi no contiene el texto filename=; el match útil es REQUEST_BODY.'
+    categoria: php-upload-progress
+    modulo: REQUEST-410-PHP-UPLOAD-PROGRESS
+    archivo: rules/hostium/REQUEST-410-PHP-UPLOAD-PROGRESS.conf
+    version_de_introduccion: 1.1.0
+    autor: Hostium
+    owner: equipo-seguridad-hostium
+    motivacion: El nombre de archivo se guarda en la estructura de upload progress y puede re-serializarse
+      en la sesión.
+    tipo_de_ataque: virtual-patch
+    referencias:
+    - https://github.com/php/php-src/security/advisories/GHSA-6wmf-4rv5-p3rp
+    - https://github.com/owasp-modsecurity/ModSecurity/wiki/Reference-Manual-(v2.x)
+    falsos_positivos_probables: 'Un archivo cuyo nombre legítimo empiece con <?php o con O: y comillas.
+      Es un nombre de ataque, no de un adjunto normal.'
+    fase: 2
+    variables_inspeccionadas:
+    - FILES_NAMES
+    - REQUEST_BODY
+    operador: '@rx'
+    transformaciones:
+    - t:none
+    accion: deny
+    severidad: CRITICAL
+    etiquetas:
+    - hostium-php-upload
+    - CVE-2026-109619
+    estado: produccion
+    modo_por_defecto: deny
+    incluir_en_paquete: true
+    casos_de_prueba_positivos:
+    - titulo: filename con etiqueta php
+      path: /index.php
+      metodo: POST
+      dispara: true
+      ejecucion: automatizada
+      notas: El cuerpo trae filename="<?php. 403 es el status de esta regla. La aproximación vive en tests/unit/test_php_upload_progress.py
+        y no es el motor ModSecurity.
+      status: 403
+    casos_de_prueba_negativos:
+    - titulo: filename de foto
+      path: /index.php
+      metodo: POST
+      dispara: false
+      ejecucion: automatizada
+      notas: filename="foto.jpg" no coincide.
+    impacto_previsto: 'Niega la petición antes de PHP. No es el parche: hay que actualizar a 8.2.35, 8.3.36,
+      8.4.27 u 8.5.12. No cubre CVE-2026-115560. ultima_validacion queda vacía hasta un cPanel real.'
+    fecha_de_revision: '2026-10-23'
+    ultima_validacion: null
+    excepciones: []
+    registro_de_cambio:
+    - version: 1.1.0
+      fecha: '2026-10-23'
+      nota: Alta en 1.1.0. Para salir, sacá el módulo de la política y publicá otra release. No reescribas
+        hostium-1.0.0.zip ni el ZIP de esta versión.
+  - id: 5500613
+    nombre: PHPSESSID como campo
+    descripcion: Niega si algún nombre de argumento es exactamente PHPSESSID. Es sensible a mayúsculas.
+      Hay informes externos, no reproducidos en este repositorio, de que el arreglo 8.2.35 sigue tomando
+      el sid por formulario si cleanup=0.
+    categoria: php-upload-progress
+    modulo: REQUEST-410-PHP-UPLOAD-PROGRESS
+    archivo: rules/hostium/REQUEST-410-PHP-UPLOAD-PROGRESS.conf
+    version_de_introduccion: 1.1.0
+    autor: Hostium
+    owner: equipo-seguridad-hostium
+    motivacion: El id de sesión no tiene que elegirse desde el cuerpo. Ese control aparece en la cadena
+      de envenenamiento de sesión.
+    tipo_de_ataque: virtual-patch
+    referencias:
+    - https://github.com/php/php-src/security/advisories/GHSA-6wmf-4rv5-p3rp
+    - https://github.com/owasp-modsecurity/ModSecurity/wiki/Reference-Manual-(v2.x)
+    falsos_positivos_probables: Una aplicación vieja que mande PHPSESSID como campo POST porque session.use_only_cookies
+      está en 0.
+    fase: 2
+    variables_inspeccionadas:
+    - ARGS_NAMES
+    operador: '@streq'
+    transformaciones:
+    - t:none
+    accion: deny
+    severidad: CRITICAL
+    etiquetas:
+    - hostium-php-upload
+    - CVE-2026-109619
+    estado: produccion
+    modo_por_defecto: deny
+    incluir_en_paquete: true
+    casos_de_prueba_positivos:
+    - titulo: campo PHPSESSID
+      path: /index.php
+      metodo: POST
+      dispara: true
+      ejecucion: automatizada
+      notas: El nombre del argumento es exactamente PHPSESSID. 403 es el status de esta regla. La aproximación
+        vive en tests/unit/test_php_upload_progress.py y no es el motor ModSecurity.
+      status: 403
+    casos_de_prueba_negativos:
+    - titulo: otro campo
+      path: /index.php
+      metodo: POST
+      dispara: false
+      ejecucion: automatizada
+      notas: MY_PHPSESSID y phpSESSID no son iguales con @streq.
+    impacto_previsto: 'Niega la petición antes de PHP. No es el parche: hay que actualizar a 8.2.35, 8.3.36,
+      8.4.27 u 8.5.12. No cubre CVE-2026-115560. ultima_validacion queda vacía hasta un cPanel real.'
+    fecha_de_revision: '2026-10-23'
+    ultima_validacion: null
+    excepciones: []
+    registro_de_cambio:
+    - version: 1.1.0
+      fecha: '2026-10-23'
+      nota: Alta en 1.1.0. Para salir, sacá el módulo de la política y publicá otra release. No reescribas
+        hostium-1.0.0.zip ni el ZIP de esta versión.
+  - id: 5500614
+    nombre: Etiqueta PHP en el cuerpo
+    descripcion: Registra, y no niega, un <?php en el cuerpo, en cualquier combinación de mayúsculas. En
+      un hosting, negar eso rompe el upload de archivos PHP, el editor de temas y los tickets que pegan
+      código. Las reglas 5500611 y 5500612 cubren los carriers concretos del aviso.
+    categoria: php-upload-progress
+    modulo: REQUEST-410-PHP-UPLOAD-PROGRESS
+    archivo: rules/hostium/REQUEST-410-PHP-UPLOAD-PROGRESS.conf
+    version_de_introduccion: 1.1.0
+    autor: Hostium
+    owner: equipo-seguridad-hostium
+    motivacion: El borrador negaba cualquier <?php. Eso es un patrón demasiado amplio para la flota.
+    tipo_de_ataque: reconocimiento
+    referencias:
+    - https://github.com/php/php-src/security/advisories/GHSA-6wmf-4rv5-p3rp
+    - https://github.com/owasp-modsecurity/ModSecurity/wiki/Reference-Manual-(v2.x)
+    falsos_positivos_probables: Cualquier POST que lleve código PHP o lo mencione con la etiqueta. Va a
+      ser ruidoso en paneles de archivos y en WordPress.
+    fase: 2
+    variables_inspeccionadas:
+    - REQUEST_BODY
+    operador: '@rx'
+    transformaciones:
+    - t:none
+    accion: pass
+    severidad: WARNING
+    etiquetas:
+    - hostium-php-upload
+    - CVE-2026-109619
+    estado: produccion
+    modo_por_defecto: log-only
+    incluir_en_paquete: true
+    casos_de_prueba_positivos:
+    - titulo: cuerpo con etiqueta
+      path: /index.php
+      metodo: POST
+      dispara: true
+      ejecucion: automatizada
+      notas: 200 quiere decir que la regla no niega. No es el código final de la aplicación. La aproximación
+        vive en tests/unit/test_php_upload_progress.py y no es el motor ModSecurity.
+      status: 200
+    casos_de_prueba_negativos:
+    - titulo: texto sin etiqueta
+      path: /index.php
+      metodo: POST
+      dispara: false
+      ejecucion: automatizada
+      notas: La palabra php sin <?php no coincide.
+    impacto_previsto: Registra y deja pasar. No mitiga el CVE por sí sola. ultima_validacion queda vacía
+      hasta un cPanel real.
+    fecha_de_revision: '2026-10-23'
+    ultima_validacion: null
+    excepciones: []
+    registro_de_cambio:
+    - version: 1.1.0
+      fecha: '2026-10-23'
+      nota: Alta en 1.1.0. Para salir, sacá el módulo de la política y publicá otra release. No reescribas
+        hostium-1.0.0.zip ni el ZIP de esta versión.
+  - id: 5500615
+    nombre: Inundación de partes
+    descripcion: Niega 500 o más líneas Content-Disposition de tipo form-data seguidas. El borrador lo asocia
+      a preparar el heap. No afirma que este repositorio haya medido el allocator de Zend.
+    categoria: php-upload-progress
+    modulo: REQUEST-410-PHP-UPLOAD-PROGRESS
+    archivo: rules/hostium/REQUEST-410-PHP-UPLOAD-PROGRESS.conf
+    version_de_introduccion: 1.1.0
+    autor: Hostium
+    owner: equipo-seguridad-hostium
+    motivacion: Un POST con cientos de partes es anómalo frente a un formulario y aparece en las descripciones
+      públicas del ataque de memoria.
+    tipo_de_ataque: virtual-patch
+    referencias:
+    - https://github.com/php/php-src/security/advisories/GHSA-w8hw-w9fx-j79w
+    - https://github.com/owasp-modsecurity/ModSecurity/wiki/Reference-Manual-(v2.x)
+    falsos_positivos_probables: Un importador que publique 500 partes form-data en un solo cuerpo.
+    fase: 2
+    variables_inspeccionadas:
+    - REQUEST_BODY
+    operador: '@rx'
+    transformaciones:
+    - t:none
+    accion: deny
+    severidad: CRITICAL
+    etiquetas:
+    - hostium-php-upload
+    - CVE-2026-109618
+    estado: produccion
+    modo_por_defecto: deny
+    incluir_en_paquete: true
+    casos_de_prueba_positivos:
+    - titulo: quinientas partes
+      path: /index.php
+      metodo: POST
+      dispara: true
+      ejecucion: automatizada
+      notas: 500 líneas Content-Disposition form-data. 403 es el status de esta regla. La aproximación vive
+        en tests/unit/test_php_upload_progress.py y no es el motor ModSecurity.
+      status: 403
+    casos_de_prueba_negativos:
+    - titulo: un formulario
+      path: /index.php
+      metodo: POST
+      dispara: false
+      ejecucion: automatizada
+      notas: Una sola parte no alcanza. attachment tampoco coincide.
+    impacto_previsto: 'Niega la petición antes de PHP. No es el parche: hay que actualizar a 8.2.35, 8.3.36,
+      8.4.27 u 8.5.12. No cubre CVE-2026-115560. ultima_validacion queda vacía hasta un cPanel real.'
+    fecha_de_revision: '2026-10-23'
+    ultima_validacion: null
+    excepciones: []
+    registro_de_cambio:
+    - version: 1.1.0
+      fecha: '2026-10-23'
+      nota: Alta en 1.1.0. Para salir, sacá el módulo de la política y publicá otra release. No reescribas
+        hostium-1.0.0.zip ni el ZIP de esta versión.
+  - id: 5500616
+    nombre: Semilla con pipe
+    descripcion: Niega si el valor de PHP_SESSION_UPLOAD_PROGRESS empieza con un pipe y una letra de tipo,
+      en mayúscula o minúscula. El borrador solo miraba minúsculas y se perdía O:, que es un objeto.
+    categoria: php-upload-progress
+    modulo: REQUEST-410-PHP-UPLOAD-PROGRESS
+    archivo: rules/hostium/REQUEST-410-PHP-UPLOAD-PROGRESS.conf
+    version_de_introduccion: 1.1.0
+    autor: Hostium
+    owner: equipo-seguridad-hostium
+    motivacion: Es el prefijo de desajuste de handler descrito junto al upload progress.
+    tipo_de_ataque: virtual-patch
+    referencias:
+    - https://github.com/php/php-src/security/advisories/GHSA-6wmf-4rv5-p3rp
+    - https://github.com/owasp-modsecurity/ModSecurity/wiki/Reference-Manual-(v2.x)
+    falsos_positivos_probables: 'Un valor legítimo de progreso que empiece con |O: o |s:. No es un identificador
+      opaco.'
+    fase: 2
+    variables_inspeccionadas:
+    - ARGS:PHP_SESSION_UPLOAD_PROGRESS
+    operador: '@rx'
+    transformaciones:
+    - t:none
+    accion: deny
+    severidad: CRITICAL
+    etiquetas:
+    - hostium-php-upload
+    - CVE-2026-109619
+    estado: produccion
+    modo_por_defecto: deny
+    incluir_en_paquete: true
+    casos_de_prueba_positivos:
+    - titulo: pipe y objeto
+      path: /index.php
+      metodo: POST
+      dispara: true
+      ejecucion: automatizada
+      notas: El valor empieza con |O:. 403 es el status de esta regla. La aproximación vive en tests/unit/test_php_upload_progress.py
+        y no es el motor ModSecurity.
+      status: 403
+    casos_de_prueba_negativos:
+    - titulo: pipe en el medio
+      path: /index.php
+      metodo: POST
+      dispara: false
+      ejecucion: automatizada
+      notas: 'x|O: no está al inicio. |9: no es una letra.'
+    impacto_previsto: 'Niega la petición antes de PHP. No es el parche: hay que actualizar a 8.2.35, 8.3.36,
+      8.4.27 u 8.5.12. No cubre CVE-2026-115560. ultima_validacion queda vacía hasta un cPanel real.'
+    fecha_de_revision: '2026-10-23'
+    ultima_validacion: null
+    excepciones: []
+    registro_de_cambio:
+    - version: 1.1.0
+      fecha: '2026-10-23'
+      nota: Alta en 1.1.0. Para salir, sacá el módulo de la política y publicá otra release. No reescribas
+        hostium-1.0.0.zip ni el ZIP de esta versión.
+  - id: 5500617
+    nombre: PHPSESSID de respuesta demasiado largo
+    descripcion: Niega en fase 3 si Set-Cookie trae PHPSESSID= seguido de 200 o más caracteres que no sean
+      punto y coma ni espacio. Apunta a un id de sesión inflado con datos del heap.
+    categoria: php-upload-progress
+    modulo: REQUEST-410-PHP-UPLOAD-PROGRESS
+    archivo: rules/hostium/REQUEST-410-PHP-UPLOAD-PROGRESS.conf
+    version_de_introduccion: 1.1.0
+    autor: Hostium
+    owner: equipo-seguridad-hostium
+    motivacion: El aviso de OOM y el de estado viejo describen fugas por el id de sesión. Esta regla mira
+      la respuesta, no el pedido.
+    tipo_de_ataque: virtual-patch
+    referencias:
+    - https://github.com/php/php-src/security/advisories/GHSA-w8hw-w9fx-j79w
+    - https://github.com/owasp-modsecurity/ModSecurity/wiki/Reference-Manual-(v2.x)
+    falsos_positivos_probables: Una aplicación que emita a propósito un PHPSESSID de más de 200 caracteres.
+      PHP, con sid_length 256, puede hacerlo si alguien lo configuró así.
+    fase: 3
+    variables_inspeccionadas:
+    - RESPONSE_HEADERS:Set-Cookie
+    operador: '@rx'
+    transformaciones:
+    - t:none
+    accion: deny
+    severidad: CRITICAL
+    etiquetas:
+    - hostium-php-upload
+    - CVE-2026-109618
+    estado: produccion
+    modo_por_defecto: deny
+    incluir_en_paquete: true
+    casos_de_prueba_positivos:
+    - titulo: cookie de 200
+      path: /
+      metodo: GET
+      dispara: true
+      ejecucion: automatizada
+      notas: Set-Cookie con 200 letras. 403 es el status de esta regla. La aproximación vive en tests/unit/test_php_upload_progress.py
+        y no es el motor ModSecurity.
+      status: 403
+    casos_de_prueba_negativos:
+    - titulo: cookie de sesión normal
+      path: /
+      metodo: GET
+      dispara: false
+      ejecucion: automatizada
+      notas: Un id de 32 caracteres y Path=/ no coincide.
+    impacto_previsto: 'Niega la petición antes de PHP. No es el parche: hay que actualizar a 8.2.35, 8.3.36,
+      8.4.27 u 8.5.12. No cubre CVE-2026-115560. ultima_validacion queda vacía hasta un cPanel real.'
+    fecha_de_revision: '2026-10-23'
+    ultima_validacion: null
+    excepciones: []
+    registro_de_cambio:
+    - version: 1.1.0
+      fecha: '2026-10-23'
+      nota: Alta en 1.1.0. Para salir, sacá el módulo de la política y publicá otra release. No reescribas
+        hostium-1.0.0.zip ni el ZIP de esta versión.
+  - id: 5500618
+    nombre: Filename gigante
+    descripcion: 'Niega un filename de 65535 caracteres o más sin salto de línea. PCRE1 no compila
+      {65536}, así que el corte queda un byte por debajo de 64 KiB. Si SecRequestBodyLimit corta antes,
+      la regla no ve el nombre entero.'
+    categoria: php-upload-progress
+    modulo: REQUEST-410-PHP-UPLOAD-PROGRESS
+    archivo: rules/hostium/REQUEST-410-PHP-UPLOAD-PROGRESS.conf
+    version_de_introduccion: 1.1.0
+    autor: Hostium
+    owner: equipo-seguridad-hostium
+    motivacion: Un nombre de archivo enorme es una vía de agotar memoria durante el parseo, distinta de
+      las cabeceras de parte.
+    tipo_de_ataque: virtual-patch
+    referencias:
+    - https://github.com/php/php-src/security/advisories/GHSA-w8hw-w9fx-j79w
+    - https://github.com/owasp-modsecurity/ModSecurity/wiki/Reference-Manual-(v2.x)
+    falsos_positivos_probables: Un nombre de archivo legítimo de 64 KiB. En la práctica es el ataque.
+    fase: 2
+    variables_inspeccionadas:
+    - FILES_NAMES
+    - REQUEST_BODY
+    operador: '@rx'
+    transformaciones:
+    - t:none
+    accion: deny
+    severidad: CRITICAL
+    etiquetas:
+    - hostium-php-upload
+    - CVE-2026-109618
+    estado: produccion
+    modo_por_defecto: deny
+    incluir_en_paquete: true
+    casos_de_prueba_positivos:
+    - titulo: filename de 64 KiB
+      path: /index.php
+      metodo: POST
+      dispara: true
+      ejecucion: automatizada
+      notas: 65535 letras después de filename=". 403 es el status de esta regla. La aproximación vive en
+        tests/unit/test_php_upload_progress.py y no es el motor ModSecurity.
+      status: 403
+    casos_de_prueba_negativos:
+    - titulo: filename corto
+      path: /index.php
+      metodo: POST
+      dispara: false
+      ejecucion: automatizada
+      notas: 65534 letras no alcanzan.
+    impacto_previsto: 'Niega la petición antes de PHP. No es el parche: hay que actualizar a 8.2.35, 8.3.36,
+      8.4.27 u 8.5.12. No cubre CVE-2026-115560. ultima_validacion queda vacía hasta un cPanel real.'
+    fecha_de_revision: '2026-10-23'
+    ultima_validacion: null
+    excepciones: []
+    registro_de_cambio:
+    - version: 1.1.0
+      fecha: '2026-10-23'
+      nota: Alta en 1.1.0. Para salir, sacá el módulo de la política y publicá otra release. No reescribas
+        hostium-1.0.0.zip ni el ZIP de esta versión.
+  - id: 5500619
+    nombre: Campo de upload progress presente
+    descripcion: Registra, y no niega, la cadena PHP_SESSION_UPLOAD_PROGRESS en el nombre de un argumento
+      o en el cuerpo. Es sensible a mayúsculas. Una barra de progreso real también coincide.
+    categoria: php-upload-progress
+    modulo: REQUEST-410-PHP-UPLOAD-PROGRESS
+    archivo: rules/hostium/REQUEST-410-PHP-UPLOAD-PROGRESS.conf
+    version_de_introduccion: 1.1.0
+    autor: Hostium
+    owner: equipo-seguridad-hostium
+    motivacion: Sirve para ver si algún sitio usa la función. No es una mitigación. La mitigación de host
+      es apagar session.upload_progress.enabled en php.ini o en el pool y reiniciar los workers.
+    tipo_de_ataque: reconocimiento
+    referencias:
+    - https://github.com/php/php-src/security/advisories/GHSA-w8hw-w9fx-j79w
+    - https://github.com/owasp-modsecurity/ModSecurity/wiki/Reference-Manual-(v2.x)
+    falsos_positivos_probables: Toda subida que use la barra de progreso nativa de PHP. Puede ser ruidosa.
+      Se exceptúa por id, no editando el ZIP.
+    fase: 2
+    variables_inspeccionadas:
+    - ARGS_NAMES
+    - REQUEST_BODY
+    operador: '@contains'
+    transformaciones:
+    - t:none
+    accion: pass
+    severidad: NOTICE
+    etiquetas:
+    - hostium-php-upload
+    - CVE-2026-109618
+    estado: produccion
+    modo_por_defecto: log-only
+    incluir_en_paquete: true
+    casos_de_prueba_positivos:
+    - titulo: campo presente
+      path: /index.php
+      metodo: POST
+      dispara: true
+      ejecucion: automatizada
+      notas: 200 quiere decir que la regla no niega. No es el código final de la aplicación. La aproximación
+        vive en tests/unit/test_php_upload_progress.py y no es el motor ModSecurity.
+      status: 200
+    casos_de_prueba_negativos:
+    - titulo: nombre en minúsculas
+      path: /index.php
+      metodo: POST
+      dispara: false
+      ejecucion: automatizada
+      notas: php_session_upload_progress no es el nombre que lee PHP.
+    impacto_previsto: Registra y deja pasar. No mitiga el CVE por sí sola. ultima_validacion queda vacía
+      hasta un cPanel real.
+    fecha_de_revision: '2026-10-23'
+    ultima_validacion: null
+    excepciones: []
+    registro_de_cambio:
+    - version: 1.1.0
+      fecha: '2026-10-23'
+      nota: Alta en 1.1.0. Para salir, sacá el módulo de la política y publicá otra release. No reescribas
+        hostium-1.0.0.zip ni el ZIP de esta versión.
+  - id: 5500620
+    nombre: Avisos de sesión en la respuesta
+    descripcion: Niega en fase 4 si el cuerpo de la respuesta trae, en este orden, Session ID is too long
+      or contains illegal characters, Failed to read session data y Failed to write session data. El borrador
+      la ponía en fase 3, donde RESPONSE_BODY todavía no está. Hace falta que ModSecurity inspeccione el
+      mime de esa respuesta.
+    categoria: php-upload-progress
+    modulo: REQUEST-410-PHP-UPLOAD-PROGRESS
+    archivo: rules/hostium/REQUEST-410-PHP-UPLOAD-PROGRESS.conf
+    version_de_introduccion: 1.1.0
+    autor: Hostium
+    owner: equipo-seguridad-hostium
+    motivacion: Es una detección del síntoma en la respuesta, no del pedido que lo provocó. No prueba por
+      sí sola que el binario de PHP esté sin parche.
+    tipo_de_ataque: virtual-patch
+    referencias:
+    - https://github.com/php/php-src/security/advisories/GHSA-w8hw-w9fx-j79w
+    - https://github.com/php/php-src/security/advisories/GHSA-6wmf-4rv5-p3rp
+    - https://github.com/owasp-modsecurity/ModSecurity/wiki/Reference-Manual-(v2.x)
+    falsos_positivos_probables: Una página que cite las tres frases en ese orden, por ejemplo documentación
+      del incidente.
+    fase: 4
+    variables_inspeccionadas:
+    - RESPONSE_BODY
+    operador: '@rx'
+    transformaciones:
+    - t:none
+    accion: deny
+    severidad: CRITICAL
+    etiquetas:
+    - hostium-php-upload
+    - CVE-2026-109618
+    - CVE-2026-109619
+    estado: produccion
+    modo_por_defecto: deny
+    incluir_en_paquete: true
+    casos_de_prueba_positivos:
+    - titulo: tres avisos en orden
+      path: /index.php
+      metodo: POST
+      dispara: true
+      ejecucion: automatizada
+      notas: Las tres frases aparecen en orden. 403 es el status de esta regla. La aproximación vive en
+        tests/unit/test_php_upload_progress.py y no es el motor ModSecurity.
+      status: 403
+    casos_de_prueba_negativos:
+    - titulo: frases invertidas
+      path: /index.php
+      metodo: POST
+      dispara: false
+      ejecucion: automatizada
+      notas: El orden invertido no coincide.
+    impacto_previsto: 'Niega la petición antes de PHP. No es el parche: hay que actualizar a 8.2.35, 8.3.36,
+      8.4.27 u 8.5.12. No cubre CVE-2026-115560. ultima_validacion queda vacía hasta un cPanel real.'
+    fecha_de_revision: '2026-10-23'
+    ultima_validacion: null
+    excepciones: []
+    registro_de_cambio:
+    - version: 1.1.0
+      fecha: '2026-10-23'
+      nota: Alta en 1.1.0. Para salir, sacá el módulo de la política y publicá otra release. No reescribas
+        hostium-1.0.0.zip ni el ZIP de esta versión.
+  - id: 5500621
+    nombre: PHPSESSID fuera de alfabeto
+    descripcion: Niega la cookie PHPSESSID si no matchea ^[a-zA-Z0-9,-]{1,256}$. El operador del .conf es
+      la negación !@rx. 256 es el máximo de session.sid_length en PHP 8; el borrador cortaba en 128 y habría
+      negado ids largos pero válidos. Si la cookie no viene, la regla no corre.
+    categoria: php-upload-progress
+    modulo: REQUEST-410-PHP-UPLOAD-PROGRESS
+    archivo: rules/hostium/REQUEST-410-PHP-UPLOAD-PROGRESS.conf
+    version_de_introduccion: 1.1.0
+    autor: Hostium
+    owner: equipo-seguridad-hostium
+    motivacion: PHP rechaza un id fuera de ese alfabeto. El valor PHPSESSID=_ es un ejemplo público de id
+      inválido.
+    tipo_de_ataque: virtual-patch
+    referencias:
+    - https://github.com/php/php-src/security/advisories/GHSA-w8hw-w9fx-j79w
+    - https://github.com/owasp-modsecurity/ModSecurity/wiki/Reference-Manual-(v2.x)
+    falsos_positivos_probables: 'Un id custom que PHP igual aceptaría no existe dentro de ese alfabeto:
+      PHP usa exactamente ese conjunto. Un sid_length futuro por encima de 256 sí sería un falso positivo.'
+    fase: 1
+    variables_inspeccionadas:
+    - REQUEST_COOKIES:PHPSESSID
+    operador: '@rx'
+    transformaciones:
+    - t:none
+    accion: deny
+    severidad: CRITICAL
+    etiquetas:
+    - hostium-php-upload
+    - CVE-2026-109618
+    estado: produccion
+    modo_por_defecto: deny
+    incluir_en_paquete: true
+    casos_de_prueba_positivos:
+    - titulo: cookie con guion bajo
+      path: /
+      metodo: GET
+      dispara: true
+      ejecucion: automatizada
+      notas: 403 es el status de esta regla. La aproximación vive en tests/unit/test_php_upload_progress.py
+        y no es el motor ModSecurity.
+      status: 403
+      headers:
+        Cookie: PHPSESSID=_
+    casos_de_prueba_negativos:
+    - titulo: cookie de sesión normal
+      path: /
+      metodo: GET
+      dispara: false
+      ejecucion: automatizada
+      notas: Letras, dígitos, coma y guion, hasta 256.
+      headers:
+        Cookie: PHPSESSID=abcXYZ012
+    impacto_previsto: 'Niega la petición antes de PHP. No es el parche: hay que actualizar a 8.2.35, 8.3.36,
+      8.4.27 u 8.5.12. No cubre CVE-2026-115560. ultima_validacion queda vacía hasta un cPanel real.'
+    fecha_de_revision: '2026-10-23'
+    ultima_validacion: null
+    excepciones: []
+    registro_de_cambio:
+    - version: 1.1.0
+      fecha: '2026-10-23'
+      nota: Alta en 1.1.0. Para salir, sacá el módulo de la política y publicá otra release. No reescribas
+        hostium-1.0.0.zip ni el ZIP de esta versión.
+  - id: 5500622
+    nombre: Ruta de archivo de sesión
+    descripcion: Niega un argumento que traiga una ruta de sess_ bajo /tmp, /var/lib/php o /var/www, con
+      o sin el directorio sessions. El id tiene al menos 6 caracteres del alfabeto de PHP.
+    categoria: php-upload-progress
+    modulo: REQUEST-410-PHP-UPLOAD-PROGRESS
+    archivo: rules/hostium/REQUEST-410-PHP-UPLOAD-PROGRESS.conf
+    version_de_introduccion: 1.1.0
+    autor: Hostium
+    owner: equipo-seguridad-hostium
+    motivacion: Después de envenenar una sesión, el paso siguiente que se describe en público es incluir
+      ese archivo.
+    tipo_de_ataque: lfi
+    referencias:
+    - https://github.com/php/php-src/security/advisories/GHSA-6wmf-4rv5-p3rp
+    - https://github.com/owasp-modsecurity/ModSecurity/wiki/Reference-Manual-(v2.x)
+    falsos_positivos_probables: Un texto legítimo que mencione /tmp/sess_ y seis caracteres de id. Poco
+      habitual fuera de un exploit o de un postmortem.
+    fase: 2
+    variables_inspeccionadas:
+    - ARGS
+    operador: '@rx'
+    transformaciones:
+    - t:none
+    accion: deny
+    severidad: CRITICAL
+    etiquetas:
+    - hostium-php-upload
+    - CVE-2026-109619
+    estado: produccion
+    modo_por_defecto: deny
+    incluir_en_paquete: true
+    casos_de_prueba_positivos:
+    - titulo: ruta /tmp/sess_
+      path: /index.php
+      metodo: POST
+      dispara: true
+      ejecucion: automatizada
+      notas: El argumento contiene /tmp/sess_abcdef. 403 es el status de esta regla. La aproximación vive
+        en tests/unit/test_php_upload_progress.py y no es el motor ModSecurity.
+      status: 403
+    casos_de_prueba_negativos:
+    - titulo: nota sin ruta
+      path: /blog/post
+      metodo: GET
+      dispara: false
+      ejecucion: automatizada
+      notas: /blog/post y /tmp/sess_abc de solo tres caracteres no coinciden.
+    impacto_previsto: 'Niega la petición antes de PHP. No es el parche: hay que actualizar a 8.2.35, 8.3.36,
+      8.4.27 u 8.5.12. No cubre CVE-2026-115560. ultima_validacion queda vacía hasta un cPanel real.'
+    fecha_de_revision: '2026-10-23'
+    ultima_validacion: null
+    excepciones: []
+    registro_de_cambio:
+    - version: 1.1.0
+      fecha: '2026-10-23'
+      nota: Alta en 1.1.0. Para salir, sacá el módulo de la política y publicá otra release. No reescribas
+        hostium-1.0.0.zip ni el ZIP de esta versión.
+  - id: 5500623
+    nombre: Memoria agotada en la respuesta
+    descripcion: Registra, y no niega, Allowed memory size, de 1 a 50 caracteres, y exhausted en el cuerpo
+      de la respuesta. La página de error sigue viéndose.
+    categoria: php-upload-progress
+    modulo: REQUEST-410-PHP-UPLOAD-PROGRESS
+    archivo: rules/hostium/REQUEST-410-PHP-UPLOAD-PROGRESS.conf
+    version_de_introduccion: 1.1.0
+    autor: Hostium
+    owner: equipo-seguridad-hostium
+    motivacion: Es una señal de que un pedido llegó a OOM dentro de PHP. No identifica la regla de pedido
+      que falló en detenerlo.
+    tipo_de_ataque: observabilidad
+    referencias:
+    - https://github.com/php/php-src/security/advisories/GHSA-w8hw-w9fx-j79w
+    - https://github.com/owasp-modsecurity/ModSecurity/wiki/Reference-Manual-(v2.x)
+    falsos_positivos_probables: Una página que explique el mensaje de PHP y lo cite casi textual. También
+      un error real no relacionado con este CVE.
+    fase: 4
+    variables_inspeccionadas:
+    - RESPONSE_BODY
+    operador: '@rx'
+    transformaciones:
+    - t:none
+    accion: pass
+    severidad: WARNING
+    etiquetas:
+    - hostium-php-upload
+    - CVE-2026-109618
+    estado: produccion
+    modo_por_defecto: log-only
+    incluir_en_paquete: true
+    casos_de_prueba_positivos:
+    - titulo: mensaje de OOM
+      path: /index.php
+      metodo: POST
+      dispara: true
+      ejecucion: automatizada
+      notas: 200 quiere decir que la regla no niega. No es el código final de la aplicación. La aproximación
+        vive en tests/unit/test_php_upload_progress.py y no es el motor ModSecurity.
+      status: 200
+    casos_de_prueba_negativos:
+    - titulo: otra página
+      path: /index.php
+      metodo: POST
+      dispara: false
+      ejecucion: automatizada
+      notas: Sin la frase completa no coincide.
+    impacto_previsto: Registra y deja pasar. No mitiga el CVE por sí sola. ultima_validacion queda vacía
+      hasta un cPanel real.
+    fecha_de_revision: '2026-10-23'
+    ultima_validacion: null
+    excepciones: []
+    registro_de_cambio:
+    - version: 1.1.0
+      fecha: '2026-10-23'
+      nota: Alta en 1.1.0. Para salir, sacá el módulo de la política y publicá otra release. No reescribas
+        hostium-1.0.0.zip ni el ZIP de esta versión.
+  - id: 5500624
+    nombre: Fallo al decodificar la sesión
+    descripcion: Registra, y no niega, Session object destruction failed o Failed to decode session object
+      en la respuesta.
+    categoria: php-upload-progress
+    modulo: REQUEST-410-PHP-UPLOAD-PROGRESS
+    archivo: rules/hostium/REQUEST-410-PHP-UPLOAD-PROGRESS.conf
+    version_de_introduccion: 1.1.0
+    autor: Hostium
+    owner: equipo-seguridad-hostium
+    motivacion: Son síntomas de estado de sesión dañado. Aparecen también por sesiones corruptas ajenas
+      a este CVE.
+    tipo_de_ataque: observabilidad
+    referencias:
+    - https://github.com/php/php-src/security/advisories/GHSA-6wmf-4rv5-p3rp
+    - https://github.com/owasp-modsecurity/ModSecurity/wiki/Reference-Manual-(v2.x)
+    falsos_positivos_probables: Cualquier error de sesión que imprima esas frases, aunque no venga de PHP2Shell.
+    fase: 4
+    variables_inspeccionadas:
+    - RESPONSE_BODY
+    operador: '@rx'
+    transformaciones:
+    - t:none
+    accion: pass
+    severidad: WARNING
+    etiquetas:
+    - hostium-php-upload
+    - CVE-2026-109619
+    estado: produccion
+    modo_por_defecto: log-only
+    incluir_en_paquete: true
+    casos_de_prueba_positivos:
+    - titulo: destrucción fallida
+      path: /index.php
+      metodo: POST
+      dispara: true
+      ejecucion: automatizada
+      notas: 200 quiere decir que la regla no niega. No es el código final de la aplicación. La aproximación
+        vive en tests/unit/test_php_upload_progress.py y no es el motor ModSecurity.
+      status: 200
+    casos_de_prueba_negativos:
+    - titulo: sesión iniciada
+      path: /index.php
+      metodo: POST
+      dispara: false
+      ejecucion: automatizada
+      notas: Session started no es ninguna de las dos frases.
+    impacto_previsto: Registra y deja pasar. No mitiga el CVE por sí sola. ultima_validacion queda vacía
+      hasta un cPanel real.
+    fecha_de_revision: '2026-10-23'
+    ultima_validacion: null
+    excepciones: []
+    registro_de_cambio:
+    - version: 1.1.0
+      fecha: '2026-10-23'
+      nota: Alta en 1.1.0. Para salir, sacá el módulo de la política y publicá otra release. No reescribas
+        hostium-1.0.0.zip ni el ZIP de esta versión.
+  - id: 5500625
+    nombre: Webshell de post-explotación
+    descripcion: Niega si la URI o un argumento contiene p2s_8512_shell.php. Es un indicador de un artefacto
+      concreto, no una detección genérica de webshells.
+    categoria: php-upload-progress
+    modulo: REQUEST-410-PHP-UPLOAD-PROGRESS
+    archivo: rules/hostium/REQUEST-410-PHP-UPLOAD-PROGRESS.conf
+    version_de_introduccion: 1.1.0
+    autor: Hostium
+    owner: equipo-seguridad-hostium
+    motivacion: El nombre aparece en material público del incidente como archivo dejado después del RCE.
+    tipo_de_ataque: webshell
+    referencias:
+    - https://github.com/php/php-src/security/advisories/GHSA-6wmf-4rv5-p3rp
+    - https://github.com/owasp-modsecurity/ModSecurity/wiki/Reference-Manual-(v2.x)
+    falsos_positivos_probables: Una página de documentación que use ese nombre de archivo en la query. El
+      nombre es específico.
+    fase: 2
+    variables_inspeccionadas:
+    - REQUEST_URI
+    - ARGS
+    operador: '@contains'
+    transformaciones:
+    - t:none
+    accion: deny
+    severidad: CRITICAL
+    etiquetas:
+    - hostium-php-upload
+    - CVE-2026-109619
+    estado: produccion
+    modo_por_defecto: deny
+    incluir_en_paquete: true
+    casos_de_prueba_positivos:
+    - titulo: uri del webshell
+      path: /p2s_8512_shell.php
+      metodo: GET
+      dispara: true
+      ejecucion: automatizada
+      notas: 403 es el status de esta regla. La aproximación vive en tests/unit/test_php_upload_progress.py
+        y no es el motor ModSecurity.
+      status: 403
+    casos_de_prueba_negativos:
+    - titulo: otro php
+      path: /shell.php
+      metodo: GET
+      dispara: false
+      ejecucion: automatizada
+      notas: shell.php a secas no es este indicador.
+    impacto_previsto: 'Niega la petición antes de PHP. No es el parche: hay que actualizar a 8.2.35, 8.3.36,
+      8.4.27 u 8.5.12. No cubre CVE-2026-115560. ultima_validacion queda vacía hasta un cPanel real.'
+    fecha_de_revision: '2026-10-23'
+    ultima_validacion: null
+    excepciones: []
+    registro_de_cambio:
+    - version: 1.1.0
+      fecha: '2026-10-23'
+      nota: Alta en 1.1.0. Para salir, sacá el módulo de la política y publicá otra release. No reescribas
+        hostium-1.0.0.zip ni el ZIP de esta versión.
+  - id: 5500626
+    nombre: Marcador en la respuesta
+    descripcion: Registra, y no niega, SHELL_ALIVE o PAYLOAD_PERSISTED en el cuerpo de la respuesta. Es
+      un indicador de una carga que ya respondió, no una prueba de que el CVE se haya explotado.
+    categoria: php-upload-progress
+    modulo: REQUEST-410-PHP-UPLOAD-PROGRESS
+    archivo: rules/hostium/REQUEST-410-PHP-UPLOAD-PROGRESS.conf
+    version_de_introduccion: 1.1.0
+    autor: Hostium
+    owner: equipo-seguridad-hostium
+    motivacion: Esos literales se usaron como marca de una carga concreta. Una página que los cite también
+      coincide.
+    tipo_de_ataque: webshell
+    referencias:
+    - https://github.com/php/php-src/security/advisories/GHSA-6wmf-4rv5-p3rp
+    - https://github.com/owasp-modsecurity/ModSecurity/wiki/Reference-Manual-(v2.x)
+    falsos_positivos_probables: Documentación, un ticket o una página que contenga esas cadenas.
+    fase: 4
+    variables_inspeccionadas:
+    - RESPONSE_BODY
+    operador: '@rx'
+    transformaciones:
+    - t:none
+    accion: pass
+    severidad: CRITICAL
+    etiquetas:
+    - hostium-php-upload
+    - CVE-2026-109619
+    estado: produccion
+    modo_por_defecto: log-only
+    incluir_en_paquete: true
+    casos_de_prueba_positivos:
+    - titulo: marca SHELL_ALIVE
+      path: /index.php
+      metodo: POST
+      dispara: true
+      ejecucion: automatizada
+      notas: 200 quiere decir que la regla no niega. No es el código final de la aplicación. La aproximación
+        vive en tests/unit/test_php_upload_progress.py y no es el motor ModSecurity.
+      status: 200
+    casos_de_prueba_negativos:
+    - titulo: respuesta normal
+      path: /index.php
+      metodo: POST
+      dispara: false
+      ejecucion: automatizada
+      notas: Un HTML sin esas cadenas no coincide.
+    impacto_previsto: Registra y deja pasar. No mitiga el CVE por sí sola. ultima_validacion queda vacía
+      hasta un cPanel real.
+    fecha_de_revision: '2026-10-23'
+    ultima_validacion: null
+    excepciones: []
+    registro_de_cambio:
+    - version: 1.1.0
+      fecha: '2026-10-23'
+      nota: Alta en 1.1.0. Para salir, sacá el módulo de la política y publicá otra release. No reescribas
+        hostium-1.0.0.zip ni el ZIP de esta versión.

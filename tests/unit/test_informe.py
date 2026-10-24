@@ -39,6 +39,7 @@ def test_evidencia_acepta_el_yaml_viejo(tmp_path: Path) -> None:
 def test_scripts_y_reglas_usan_lf() -> None:
     archivos = list((ROOT / "scripts").glob("*.sh"))
     archivos.append(ROOT / "rules" / "hostium" / "REQUEST-100-SENSITIVE-FILES.conf")
+    archivos.append(ROOT / "rules" / "hostium" / "REQUEST-410-PHP-UPLOAD-PROGRESS.conf")
     for ruta in archivos:
         datos = ruta.read_bytes()
         assert b"\r\n" not in datos, ruta.name
