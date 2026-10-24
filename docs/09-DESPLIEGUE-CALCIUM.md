@@ -11,7 +11,7 @@ La persona con acceso root al piloto y aprobación para tocarlo.
 ## Prerrequisitos
 
 - Artefacto publicado: `publish/stable/meta_hostium.yaml` apunta a `hostium-1.1.1.zip`. Ese ZIP trae dos sets, `REQUEST-100-SENSITIVE-FILES.conf` y `REQUEST-410-PHP-UPLOAD-PROGRESS.conf`. `hostium-1.0.0.zip` sigue en el directorio y no se reescribe.
-- `package build --version 1.0.0` falla a propósito para no reescribir la distribution ya publicada. `hostium-1.1.0` no se publicó.
+- `package build --version 1.0.0` falla a propósito para no reescribir la distribution ya publicada. `hostium-1.1.0.zip` está en `publish/stable/` y `meta_hostium.yaml` no lo nombra. WHM no lo instala con el alta de este runbook.
 - Ventana acordada.
 - Un dominio de prueba autorizado, no un sitio de cliente al azar.
 - Copia de la salida de solo lectura de antes del cambio.
@@ -93,4 +93,4 @@ Páginas de `modsec_vendor` y de ModSecurity por dominio, en `docs/REFERENCIAS.m
 
 ## Limitaciones
 
-Este documento no es una bitácora de un cambio hecho. No hay salida real de calcium adjunta. El inventario `config/fleet.example.yaml` usa `calcium.example.invalid` y no resuelve al piloto. El contraste entre la metadata publicada y la 1.1.0 local está en `docs/21-QA-CPANEL.md`.
+Este documento no es una bitácora de un cambio hecho. No hay salida real de calcium adjunta. El inventario `config/fleet.example.yaml` usa `calcium.example.invalid` y no resuelve al piloto. La metadata publicada nombra `hostium-1.1.1`. El informe de vendor está en `docs/21-QA-CPANEL.md` y la corrida del 24 de octubre en `docs/22-QA-TRES-PASADAS.md`.

@@ -6,7 +6,7 @@ Decir qué se corrió, qué se omitió y qué no prueba protección en un cPanel
 
 ## Audiencia
 
-Quien lea el estado de la 1.0.0.
+Quien lea el estado de stable. Hoy `publish/stable/meta_hostium.yaml` nombra `hostium-1.1.1`. La bitácora del 23 de octubre, más abajo, es de esa fecha. La del 24 está en «Corrida del 24 de octubre de 2026» y en `docs/22-QA-TRES-PASADAS.md`.
 
 ## Prerrequisitos
 
@@ -132,6 +132,20 @@ En esa corrida la URL del metadata era `https://waf.hostium.com/stable/hostium-1
 Barrido del árbol versionado: no apareció un bloque `BEGIN PRIVATE KEY` ni una clave `AKIA` de 16 caracteres. La cadena `StrictHostKeyChecking=no` solo está en la prohibición de la documentación, en la especificación y en las pruebas que exigen que el cliente SSH no la use. `ultima_validacion` de las reglas sigue en null.
 
 Pasada de QA posterior, el mismo 23 de octubre de 2026: `python -m ruff check src tests` sin hallazgos, `python -m pytest` 35 pasadas y 3 deseleccionadas en 0,68 s, e integración otra vez 3 pasadas en 27,46 s. Los informes `reports/integracion-*.json` de esa corrida son JSON. El ZIP no cambió de bytes: mismos MD5 y SHA-256 de arriba. Las tablas de milisegundos corresponden a la corrida anterior del mismo día, no a esta repetición.
+
+## Corrida del 24 de octubre de 2026
+
+Python 3.14.4, ruff 0.17.2, pytest 9.1.1. No se corrió la marca `integration`. Los pedidos al contenedor están en `docs/22-QA-TRES-PASADAS.md`, no en las tablas de arriba.
+
+```text
+python -m ruff check src tests
+All checks passed!
+
+python -m pytest --tb=line -q
+66 passed, 4 deselected, 1 warning in 1.85s
+```
+
+El aviso sigue siendo `Duplicate name: 'hostium/doble.conf'` en el caso que arma un ZIP inválido. `ultima_validacion` sigue en null.
 
 ## Qué no está probado en cPanel
 

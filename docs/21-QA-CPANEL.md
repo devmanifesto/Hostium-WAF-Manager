@@ -59,3 +59,5 @@ Si la 1.1.1 llega a un servidor, `modsec_vendor disable hostium` la saca y OWASP
 ## Referencias
 
 `docs/09-DESPLIEGUE-CALCIUM.md`, `docs/05-REGLAS-SECLANG.md`, `docs/14-ROLLBACK-Y-RECUPERACION.md`.
+
+La corrida del 24 de octubre de 2026, con otras tres lecturas y pedidos contra el Apache de Debian, está en `docs/22-QA-TRES-PASADAS.md`.
