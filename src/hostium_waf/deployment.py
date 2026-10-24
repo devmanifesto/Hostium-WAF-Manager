@@ -39,7 +39,7 @@ def plan_despliegue(inventory: Inventory, ring: str, version: str, artefacto: Pa
             "SOLO LECTURA. /usr/local/cpanel/scripts/modsec_vendor list y comprobar enabled e in_use del vendor hostium.",
             "MODIFICA / REINICIA. No asumir que el alta del vendor recarga Apache. Un graceful queda para la ventana aprobada.",
             "SOLO LECTURA. Smoke test en un dominio autorizado: pedir /.env, observar 403 y el id 5500100 en el log de auditoría. Un 403 sin ese id no cuenta.",
-            "No ejecutar enable-updates ni enable_updates hasta leer la ayuda real del script en ese cPanel.",
+            "PRODUCCIÓN / MODIFICA. Con el vendor ya instalado: /usr/local/cpanel/scripts/modsec_vendor enable-updates hostium. upcp es el que después relee la metadata.",
         ],
         "bloqueos": [_MOTIVO],
     }

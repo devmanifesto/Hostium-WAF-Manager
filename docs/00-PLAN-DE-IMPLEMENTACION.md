@@ -40,7 +40,7 @@ Python 3.11+, el árbol de este repositorio y, para la fase HTTP, Docker. No se 
 
 ## Riesgos
 
-- La grafía `enable-updates` / `enable_updates` sigue sin comprobar en un `modsec_vendor` real.
+- La grafía elegida para el flag de updates es `enable-updates`. El ejemplo oficial de la misma fila sigue diciendo `enable_updates`. No se corrió en un cPanel.
 - El contenedor Debian no es el RPM `ea-apache24-mod_security2` de cPanel. La versión que imprime la imagen es la de esa imagen, no la de calcium.
 - NGINX o Engintron pueden servir una URL sin pasar por Apache. Este paquete no lo cubre.
 

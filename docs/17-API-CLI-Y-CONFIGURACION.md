@@ -23,7 +23,7 @@ Instalación del documento 04.
 | 0 | La operación local terminó bien |
 | 1 | Validación, artefacto ausente o diagnóstico con hallazgos |
 | 2 | Uso incorrecto, lo informa Typer |
-| 3 | Operación bloqueada: deploy apply, rollback apply, publish apply |
+| 3 | Operación bloqueada: deploy apply, rollback apply, publish apply, updates apply |
 
 ## Comandos
 
@@ -42,6 +42,8 @@ Instalación del documento 04.
 | `deploy plan` / `deploy verify` | Plan, o existencia local del ZIP. `verify` dice `remoto: no_ejecutado` |
 | `deploy apply` | Código 3 |
 | `rollback plan` / `rollback apply` | Plan, o código 3 |
+| `updates plan` | Comando `enable-updates hostium`. No se conecta. `--help-file` lee una ayuda local |
+| `updates apply` | Código 3. No abre SSH |
 | `report generate --format markdown` | Informe sin cuerpos |
 
 `deploy verify` sale en 1 si el ZIP local no está. Eso no significa que el servidor falló.

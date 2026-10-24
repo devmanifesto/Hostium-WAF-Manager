@@ -230,7 +230,7 @@ def _inferir(comandos: list[ResultadoComando]) -> list[str]:
     por_id = {item.id: item.stdout for item in comandos}
     notas = [
         "La presencia de un vendor o Syntax OK no demuestra un bloqueo de extremo a extremo.",
-        "enable-updates y enable_updates no se invocan: la grafía oficial está en conflicto y no fue comprobada en cPanel.",
+        "Esta auditoría no ejecuta enable-updates. El alta de actualizaciones es un comando aparte y modifica el servidor.",
     ]
     vendor = por_id.get("vendor_list", "")
     if "hostium" in vendor.lower():

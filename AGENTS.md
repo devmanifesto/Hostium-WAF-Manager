@@ -27,6 +27,6 @@ Una tarea está terminada cuando el comando que dice implementar existe, falla d
 ## Qué no tocar
 
 - Servidores reales, incluido calcium, sin un pedido explícito de esa operación.
-- `enable-updates` / `enable_updates`: la documentación de cPanel no coincide y no se automatiza.
+- `enable-updates hostium` es el comando documentado para el flag de updates. `updates apply` no abre SSH. No lo corras en calcium sin un pedido explícito de esa operación.
 - Archivos bajo el vendor OWASP3 instalado por RPM.
 - `deploy apply` y `rollback apply`: siguen bloqueados hasta que haya captura de estado, idempotencia ensayada y rollback ensayado.

@@ -55,6 +55,7 @@ def test_apply_esta_bloqueado() -> None:
         ["deploy", "apply", "--ring", "pilot", "--version", "1.0.0", "--approve"],
         ["rollback", "apply", "--ring", "pilot", "--approve"],
         ["publish", "apply"],
+        ["updates", "apply", "--approve"],
     ):
         resultado = runner.invoke(app, comando)
         assert resultado.exit_code == 3, comando

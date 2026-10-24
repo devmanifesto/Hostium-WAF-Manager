@@ -65,13 +65,17 @@ No actives el selftest en este piloto. El archivo no está en el ZIP. Si alguien
 
 ## Actualizaciones automáticas
 
-No ejecutes `enable-updates` ni `enable_updates` hasta leer la ayuda real:
+Con el vendor ya instalado, en el servidor, como root:
 
 ```sh
-/usr/local/cpanel/scripts/modsec_vendor
+/usr/local/cpanel/scripts/modsec_vendor enable-updates hostium
 ```
 
-La documentación oficial, al 8 de julio de 2026, no usa una sola grafía. Anotá la que acepte ese binario.
+Eso modifica el servidor: deja el flag de updates en On. La descarga nueva ocurre cuando corre `/usr/local/cpanel/scripts/upcp`, que relee la metadata del `add`. En la interfaz es la columna Updates del vendor `hostium`, en WHM » Security Center » ModSecurity Vendors.
+
+La página del script, al 8 de julio de 2026, nombra el argumento `enable-updates` y el ejemplo de esa fila usa `enable_updates`. El comando de arriba sigue el nombre del argumento. No se ejecutó en calcium. `hostium-waf updates apply` termina con código 3 y no abre SSH. El mismo texto está en `scripts/enable-hostium-updates.sh`.
+
+Para apagar solo el flag, sin desinstalar el vendor: `modsec_vendor disable-updates hostium`.
 
 ## Rollback
 

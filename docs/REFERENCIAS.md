@@ -20,7 +20,7 @@ Consulta del 23 de octubre de 2026. Si una página cambió, manda la página y n
 
 - El tutorial exige que el directorio del ZIP coincida con el `vendor_id`. El ejemplo de shell del mismo tutorial comprime una carpeta con el nombre de la distribución. Este proyecto sigue el requisito textual: raíz `hostium/`.
 - La tabla de atributos incluye SHA512. El ejemplo de una sola versión del tutorial a veces muestra solo MD5. Generamos los dos.
-- En la página del script, el argumento figura como `enable-updates` y un ejemplo usa `enable_updates`. No se automatiza.
+- En la página del script, el argumento figura como `enable-updates` y un ejemplo usa `enable_updates`. El comando que emitimos es `enable-updates`. No se corrió en un cPanel.
 
 ## Línea base del piloto
 

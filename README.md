@@ -56,7 +56,13 @@ httpd -t
 httpd -t -D DUMP_INCLUDES
 ```
 
-El `vendor_id` queda `hostium`. No ejecutes `enable-updates` ni `enable_updates`: la documentación de cPanel no usa una sola grafía. Para retirarlo, `modsec_vendor disable hostium`. OWASP3 tiene que seguir habilitado.
+El `vendor_id` queda `hostium`. Después del alta, las actualizaciones automáticas se activan con:
+
+```sh
+/usr/local/cpanel/scripts/modsec_vendor enable-updates hostium
+```
+
+Ese flag no baja el ZIP en el momento. cPanel relee la metadata cuando corre `/usr/local/cpanel/scripts/upcp`. La documentación oficial nombra el argumento `enable-updates` y, en el ejemplo de la misma fila, escribe `enable_updates`. Usamos el nombre del argumento. `hostium-waf updates plan` imprime el comando. `updates apply` no abre SSH. Para retirarlo, `modsec_vendor disable hostium`. Si las actualizaciones quedaron activas y hay que frenar una release, `modsec_vendor disable-updates hostium`. OWASP3 tiene que seguir habilitado.
 
 En un dominio de prueba, `https://<dominio>/.env` tiene que responder 403 con el id `5500100` en el Hits List o en el audit log. `https://<dominio>/environment` no tiene que mostrar ese id. Un 403 sin `5500100` no cuenta como éxito de esta regla.
 

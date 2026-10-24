@@ -343,7 +343,7 @@ Crear un manual con procedimientos concretos de:
 9. Manejar interacción con NGINX/Engintron, CDN, proxy IP real, rutas servidas sin Apache y cache bypass.
 10. Rollback por módulo, proveedor y versión, sin dejar OWASP apagado.
 
-**Detalle a verificar:** la documentación de cPanel muestra variantes de grafía de `enable-updates`/`enable_updates`. No adivinar la opción para automatización: verificar ayuda o comportamiento en versión real del script e incluir la variante constatada para el entorno. En general, preferí invocar comandos documentados y probados, nunca construir shell arbitrario con parámetros de usuario.
+**Detalle constatado el 24 de octubre de 2026:** la documentación de cPanel, modificada el 8 de julio de 2026, nombra el argumento `enable-updates` y el ejemplo de esa fila usa `enable_updates`. El comando que emite `updates plan` es `enable-updates hostium`. `updates apply` no abre SSH y no se ejecutó en un cPanel. No construyas shell arbitrario con parámetros de usuario.
 
 ## 12. Desarrollo y pruebas automatizadas
 

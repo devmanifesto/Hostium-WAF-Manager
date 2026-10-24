@@ -16,7 +16,7 @@ La 1.0.0 descrita en el documento 03.
 
 - Publicar de verdad un origen HTTPS y sustituir la URL de diseño.
 - Correr `modsec_vendor add` en un laboratorio, no en calcium, y guardar `httpd -t` y `DUMP_INCLUDES`.
-- Confirmar en ese binario si el subcomando es `enable-updates` o `enable_updates`.
+- El comando de actualizaciones es `modsec_vendor enable-updates hostium`. La documentación del 8 de julio de 2026 también muestra `enable_updates` en un ejemplo. `updates plan` emite la grafía con guion. `updates apply` no abre SSH y no se ejecutó en calcium.
 - Ver un 403 con id 5500100 en un dominio de prueba autorizado, y la ausencia de ese id en `/environment`.
 - La versión del contenedor Debian ya está anotada en `docs/11`: `modsecurity 2.9.7-1+deb12u2`, distinta del RPM `2.9.15` del piloto. Eso no cierra el P0.
 

@@ -22,6 +22,7 @@ from hostium_waf.publishing import apply_publicacion, plan_publicacion
 from hostium_waf.reporting import cargar_evidencia_integracion, escribir_informe, generar_informe
 from hostium_waf.rollback import apply_rollback, plan_rollback
 from hostium_waf.settings import find_root, load_settings, load_yaml, ruta_dentro
+from hostium_waf.updates import apply_activacion, plan_activacion, url_metadata
 from hostium_waf.validation import validar_repositorio
 
 
@@ -44,6 +45,7 @@ publish_app = typer.Typer(no_args_is_help=True, help="Describe la publicación. 
 fleet_app = typer.Typer(no_args_is_help=True, help="Inventario y auditoría de solo lectura.")
 deploy_app = typer.Typer(no_args_is_help=True, help="Planes de despliegue. apply está bloqueado.")
 rollback_app = typer.Typer(no_args_is_help=True, help="Planes de rollback. apply está bloqueado.")
+updates_app = typer.Typer(no_args_is_help=True, help="Actualizaciones del vendor. apply no abre SSH.")
 report_app = typer.Typer(no_args_is_help=True, help="Genera informes locales.")
 
 app.add_typer(rules_app, name="rules")
@@ -53,6 +55,7 @@ app.add_typer(publish_app, name="publish")
 app.add_typer(fleet_app, name="fleet")
 app.add_typer(deploy_app, name="deploy")
 app.add_typer(rollback_app, name="rollback")
+app.add_typer(updates_app, name="updates")
 app.add_typer(report_app, name="report")
 
 
@@ -580,6 +583,51 @@ def rollback_apply(
     def accion() -> None:
         _ = (ring, approve)
         apply_rollback()
+
+    _ejecutar(ctx, accion)
+
+
+@updates_app.command("plan")
+def updates_plan(
+    ctx: typer.Context,
+    help_file: Path | None = typer.Option(None, "--help-file", help="Texto local de modsec_vendor sin argumentos."),
+    settings: Path | None = typer.Option(None, "--settings"),
+) -> None:
+    """Muestra el comando que activa las actualizaciones. No se conecta."""
+
+    def accion() -> None:
+        root = _raiz()
+        cfg = _settings(root, settings)
+        ayuda = None
+        if help_file is not None:
+            if not help_file.is_file():
+                raise HostiumError(f"No existe la ayuda local: {help_file}")
+            ayuda = help_file.read_text(encoding="utf-8")
+        url = url_metadata(cfg.base_url, cfg.canal_por_defecto)
+        plan = plan_activacion(url, ayuda)
+        lineas = [
+            "updates plan",
+            str(plan["comando"]),
+            f"metadata {plan['url_metadata']}",
+            "No se modificó ningún servidor.",
+            str(plan["cuando_corre"]),
+            str(plan["nota"]),
+        ]
+        _emitir(ctx, plan, "\n".join(lineas))
+
+    _ejecutar(ctx, accion)
+
+
+@updates_app.command("apply")
+def updates_apply(
+    ctx: typer.Context,
+    approve: bool = typer.Option(False, "--approve", help="No abre SSH."),
+) -> None:
+    """Bloqueado. No activa actualizaciones en un servidor."""
+
+    def accion() -> None:
+        _ = approve
+        apply_activacion()
 
     _ejecutar(ctx, accion)
 

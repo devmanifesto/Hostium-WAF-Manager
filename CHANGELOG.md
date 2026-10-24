@@ -6,6 +6,8 @@ Módulo `REQUEST-410-PHP-UPLOAD-PROGRESS` para CVE-2026-109618 y CVE-2026-109619
 
 La aproximación de las expresiones está en `tests/unit/test_php_upload_progress.py`. No se ejecutó el motor ModSecurity contra estos ids. `ultima_validacion` sigue vacía.
 
+`updates plan` emite `modsec_vendor enable-updates hostium`. `updates apply` sale con código 3 y no abre SSH.
+
 ## 1.0.0 — 2026-10-23
 
 Primera versión usable en el repositorio: CLI, manifiesto, regla de archivos secretos, selftest fuera del ZIP, empaquetado reproducible y auditoría de flota en solo lectura.
