@@ -1,3 +1,4 @@
+# Reglas complementarias de seguridad administradas por Hostium 1.0.0
 # INCOMPLETO — borrador WordPress/WooCommerce.
 # No hay una SecRule activa. No bloquear wp-login.php, xmlrpc.php, wp-json ni
 # admin-ajax.php con un patrón amplio. Antes de habilitar una regla hacen falta

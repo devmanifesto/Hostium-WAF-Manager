@@ -27,7 +27,7 @@ python -m hostium_waf package verify --zip dist/hostium-1.1.0.zip --metadata dis
 
 ## Qué entra al ZIP estable
 
-`hostium-1.1.0.zip` lleva dos `.conf`: `REQUEST-100-SENSITIVE-FILES.conf` (ids `5500100` y `5500101`) y `REQUEST-410-PHP-UPLOAD-PROGRESS.conf` (ids `5500600`–`5500626`, CVE-2026-109618 y CVE-2026-109619). Esas reglas no reemplazan actualizar PHP. El selftest `5500000` vive en un `.example` y no se empaqueta. Los borradores de WordPress, PHP genérico, el id vacío `5500400` y los escáneres tampoco.
+`hostium-1.1.0.zip` lleva dos `.conf`: `REQUEST-100-SENSITIVE-FILES.conf` (ids `5500100` y `5500101`) y `REQUEST-410-PHP-UPLOAD-PROGRESS.conf` (ids de pedido `5500600`–`5500619` y `5500621`, `5500622`, `5500625`). Las de fase 4 (`5500620`, `5500623`, `5500624`, `5500626`) quedan en un `.example` y no se empaquetan: en cPanel no se enciende `SecResponseBodyAccess` para todo el servidor. Esas reglas no reemplazan actualizar PHP. El selftest `5500000` vive en un `.example` y no se empaqueta. Los borradores de WordPress, PHP genérico, el id vacío `5500400` y los escáneres tampoco.
 
 El ZIP extrae un único directorio `hostium/`. La metadata se llama `meta_hostium.yaml`. La clave `'2.9.15'` es la versión del motor, no la del ruleset. `distribution: hostium-1.1.0` identifica esta release. `hostium-1.0.0` sigue siendo el artefacto ya publicado y `package build --version 1.0.0` falla a propósito.
 

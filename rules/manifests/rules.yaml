@@ -1344,8 +1344,8 @@ reglas:
       la ponía en fase 3, donde RESPONSE_BODY todavía no está. Hace falta que ModSecurity inspeccione el
       mime de esa respuesta.
     categoria: php-upload-progress
-    modulo: REQUEST-410-PHP-UPLOAD-PROGRESS
-    archivo: rules/hostium/REQUEST-410-PHP-UPLOAD-PROGRESS.conf
+    modulo: REQUEST-411-PHP-UPLOAD-PROGRESS-RESPONSE
+    archivo: rules/hostium/REQUEST-411-PHP-UPLOAD-PROGRESS-RESPONSE.conf.example
     version_de_introduccion: 1.1.0
     autor: Hostium
     owner: equipo-seguridad-hostium
@@ -1370,9 +1370,9 @@ reglas:
     - hostium-php-upload
     - CVE-2026-109618
     - CVE-2026-109619
-    estado: produccion
+    estado: experimental
     modo_por_defecto: deny
-    incluir_en_paquete: true
+    incluir_en_paquete: false
     casos_de_prueba_positivos:
     - titulo: tres avisos en orden
       path: /index.php
@@ -1399,6 +1399,10 @@ reglas:
       fecha: '2026-10-23'
       nota: Alta en 1.1.0. Para salir, sacá el módulo de la política y publicá otra release. No reescribas
         hostium-1.0.0.zip ni el ZIP de esta versión.
+    - version: '1.1.0'
+      fecha: '2026-10-23'
+      nota: Fuera del ZIP. En cPanel no se enciende SecResponseBodyAccess desde el vendor.
+
   - id: 5500621
     nombre: PHPSESSID fuera de alfabeto
     descripcion: Niega la cookie PHPSESSID si no matchea ^[a-zA-Z0-9,-]{1,256}$. El operador del .conf es
@@ -1525,8 +1529,8 @@ reglas:
     descripcion: Registra, y no niega, Allowed memory size, de 1 a 50 caracteres, y exhausted en el cuerpo
       de la respuesta. La página de error sigue viéndose.
     categoria: php-upload-progress
-    modulo: REQUEST-410-PHP-UPLOAD-PROGRESS
-    archivo: rules/hostium/REQUEST-410-PHP-UPLOAD-PROGRESS.conf
+    modulo: REQUEST-411-PHP-UPLOAD-PROGRESS-RESPONSE
+    archivo: rules/hostium/REQUEST-411-PHP-UPLOAD-PROGRESS-RESPONSE.conf.example
     version_de_introduccion: 1.1.0
     autor: Hostium
     owner: equipo-seguridad-hostium
@@ -1549,9 +1553,9 @@ reglas:
     etiquetas:
     - hostium-php-upload
     - CVE-2026-109618
-    estado: produccion
+    estado: experimental
     modo_por_defecto: log-only
-    incluir_en_paquete: true
+    incluir_en_paquete: false
     casos_de_prueba_positivos:
     - titulo: mensaje de OOM
       path: /index.php
@@ -1578,13 +1582,17 @@ reglas:
       fecha: '2026-10-23'
       nota: Alta en 1.1.0. Para salir, sacá el módulo de la política y publicá otra release. No reescribas
         hostium-1.0.0.zip ni el ZIP de esta versión.
+    - version: '1.1.0'
+      fecha: '2026-10-23'
+      nota: Fuera del ZIP. En cPanel no se enciende SecResponseBodyAccess desde el vendor.
+
   - id: 5500624
     nombre: Fallo al decodificar la sesión
     descripcion: Registra, y no niega, Session object destruction failed o Failed to decode session object
       en la respuesta.
     categoria: php-upload-progress
-    modulo: REQUEST-410-PHP-UPLOAD-PROGRESS
-    archivo: rules/hostium/REQUEST-410-PHP-UPLOAD-PROGRESS.conf
+    modulo: REQUEST-411-PHP-UPLOAD-PROGRESS-RESPONSE
+    archivo: rules/hostium/REQUEST-411-PHP-UPLOAD-PROGRESS-RESPONSE.conf.example
     version_de_introduccion: 1.1.0
     autor: Hostium
     owner: equipo-seguridad-hostium
@@ -1606,9 +1614,9 @@ reglas:
     etiquetas:
     - hostium-php-upload
     - CVE-2026-109619
-    estado: produccion
+    estado: experimental
     modo_por_defecto: log-only
-    incluir_en_paquete: true
+    incluir_en_paquete: false
     casos_de_prueba_positivos:
     - titulo: destrucción fallida
       path: /index.php
@@ -1635,6 +1643,10 @@ reglas:
       fecha: '2026-10-23'
       nota: Alta en 1.1.0. Para salir, sacá el módulo de la política y publicá otra release. No reescribas
         hostium-1.0.0.zip ni el ZIP de esta versión.
+    - version: '1.1.0'
+      fecha: '2026-10-23'
+      nota: Fuera del ZIP. En cPanel no se enciende SecResponseBodyAccess desde el vendor.
+
   - id: 5500625
     nombre: Webshell de post-explotación
     descripcion: Niega si la URI o un argumento contiene p2s_8512_shell.php. Es un indicador de un artefacto
@@ -1698,8 +1710,8 @@ reglas:
     descripcion: Registra, y no niega, SHELL_ALIVE o PAYLOAD_PERSISTED en el cuerpo de la respuesta. Es
       un indicador de una carga que ya respondió, no una prueba de que el CVE se haya explotado.
     categoria: php-upload-progress
-    modulo: REQUEST-410-PHP-UPLOAD-PROGRESS
-    archivo: rules/hostium/REQUEST-410-PHP-UPLOAD-PROGRESS.conf
+    modulo: REQUEST-411-PHP-UPLOAD-PROGRESS-RESPONSE
+    archivo: rules/hostium/REQUEST-411-PHP-UPLOAD-PROGRESS-RESPONSE.conf.example
     version_de_introduccion: 1.1.0
     autor: Hostium
     owner: equipo-seguridad-hostium
@@ -1721,9 +1733,9 @@ reglas:
     etiquetas:
     - hostium-php-upload
     - CVE-2026-109619
-    estado: produccion
+    estado: experimental
     modo_por_defecto: log-only
-    incluir_en_paquete: true
+    incluir_en_paquete: false
     casos_de_prueba_positivos:
     - titulo: marca SHELL_ALIVE
       path: /index.php
@@ -1750,3 +1762,6 @@ reglas:
       fecha: '2026-10-23'
       nota: Alta en 1.1.0. Para salir, sacá el módulo de la política y publicá otra release. No reescribas
         hostium-1.0.0.zip ni el ZIP de esta versión.
+    - version: '1.1.0'
+      fecha: '2026-10-23'
+      nota: Fuera del ZIP. En cPanel no se enciende SecResponseBodyAccess desde el vendor.

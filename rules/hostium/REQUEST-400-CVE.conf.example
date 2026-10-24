@@ -1,3 +1,4 @@
+# Reglas complementarias de seguridad administradas por Hostium 1.0.0
 # INCOMPLETO — borrador de virtual patch.
 # No hay una SecRule activa. Una regla no es una mitigación de CVE si no tiene el
 # vector de explotación, una prueba que lo reproduzca, una prueba que una petición

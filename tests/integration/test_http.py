@@ -306,3 +306,39 @@ def test_coexistencia_con_crs() -> None:
         _marcar("ejecutada")
     finally:
         _docker("rm", "-f", nombre)
+
+
+@pytest.mark.integration
+def test_sintaxis_del_conf_empaquetado(tmp_path: Path) -> None:
+    """configtest del ZIP lógico. Si Docker no está, se omite y no es un bloqueo comprobado."""
+    _exigir_docker()
+    _construir()
+    for nombre in ("REQUEST-100-SENSITIVE-FILES.conf", "REQUEST-410-PHP-UPLOAD-PROGRESS.conf"):
+        origen = ROOT / "rules" / "hostium" / nombre
+        activas = [
+            linea
+            for linea in origen.read_text(encoding="utf-8").splitlines()
+            if linea.strip() and not linea.strip().startswith("#")
+        ]
+        assert not any("SecResponseBodyAccess" in linea for linea in activas)
+        shutil.copy(origen, tmp_path / nombre)
+    ejemplo = ROOT / "rules" / "hostium" / "REQUEST-411-PHP-UPLOAD-PROGRESS-RESPONSE.conf.example"
+    assert not (tmp_path / ejemplo.name).exists()
+    contenedor = "hostium-waf-sintaxis"
+    _docker("rm", "-f", contenedor)
+    alta = _docker(
+        "run",
+        "-d",
+        "--name",
+        contenedor,
+        *_montaje(tmp_path, "/etc/modsecurity/hostium"),
+        IMAGE,
+    )
+    if alta.returncode != 0:
+        pytest.fail(alta.stderr[-2000:])
+    try:
+        sintaxis = _docker("exec", contenedor, "apache2ctl", "configtest")
+        if sintaxis.returncode != 0:
+            pytest.fail(sintaxis.stdout + sintaxis.stderr)
+    finally:
+        _docker("rm", "-f", contenedor)

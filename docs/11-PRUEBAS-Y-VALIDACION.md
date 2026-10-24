@@ -35,7 +35,7 @@ La primera línea es lint. La segunda es la suite unitaria y excluye la marca `i
 
 ## Reglas 5500600–5500626
 
-La corrida de abajo es la de los ids `5500100` y `5500101`. Los ids de PHP upload progress no están en esa tabla. Su control automático es `tests/unit/test_php_upload_progress.py`, que aplica las expresiones en Python. `apache2ctl configtest` en `modsecurity 2.9.7-1+deb12u2` aceptó el archivo. No hubo un POST de prueba ni un 403 observado para esos ids, y `ultima_validacion` sigue vacía.
+La corrida de abajo es la de los ids `5500100` y `5500101`. Los ids de PHP upload progress no están en esa tabla. Los de fase 4 no entran al ZIP. Su control automático es `tests/unit/test_php_upload_progress.py`, que aplica las expresiones en Python. El `configtest` del conf empaquetado está en `tests/integration/test_http.py` y se omite si Docker no está. No hubo un POST de prueba ni un 403 observado para esos ids, y `ultima_validacion` sigue vacía. El informe de cPanel está en `docs/21-QA-CPANEL.md`.
 
 ## Resultado de la corrida de cierre
 

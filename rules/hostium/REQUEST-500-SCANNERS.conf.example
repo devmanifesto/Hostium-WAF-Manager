@@ -1,3 +1,4 @@
+# Reglas complementarias de seguridad administradas por Hostium 1.0.0
 # INCOMPLETO — borrador de escáneres.
 # No hay una SecRule activa. No bloquear user agents desconocidos ni cualquier cliente
 # que no sea un navegador. Hace falta una lista corta, revisable y con vencimiento.

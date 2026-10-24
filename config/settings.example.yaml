@@ -1,6 +1,7 @@
 version_esquema: 1
 vendor_id: hostium
 nombre_visible: Hostium WAF Ruleset
+# Frase fija. El build le agrega la versión SemVer del ruleset. No cambies el texto.
 descripcion: Reglas complementarias de seguridad administradas por Hostium
 vendor_url: https://hostium.com
 # WHM baja por HTTPS este prefijo. El canal y el nombre del ZIP se agregan solos.

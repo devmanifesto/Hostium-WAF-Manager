@@ -202,6 +202,7 @@ Reglas verificables del artefacto:
 - Bajo cada versión de motor deben figurar `MD5`, `SHA512`, `distribution` y `url` según el esquema admitido; el ZIP debe terminar en `.zip`.
 - `distribution` cambia al publicar una revisión (por ejemplo `hostium-1.0.0`) y debe ser un identificador inmutable, independiente del nombre del directorio ZIP.
 - `attributes` debe incluir `name`, `description` y `vendor_url`; `report_url` solo si existe de verdad un receptor válido.
+- `description` es siempre `Reglas complementarias de seguridad administradas por Hostium` seguido de la versión SemVer del ruleset. No es la versión del motor.
 - Compatibilidad con otros motores se declara únicamente tras pruebas por versión. No copiar ciegamente la misma regla a una versión no probada.
 - El generador debe permitir versiones múltiples del motor en la metadata, cuando existan paquetes validados para cada una.
 - Debe rechazar metadata malformada y ZIP peligrosos (path traversal `../`, rutas absolutas, symlinks no previstos, nombres duplicados, vacíos, rutas fuera de `hostium/`, extensiones inesperadas).
@@ -217,7 +218,7 @@ Ejemplo orientativo de YAML **con valores ficticios** que el código deberá gen
   url: 'https://waf.hostium.com/releases/hostium-1.0.0.zip'
 attributes:
   name: 'Hostium WAF Ruleset'
-  description: 'Reglas complementarias de seguridad administradas por Hostium'
+  description: 'Reglas complementarias de seguridad administradas por Hostium 1.0.0'
   vendor_url: 'https://hostium.com'
 ```
 
@@ -241,7 +242,7 @@ Definí para cada regla los siguientes atributos en el manifiesto propio:
 Convenciones:
 
 1. Nunca duplicar IDs, tampoco en cadenas `chain` o proveedores instalados.
-2. Todos los módulos y reglas deben ser legibles, comentados y trazables.
+2. Todos los módulos y reglas deben ser legibles, comentados y trazables. La primera línea de cada `.conf` es `# Reglas complementarias de seguridad administradas por Hostium` y una versión SemVer. El empaquetador reescribe esa versión con la del paquete.
 3. Usar `t:none` y transformaciones explícitas según corresponda; justificar excepciones.
 4. No crear patrones regex catastróficos o con riesgo de ReDoS; medir rendimiento y límites.
 5. No usar patrones amplísimos como bloquear cualquier `POST`, cualquier `base64`, cualquier WordPress REST API, cualquier `admin-ajax.php` o toda petición de user agent desconocido.

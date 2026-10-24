@@ -8,6 +8,7 @@ from pathlib import Path, PurePosixPath
 from typing import Any
 
 from hostium_waf.errors import Issue
+from hostium_waf.metadata import comentario_modulo_valido
 from hostium_waf.models import Cambio, CasoPrueba, Manifiesto, Politica, Regla, Settings
 from hostium_waf.security import es_semver, regex_peligrosa
 
@@ -181,8 +182,9 @@ def _validar_regla(
         issues.append(Issue("fecha", "fecha_de_revision debe ser AAAA-MM-DD", f"{ruta}.fecha_de_revision"))
     if cruda.get("ultima_validacion") is not None and _fecha(cruda.get("ultima_validacion")) is None:
         issues.append(Issue("fecha", "ultima_validacion debe ser AAAA-MM-DD o null", f"{ruta}.ultima_validacion"))
-    # Una regla empaquetada que no niega deja seguir la petición: el caso positivo anota 200.
-    paso_sin_deny = cruda.get("modo_por_defecto") in {"log-only", "detection"} and cruda.get("incluir_en_paquete") is True
+    # Una regla con accion pass no niega: el caso positivo anota 200, esté o no en el ZIP.
+    # Los borradores usan accion log y siguen documentando 403 como objetivo futuro.
+    paso_sin_deny = cruda.get("accion") == "pass" and cruda.get("modo_por_defecto") in {"log-only", "detection"}
     issues.extend(
         _validar_casos(
             cruda.get("casos_de_prueba_positivos"),
@@ -371,6 +373,14 @@ def validar_conf_de_reglas(root: Path, reglas: list[Regla]) -> list[Issue]:
             issues.append(Issue("archivo", "no existe el archivo de la regla", relativo))
             continue
         texto = path.read_text(encoding="utf-8")
+        if not comentario_modulo_valido(texto):
+            issues.append(
+                Issue(
+                    "comentario",
+                    "la primera línea debe decir la frase fija del módulo y una versión SemVer",
+                    relativo,
+                )
+            )
         activos = ids_activos(texto)
         if len(activos) != len(set(activos)):
             issues.append(Issue("id_duplicado", "hay IDs repetidos en el archivo", relativo))

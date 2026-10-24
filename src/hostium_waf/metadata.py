@@ -15,6 +15,35 @@ _HEX_MD5 = re.compile(r"^[0-9a-f]{32}$")
 _HEX_SHA512 = re.compile(r"^[0-9a-f]{128}$")
 _CLAVES_MOTOR = {"MD5", "SHA512", "distribution", "url"}
 _CLAVES_ATRIBUTOS = {"name", "description", "vendor_url"}
+FRASE_COMENTARIO_MODULO = "Reglas complementarias de seguridad administradas por Hostium"
+_LINEA_COMENTARIO = re.compile(
+    rf"^# {re.escape(FRASE_COMENTARIO_MODULO)} (0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$"
+)
+_DESCRIPCION_COMENTARIO = re.compile(
+    rf"^{re.escape(FRASE_COMENTARIO_MODULO)} (0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$"
+)
+
+
+def descripcion_modulo(version: str) -> str:
+    if not es_semver(version):
+        raise ValueError("la versión del ruleset debe ser SemVer")
+    return f"{FRASE_COMENTARIO_MODULO} {version}"
+
+
+def aplicar_comentario_modulo(texto: str, version: str) -> str:
+    """Deja la primera línea del módulo con la frase fija y la versión del paquete."""
+    linea = f"# {descripcion_modulo(version)}"
+    lineas = texto.split("\n")
+    if lineas and _LINEA_COMENTARIO.fullmatch(lineas[0]):
+        lineas[0] = linea
+    else:
+        lineas.insert(0, linea)
+    return "\n".join(lineas)
+
+
+def comentario_modulo_valido(texto: str) -> bool:
+    primera = texto.splitlines()[0] if texto.splitlines() else ""
+    return bool(_LINEA_COMENTARIO.fullmatch(primera))
 
 
 def render_metadata(
@@ -25,7 +54,7 @@ def render_metadata(
     distribution: str,
     url: str,
     nombre: str,
-    descripcion: str,
+    version: str,
     vendor_url: str,
     motores_extra: dict[str, dict[str, str]] | None = None,
 ) -> str:
@@ -59,7 +88,7 @@ def render_metadata(
         [
             "attributes:",
             f"  name: '{_yaml_simple(nombre)}'",
-            f"  description: '{_yaml_simple(descripcion)}'",
+            f"  description: '{_yaml_simple(descripcion_modulo(version))}'",
             f"  vendor_url: '{vendor_url}'",
             "",
         ]
@@ -106,6 +135,15 @@ def validar_metadata(data: Any) -> list[Issue]:
         vendor = atributos.get("vendor_url")
         if isinstance(vendor, str) and not vendor.startswith("https://"):
             issues.append(Issue("url_insegura", "vendor_url debe ser HTTPS", "metadata.attributes.vendor_url"))
+        descripcion = atributos.get("description")
+        if isinstance(descripcion, str) and descripcion.strip() and not _DESCRIPCION_COMENTARIO.fullmatch(descripcion):
+            issues.append(
+                Issue(
+                    "comentario",
+                    "description debe ser la frase fija del módulo seguida de la versión SemVer del ruleset",
+                    "metadata.attributes.description",
+                )
+            )
     motores = [clave for clave in data if clave != "attributes"]
     if not motores:
         issues.append(Issue("metadata", "falta la clave de versión del motor ModSecurity", "metadata"))

@@ -9,6 +9,7 @@ from typing import Any
 import yaml
 
 from hostium_waf.errors import HostiumError, Issue
+from hostium_waf.metadata import FRASE_COMENTARIO_MODULO
 from hostium_waf.models import Settings
 from hostium_waf.security import es_version_motor, url_publicacion_valida
 
@@ -88,6 +89,14 @@ def _issues_settings(data: Any) -> list[Issue]:
     for clave in ("nombre_visible", "descripcion", "manifiesto", "politica", "directorio_salida"):
         if not isinstance(data[clave], str) or not data[clave].strip():
             issues.append(Issue("tipo_invalido", "debe ser un texto no vacío", f"settings.{clave}"))
+    if isinstance(data.get("descripcion"), str) and data["descripcion"] != FRASE_COMENTARIO_MODULO:
+        issues.append(
+            Issue(
+                "descripcion",
+                "debe ser exactamente la frase fija del módulo; la versión SemVer la agrega el build",
+                "settings.descripcion",
+            )
+        )
     if data.get("canal_por_defecto") not in {"stable", "canary"}:
         issues.append(Issue("canal", "el canal debe ser stable o canary", "settings.canal_por_defecto"))
     for clave in ("vendor_url", "base_url"):

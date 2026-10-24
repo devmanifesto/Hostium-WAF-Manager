@@ -40,6 +40,7 @@ def test_scripts_y_reglas_usan_lf() -> None:
     archivos = list((ROOT / "scripts").glob("*.sh"))
     archivos.append(ROOT / "rules" / "hostium" / "REQUEST-100-SENSITIVE-FILES.conf")
     archivos.append(ROOT / "rules" / "hostium" / "REQUEST-410-PHP-UPLOAD-PROGRESS.conf")
+    archivos.append(ROOT / "rules" / "hostium" / "REQUEST-411-PHP-UPLOAD-PROGRESS-RESPONSE.conf.example")
     for ruta in archivos:
         datos = ruta.read_bytes()
         assert b"\r\n" not in datos, ruta.name

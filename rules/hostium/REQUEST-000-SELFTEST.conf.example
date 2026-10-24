@@ -1,3 +1,4 @@
+# Reglas complementarias de seguridad administradas por Hostium 1.0.0
 # INCOMPLETO — selftest de laboratorio.
 # Este archivo termina en .example y no entra al ZIP estable.
 # No es autenticación: cualquiera que pueda enviar la cabecera dispara la regla.

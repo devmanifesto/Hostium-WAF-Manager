@@ -9,6 +9,7 @@ from hostium_waf.security import regex_peligrosa
 
 ROOT = Path(__file__).resolve().parents[2]
 CONF = ROOT / "rules" / "hostium" / "REQUEST-410-PHP-UPLOAD-PROGRESS.conf"
+EXAMPLE = ROOT / "rules" / "hostium" / "REQUEST-411-PHP-UPLOAD-PROGRESS-RESPONSE.conf.example"
 
 PASS = {5500600, 5500614, 5500619, 5500623, 5500624, 5500626}
 IDS = {
@@ -76,7 +77,11 @@ def parsear(texto: str) -> dict[int, list[Parte]]:
     return grupos
 
 
-REGLAS = parsear(CONF.read_text(encoding="utf-8"))
+REGLAS: dict[int, list[Parte]] = {}
+for _ruta in (CONF, EXAMPLE):
+    for _identificador, _partes in parsear(_ruta.read_text(encoding="utf-8")).items():
+        assert _identificador not in REGLAS
+        REGLAS[_identificador] = _partes
 
 
 def _rx(identificador: int, indice: int = 0) -> re.Pattern[str]:
@@ -93,6 +98,7 @@ def test_ids_acciones_y_version() -> None:
         linea for linea in CONF.read_text(encoding="utf-8").splitlines() if linea.strip() and not linea.strip().startswith("#")
     )
     assert regex_peligrosa(activas) is False
+    assert "SecResponseBodyAccess" not in activas
     for identificador, partes in REGLAS.items():
         assert "ver:'hostium/1.1.0'" in partes[0].acciones
         if identificador in PASS:
@@ -105,8 +111,11 @@ def test_ids_acciones_y_version() -> None:
     assert len(REGLAS[5500601]) == 2
     assert "chain" in REGLAS[5500601][0].acciones
     assert "SecRequestBodyAccess On" in activas
-    assert "SecResponseBodyAccess On" in activas
     assert "ctl:forceRequestBodyVariable=On" in REGLAS[5500600][0].acciones
+    fuera = {5500620, 5500623, 5500624, 5500626}
+    for identificador in fuera:
+        assert f"id:{identificador}" not in activas
+        assert f"id:{identificador}" in EXAMPLE.read_text(encoding="utf-8")
 
 
 def test_5500600_fuerza_el_cuerpo_solo_en_multipart() -> None:

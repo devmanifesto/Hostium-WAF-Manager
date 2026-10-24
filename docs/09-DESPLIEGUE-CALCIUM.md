@@ -10,7 +10,8 @@ La persona con acceso root al piloto y aprobación para tocarlo.
 
 ## Prerrequisitos
 
-- Artefacto verificado `publish/stable/hostium-1.0.0.zip` y `publish/stable/meta_hostium.yaml`. Están en git y el raw público responde 200.
+- Artefacto publicado y verificado: `publish/stable/hostium-1.0.0.zip` y `publish/stable/meta_hostium.yaml`. Están en git. Esa metadata instala solo `5500100` y `5500101`. No trae el módulo PHP de la 1.1.0.
+- La 1.1.0 se construye en local con `package build --version 1.1.0`. No está en `publish/stable/` y este runbook no la publica. `package build --version 1.0.0` falla a propósito para no reescribir la distribution ya publicada.
 - Ventana acordada.
 - Un dominio de prueba autorizado, no un sitio de cliente al azar.
 - Copia de la salida de solo lectura de antes del cambio.
@@ -37,6 +38,8 @@ Solo con aprobación, y solo cuando la metadata sea alcanzable por HTTPS:
 ```sh
 /usr/local/cpanel/scripts/modsec_vendor add 'https://raw.githubusercontent.com/devmanifesto/Hostium-WAF-Manager/main/publish/stable/meta_hostium.yaml'
 ```
+
+Esa URL es la metadata de la 1.0.0. El alta instala el ZIP que esa metadata nombra, hoy `hostium-1.0.0.zip`, con los ids `5500100` y `5500101`. No instala `5500600` ni el resto del módulo PHP. Publicar la 1.1.0 es otro cambio de metadata y no se hace desde este runbook.
 
 Esa URL es pública. No uses un HTTP ni pegues un PAT en la URL. El alta modifica el piloto y no se ejecutó desde este repositorio.
 
@@ -86,4 +89,4 @@ Páginas de `modsec_vendor` y de ModSecurity por dominio, en `docs/REFERENCIAS.m
 
 ## Limitaciones
 
-Este documento no es una bitácora de un cambio hecho. No hay salida real de calcium adjunta. El inventario `config/fleet.example.yaml` usa `calcium.example.invalid` y no resuelve al piloto.
+Este documento no es una bitácora de un cambio hecho. No hay salida real de calcium adjunta. El inventario `config/fleet.example.yaml` usa `calcium.example.invalid` y no resuelve al piloto. El contraste entre la metadata publicada y la 1.1.0 local está en `docs/21-QA-CPANEL.md`.

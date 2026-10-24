@@ -6,5 +6,5 @@
   url: 'https://raw.githubusercontent.com/devmanifesto/Hostium-WAF-Manager/main/publish/stable/hostium-1.0.0.zip'
 attributes:
   name: 'Hostium WAF Ruleset'
-  description: 'Reglas complementarias de seguridad administradas por Hostium'
+  description: 'Reglas complementarias de seguridad administradas por Hostium 1.0.0'
   vendor_url: 'https://hostium.com'

@@ -7,7 +7,7 @@ from zipfile import ZipFile, ZipInfo
 
 import yaml
 
-from hostium_waf.metadata import validar_metadata
+from hostium_waf.metadata import aplicar_comentario_modulo, descripcion_modulo, validar_metadata
 from hostium_waf.packaging import build_package, inspect_zip, verify_package, zip_bytes
 from hostium_waf.settings import load_settings
 
@@ -46,6 +46,13 @@ def test_zip_solo_contiene_la_regla_productiva(tmp_path: Path) -> None:
     assert data["2.9.15"]["distribution"] == "hostium-1.1.0"
     assert "SHA512" in data["2.9.15"]
     assert "report_url" not in data["attributes"]
+    assert data["attributes"]["description"] == "Reglas complementarias de seguridad administradas por Hostium 1.1.0"
+    with ZipFile(artefacto.zip_path) as zf:
+        for nombre in zf.namelist():
+            if not nombre.endswith(".conf"):
+                continue
+            texto = zf.read(nombre).decode("utf-8")
+            assert texto.startswith("# Reglas complementarias de seguridad administradas por Hostium 1.1.0\n")
 
 
 def test_no_reconstruye_una_distribution_vieja(tmp_path: Path) -> None:
@@ -105,6 +112,17 @@ def test_zip_bytes_determinista() -> None:
     assert zip_bytes(_miembros()) == zip_bytes(_miembros())
 
 
+def test_comentario_del_modulo_lleva_frase_y_version() -> None:
+    assert descripcion_modulo("1.1.0") == "Reglas complementarias de seguridad administradas por Hostium 1.1.0"
+    agregado = aplicar_comentario_modulo("# otra cosa\nSecRule\n", "1.2.3")
+    assert agregado.startswith("# Reglas complementarias de seguridad administradas por Hostium 1.2.3\n# otra cosa\n")
+    reescrito = aplicar_comentario_modulo(
+        "# Reglas complementarias de seguridad administradas por Hostium 1.0.0\nSecRule\n",
+        "1.1.0",
+    )
+    assert reescrito.startswith("# Reglas complementarias de seguridad administradas por Hostium 1.1.0\nSecRule\n")
+
+
 def test_metadata_sin_sha512() -> None:
     issues = validar_metadata(
         {
@@ -121,6 +139,7 @@ def test_metadata_sin_sha512() -> None:
         }
     )
     assert any(item.codigo == "campo_faltante" for item in issues)
+    assert any(item.codigo == "comentario" for item in issues)
 
 
 def test_clave_de_motor_numerica() -> None:

@@ -20,6 +20,7 @@ Tutorial oficial de vendor, consultado el 23 de octubre de 2026.
 - La clave de primer nivel es la versión del motor, citada: `'2.9.15'`.
 - Bajo esa clave: `MD5`, `SHA512`, `distribution`, `url`.
 - `attributes`: `name`, `description`, `vendor_url`. Sin `report_url`.
+- `description` es siempre `Reglas complementarias de seguridad administradas por Hostium` y la versión SemVer del ruleset. El texto no se elige por release.
 
 ## Ejemplo de forma, con hashes reales solo después del build
 
@@ -32,7 +33,7 @@ Tutorial oficial de vendor, consultado el 23 de octubre de 2026.
   url: 'https://raw.githubusercontent.com/devmanifesto/Hostium-WAF-Manager/main/publish/stable/hostium-1.0.0.zip'
 attributes:
   name: 'Hostium WAF Ruleset'
-  description: 'Reglas complementarias de seguridad administradas por Hostium'
+  description: 'Reglas complementarias de seguridad administradas por Hostium 1.0.0'
   vendor_url: 'https://hostium.com'
 ```
 

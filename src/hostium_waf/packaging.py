@@ -16,7 +16,7 @@ from zipfile import ZIP_DEFLATED, ZIP_STORED, ZipFile, ZipInfo
 import yaml
 
 from hostium_waf.errors import HostiumError, Issue
-from hostium_waf.metadata import distribution_de, load_metadata, render_metadata
+from hostium_waf.metadata import aplicar_comentario_modulo, distribution_de, load_metadata, render_metadata
 from hostium_waf.models import Politica, Settings
 from hostium_waf.security import es_semver, es_version_motor, ruta_zip_insegura
 from hostium_waf.settings import load_yaml, ruta_dentro, url_de_artefacto
@@ -148,7 +148,7 @@ def build_package(
     destino = (output if output is not None else root / settings.directorio_salida).resolve()
     return _empaquetar(
         settings,
-        manifiesto_reglas(root, politica, manifiesto),
+        manifiesto_reglas(root, politica, manifiesto, version),
         version,
         engine,
         canal_final,
@@ -170,7 +170,7 @@ def _version_introduccion_maxima(reglas: list[object]) -> str | None:
     return max(introducidas, key=_tupla_semver)
 
 
-def manifiesto_reglas(root: Path, politica: Politica, manifiesto: object) -> list[tuple[str, bytes]]:
+def manifiesto_reglas(root: Path, politica: Politica, manifiesto: object, version: str) -> list[tuple[str, bytes]]:
     from hostium_waf.models import Manifiesto
 
     if not isinstance(manifiesto, Manifiesto):
@@ -190,6 +190,7 @@ def manifiesto_reglas(root: Path, politica: Politica, manifiesto: object) -> lis
         if path.name.endswith((".example", ".conf.example")) or not path.name.endswith(".conf"):
             raise HostiumError(f"Intento de empaquetar un archivo no permitido: {path.name}")
         texto = path.read_text(encoding="utf-8").replace("\r\n", "\n").replace("\r", "\n")
+        texto = aplicar_comentario_modulo(texto, version)
         if "INCOMPLETO" in texto:
             raise HostiumError(f"El archivo {path.name} está marcado INCOMPLETO")
         if "ver:'hostium/" not in texto:
@@ -228,7 +229,7 @@ def _empaquetar(
         distribution=distribution,
         url=url,
         nombre=settings.nombre_visible,
-        descripcion=settings.descripcion,
+        version=version,
         vendor_url=settings.vendor_url,
     )
     metadata_path = salida / "meta_hostium.yaml"

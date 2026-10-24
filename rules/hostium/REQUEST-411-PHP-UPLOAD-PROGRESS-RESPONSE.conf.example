@@ -1,0 +1,67 @@
+# Reglas de RESPONSE_BODY para PHP2Shell. No entran al ZIP.
+# En cPanel el vendor se incluye para todo el servidor. Encender
+# SecResponseBodyAccess desde aquí bufferizaría la respuesta de todas las cuentas.
+# Este archivo no trae esa directiva. Si se copia a un laboratorio, hay que
+# activar SecResponseBodyAccess en la config del servidor, fuera de este example,
+# y solo en ese entorno. Sin eso estas reglas no ven el cuerpo y no coinciden.
+# No es el parche de PHP.
+
+# Tres avisos de sesión, en ese orden. RESPONSE_BODY es fase 4.
+SecRule RESPONSE_BODY "@rx (?s)(Session ID is too long or contains illegal characters.*Failed to read session data.*Failed to write session data)" \
+    "id:5500620,\
+phase:4,\
+deny,\
+status:403,\
+log,\
+auditlog,\
+t:none,\
+msg:'Hostium WAF: respuesta con fallos de sesión encadenados (CVE-2026-109618 CVE-2026-109619)',\
+logdata:'%{MATCHED_VAR_NAME}',\
+tag:'hostium-php-upload',\
+tag:'CVE-2026-109618',\
+tag:'CVE-2026-109619',\
+severity:'CRITICAL',\
+ver:'hostium/1.1.0'"
+
+# No niega: la página de error ya salió. Sirve para el registro.
+SecRule RESPONSE_BODY "@rx Allowed memory size.{1,50}exhausted" \
+    "id:5500623,\
+phase:4,\
+pass,\
+log,\
+auditlog,\
+t:none,\
+msg:'Hostium WAF: memoria agotada en la respuesta (CVE-2026-109618)',\
+logdata:'%{MATCHED_VAR_NAME}',\
+tag:'hostium-php-upload',\
+tag:'CVE-2026-109618',\
+severity:'WARNING',\
+ver:'hostium/1.1.0'"
+
+SecRule RESPONSE_BODY "@rx (Session object destruction failed|Failed to decode session object)" \
+    "id:5500624,\
+phase:4,\
+pass,\
+log,\
+auditlog,\
+t:none,\
+msg:'Hostium WAF: fallo al decodificar la sesión en la respuesta (CVE-2026-109619)',\
+logdata:'%{MATCHED_VAR_NAME}',\
+tag:'hostium-php-upload',\
+tag:'CVE-2026-109619',\
+severity:'WARNING',\
+ver:'hostium/1.1.0'"
+
+SecRule RESPONSE_BODY "@rx (SHELL_ALIVE|PAYLOAD_PERSISTED)" \
+    "id:5500626,\
+phase:4,\
+pass,\
+log,\
+auditlog,\
+t:none,\
+msg:'Hostium WAF: marcador de post-explotación en la respuesta',\
+logdata:'%{MATCHED_VAR_NAME}',\
+tag:'hostium-php-upload',\
+tag:'CVE-2026-109619',\
+severity:'CRITICAL',\
+ver:'hostium/1.1.0'"
