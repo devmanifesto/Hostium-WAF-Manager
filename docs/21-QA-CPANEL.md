@@ -40,9 +40,9 @@ Quien vaya a correr `modsec_vendor add` o a leer qué hay en stable.
 | `enable-updates` / `enable_updates` | No se ejecutó |
 | `ultima_validacion` de las reglas | Sigue vacía |
 
-## Riesgos que quedan con la 1.1.0 cargada
+## Riesgos que quedan con la 1.1.1 cargada
 
-El vendor, cuando se publique y se habilite, vale para todas las cuentas.
+El vendor, cuando está habilitado, vale para todas las cuentas.
 
 - `5500601` niega un multipart con `Transfer-Encoding: chunked`. Una subida legítima por HTTP/1.1 con esa codificación cae. La excepción es el id, no apagar el vendor.
 - `5500613` niega el campo de formulario `PHPSESSID`. Una aplicación con `session.use_only_cookies=0` cae.
@@ -54,7 +54,7 @@ phpMyAdmin, webmail y el administrador de archivos no se ejercitaron. El repaso 
 
 ## Cómo salir
 
-Si la 1.1.0 llegara a un servidor, `modsec_vendor disable hostium` la saca y OWASP3 tiene que seguir enabled. Volver a la metadata publicada reinstala la 1.0.0, no un parche del ZIP. No se reescribe `hostium-1.0.0.zip`.
+Si la 1.1.1 llega a un servidor, `modsec_vendor disable hostium` la saca y OWASP3 tiene que seguir enabled. Volver a la 1.0.0 es publicar de nuevo la metadata que apunta a `hostium-1.0.0.zip`, no un parche del ZIP. No se reescribe `hostium-1.0.0.zip`.
 
 ## Referencias
 
