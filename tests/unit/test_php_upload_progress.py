@@ -104,7 +104,7 @@ def test_ids_acciones_y_version() -> None:
     assert "SecResponseBodyAccess" not in activas
     for identificador, partes in REGLAS.items():
         if identificador in {5500606, 5500607, 5500608}:
-            assert "ver:'hostium/1.2.0'" in partes[0].acciones
+            assert "ver:'hostium/1.1.2'" in partes[0].acciones
         else:
             assert "ver:'hostium/1.1.0'" in partes[0].acciones
         if identificador in PASS:

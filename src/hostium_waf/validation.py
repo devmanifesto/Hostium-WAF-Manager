@@ -430,7 +430,26 @@ def _revisar_conf_empaquetable(texto: str, relativo: str, reglas: list[Regla]) -
                     relativo,
                 )
             )
+        bloque = _bloque_de_id(activas, regla.id)
+        if bloque is not None and not re.search(rf"phase:\s*{regla.fase}\b", bloque):
+            issues.append(
+                Issue(
+                    "fase",
+                    f"id:{regla.id} no declara phase:{regla.fase}",
+                    relativo,
+                )
+            )
     return issues
+
+
+def _bloque_de_id(activas: str, identificador: int) -> str | None:
+    plano = re.sub(r"\\\s*\n", " ", activas)
+    bloques = re.findall(r"SecRule\b.*?(?=SecRule\b|$)", plano, flags=re.S)
+    marca = f"id:{identificador}"
+    for bloque in bloques:
+        if re.search(rf"{re.escape(marca)}\b", bloque):
+            return bloque
+    return None
 
 
 def cargar_manifiesto(data: dict[str, Any]) -> Manifiesto:

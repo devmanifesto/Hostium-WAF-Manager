@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.2 — 2026-10-24
+
+En ModSecurity 2, `REQUEST_BODY` queda vacío cuando el procesador ya es MULTIPART. `5500600` se conserva y no niega. Entran `5500606`, `5500607` y `5500608`: cuentan cabeceras `X-` de parte, filenames vacíos y partes `form-data`. Siguen negando, con la misma fase, `5500602` (100), `5500604` (50) y `5500615` (500). `5500613` también niega `PHPSESSID[0]`. `5500625` pasa a minúsculas. `5500617` niega desde 257 caracteres. `5500612` mira `FILES` y `FILES_NAMES`. `5500622` exige que el argumento entero sea la ruta de sesión.
+
+`publish/stable/meta_hostium.yaml` pasa a `hostium-1.1.2`. No se reescriben `hostium-1.1.1.zip` ni `hostium-1.0.0.zip`. `ultima_validacion` sigue vacía. No se ejecutó `upcp` ni `modsec_vendor`. En la imagen Debian `modsecurity 2.9.7-1+deb12u2`, `test_motor_ve_las_reglas_410` pasó. No es el RPM `2.9.15` de cPanel.
+
 ## 1.1.1 — 2026-10-24
 
 Saca del ZIP las reglas de fase 4 (`5500620`, `5500623`, `5500624`, `5500626`). En cPanel no se enciende `SecResponseBodyAccess` para todas las cuentas. Quedan en `REQUEST-411-PHP-UPLOAD-PROGRESS-RESPONSE.conf.example`. `publish/stable/meta_hostium.yaml` pasa a `hostium-1.1.1`. El ZIP `hostium-1.0.0.zip` no se reescribe y `hostium-1.1.0` no se publicó. WHM cuenta dos sets: `REQUEST-100-SENSITIVE-FILES.conf` y `REQUEST-410-PHP-UPLOAD-PROGRESS.conf`.

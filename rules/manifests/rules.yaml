@@ -446,16 +446,18 @@ reglas:
         nota: Reserva documental.
   - id: 5500600
     nombre: Cuerpo crudo en multipart
-    descripcion: En fase 1, si el Content-Type es multipart/form-data, activa REQUEST_BODY con ctl:forceRequestBodyVariable.
-      Sin eso el parser de ModSecurity no llena el cuerpo crudo y las reglas de fase 2 no ven el multipart.
+    descripcion: En fase 1, si el Content-Type es multipart/form-data, ejecuta ctl:forceRequestBodyVariable.
+      El manual v2.x solo llena REQUEST_BODY con ese ctl cuando no hay procesador de cuerpo. Multipart
+      ya elige MULTIPART, así que REQUEST_BODY sigue vacío. Las reglas de 1.1.2 leen ARGS, FILES y
+      MULTIPART_PART_HEADERS. El ctl se conserva para un cuerpo sin procesador.
     categoria: php-upload-progress
     modulo: REQUEST-410-PHP-UPLOAD-PROGRESS
     archivo: rules/hostium/REQUEST-410-PHP-UPLOAD-PROGRESS.conf
     version_de_introduccion: 1.1.0
     autor: Hostium
     owner: equipo-seguridad-hostium
-    motivacion: Las reglas de amplificación y de filename leen REQUEST_BODY. El manual v2.x dice que esa
-      variable no se llena sola en multipart.
+    motivacion: El ctl queda documentado. En multipart de ModSecurity 2 no llena REQUEST_BODY. Las reglas
+      que niegan leen colecciones que el parser sí llena.
     tipo_de_ataque: soporte-de-deteccion
     referencias:
     - https://github.com/php/php-src/security/advisories/GHSA-w8hw-w9fx-j79w
@@ -601,8 +603,8 @@ reglas:
       patrón de navegador.
     fase: 2
     variables_inspeccionadas:
-    - REQUEST_BODY
-    operador: '@rx'
+    - TX:hostium_xhdr
+    operador: '@ge'
     transformaciones:
     - t:none
     accion: deny
@@ -714,12 +716,12 @@ reglas:
     referencias:
     - https://github.com/php/php-src/security/advisories/GHSA-w8hw-w9fx-j79w
     - https://github.com/owasp-modsecurity/ModSecurity/wiki/Reference-Manual-(v2.x)
-    falsos_positivos_probables: Un cliente que arme 50 partes con filename vacío en esa forma exacta. Un
-      adjunto con nombre no coincide.
+    falsos_positivos_probables: Un cliente que arme 50 partes con filename vacío. Un adjunto con nombre
+      no coincide.
     fase: 2
     variables_inspeccionadas:
-    - REQUEST_BODY
-    operador: '@rx'
+    - TX:hostium_emptyfile
+    operador: '@ge'
     transformaciones:
     - t:none
     accion: deny
@@ -813,6 +815,166 @@ reglas:
       fecha: '2026-10-23'
       nota: Alta en 1.1.0. Para salir, sacá el módulo de la política y publicá otra release. No reescribas
         hostium-1.0.0.zip ni el ZIP de esta versión.
+  - id: 5500606
+    nombre: Contador de cabeceras X- de parte
+    descripcion: Suma uno por cada cabecera de parte que empieza con X-. No niega. 5500602 niega cuando
+      el contador llega a 100. Tiene que estar antes de 5500602 en el archivo.
+    categoria: php-upload-progress
+    modulo: REQUEST-410-PHP-UPLOAD-PROGRESS
+    archivo: rules/hostium/REQUEST-410-PHP-UPLOAD-PROGRESS.conf
+    version_de_introduccion: 1.1.2
+    autor: Hostium
+    owner: equipo-seguridad-hostium
+    motivacion: En ModSecurity 2 el cuerpo multipart no queda en REQUEST_BODY. MULTIPART_PART_HEADERS
+      sí trae cada cabecera de parte.
+    tipo_de_ataque: virtual-patch
+    referencias:
+    - https://github.com/php/php-src/security/advisories/GHSA-w8hw-w9fx-j79w
+    - https://github.com/owasp-modsecurity/ModSecurity/wiki/Reference-Manual-(v2.x)
+    falsos_positivos_probables: Ninguno por sí sola. Solo cuenta.
+    fase: 2
+    variables_inspeccionadas:
+    - MULTIPART_PART_HEADERS
+    operador: '@rx'
+    transformaciones:
+    - t:none
+    accion: pass
+    severidad: NOTICE
+    etiquetas:
+    - hostium-php-upload
+    estado: produccion
+    modo_por_defecto: log-only
+    incluir_en_paquete: true
+    casos_de_prueba_positivos:
+    - titulo: una cabecera X-
+      path: /index.php
+      metodo: POST
+      dispara: true
+      ejecucion: automatizada
+      notas: pass y nolog. La negación la hace 5500602.
+      status: 200
+    casos_de_prueba_negativos:
+    - titulo: Content-Disposition
+      path: /index.php
+      metodo: POST
+      dispara: false
+      ejecucion: automatizada
+      notas: Una cabecera que no empieza con X- no suma.
+    impacto_previsto: No cambia el status. ultima_validacion queda vacía hasta un cPanel real.
+    fecha_de_revision: '2026-10-24'
+    ultima_validacion: null
+    excepciones: []
+    registro_de_cambio:
+    - version: 1.1.2
+      fecha: '2026-10-24'
+      nota: Alta en 1.1.2. Para salir, sacá el módulo de la política y publicá otra release. No reescribas
+        hostium-1.1.1.zip ni hostium-1.0.0.zip.
+  - id: 5500607
+    nombre: Contador de filename vacío
+    descripcion: Suma uno por cada FILES cuyo valor está vacío. No niega. 5500604 niega cuando el contador
+      llega a 50. FILES es el filename, no el nombre del campo.
+    categoria: php-upload-progress
+    modulo: REQUEST-410-PHP-UPLOAD-PROGRESS
+    archivo: rules/hostium/REQUEST-410-PHP-UPLOAD-PROGRESS.conf
+    version_de_introduccion: 1.1.2
+    autor: Hostium
+    owner: equipo-seguridad-hostium
+    motivacion: El filename vacío no aparece en REQUEST_BODY de ModSecurity 2 cuando el procesador es MULTIPART.
+    tipo_de_ataque: virtual-patch
+    referencias:
+    - https://github.com/php/php-src/security/advisories/GHSA-w8hw-w9fx-j79w
+    - https://github.com/owasp-modsecurity/ModSecurity/wiki/Reference-Manual-(v2.x)
+    falsos_positivos_probables: Ninguno por sí sola. Solo cuenta.
+    fase: 2
+    variables_inspeccionadas:
+    - FILES
+    operador: '@rx'
+    transformaciones:
+    - t:none
+    accion: pass
+    severidad: NOTICE
+    etiquetas:
+    - hostium-php-upload
+    estado: produccion
+    modo_por_defecto: log-only
+    incluir_en_paquete: true
+    casos_de_prueba_positivos:
+    - titulo: filename vacío
+      path: /index.php
+      metodo: POST
+      dispara: true
+      ejecucion: automatizada
+      notas: pass y nolog. La negación la hace 5500604.
+      status: 200
+    casos_de_prueba_negativos:
+    - titulo: filename con texto
+      path: /index.php
+      metodo: POST
+      dispara: false
+      ejecucion: automatizada
+      notas: Un nombre no vacío no suma.
+    impacto_previsto: No cambia el status. ultima_validacion queda vacía hasta un cPanel real.
+    fecha_de_revision: '2026-10-24'
+    ultima_validacion: null
+    excepciones: []
+    registro_de_cambio:
+    - version: 1.1.2
+      fecha: '2026-10-24'
+      nota: Alta en 1.1.2. Para salir, sacá el módulo de la política y publicá otra release. No reescribas
+        hostium-1.1.1.zip ni hostium-1.0.0.zip.
+  - id: 5500608
+    nombre: Contador de partes form-data
+    descripcion: Suma uno por cada Content-Disposition form-data de una parte. No niega. 5500615 niega
+      cuando el contador llega a 500. Un espacio antes del punto y coma sigue contando.
+    categoria: php-upload-progress
+    modulo: REQUEST-410-PHP-UPLOAD-PROGRESS
+    archivo: rules/hostium/REQUEST-410-PHP-UPLOAD-PROGRESS.conf
+    version_de_introduccion: 1.1.2
+    autor: Hostium
+    owner: equipo-seguridad-hostium
+    motivacion: El recuento de partes no puede leerse de REQUEST_BODY en ModSecurity 2 con procesador MULTIPART.
+    tipo_de_ataque: virtual-patch
+    referencias:
+    - https://github.com/php/php-src/security/advisories/GHSA-w8hw-w9fx-j79w
+    - https://github.com/owasp-modsecurity/ModSecurity/wiki/Reference-Manual-(v2.x)
+    falsos_positivos_probables: Ninguno por sí sola. Solo cuenta.
+    fase: 2
+    variables_inspeccionadas:
+    - MULTIPART_PART_HEADERS
+    operador: '@rx'
+    transformaciones:
+    - t:none
+    accion: pass
+    severidad: NOTICE
+    etiquetas:
+    - hostium-php-upload
+    estado: produccion
+    modo_por_defecto: log-only
+    incluir_en_paquete: true
+    casos_de_prueba_positivos:
+    - titulo: una parte form-data
+      path: /index.php
+      metodo: POST
+      dispara: true
+      ejecucion: automatizada
+      notas: pass y nolog. La negación la hace 5500615.
+      status: 200
+    casos_de_prueba_negativos:
+    - titulo: Content-Disposition attachment
+      path: /index.php
+      metodo: POST
+      dispara: false
+      ejecucion: automatizada
+      notas: attachment no suma.
+    impacto_previsto: No cambia el status. ultima_validacion queda vacía hasta un cPanel real.
+    fecha_de_revision: '2026-10-24'
+    ultima_validacion: null
+    excepciones: []
+    registro_de_cambio:
+    - version: 1.1.2
+      fecha: '2026-10-24'
+      nota: Alta en 1.1.2. Para salir, sacá el módulo de la política y publicá otra release. No reescribas
+        hostium-1.1.1.zip ni hostium-1.0.0.zip.
   - id: 5500611
     nombre: Carga serializada en upload progress
     descripcion: 'Niega si el valor de PHP_SESSION_UPLOAD_PROGRESS trae una etiqueta PHP, un objeto O:,
@@ -874,8 +1036,8 @@ reglas:
         hostium-1.0.0.zip ni el ZIP de esta versión.
   - id: 5500612
     nombre: Carga en el filename
-    descripcion: 'Niega un filename del cuerpo que, en los primeros 512 caracteres, traiga <?php, <?= o
-      un objeto O: con comillas. FILES_NAMES casi no contiene el texto filename=; el match útil es REQUEST_BODY.'
+    descripcion: 'Niega si FILES o FILES_NAMES traen <?php, <?=, un objeto O:, una cadena s: o un
+      objeto custom C:. FILES es el filename que arma el parser.'
     categoria: php-upload-progress
     modulo: REQUEST-410-PHP-UPLOAD-PROGRESS
     archivo: rules/hostium/REQUEST-410-PHP-UPLOAD-PROGRESS.conf
@@ -892,8 +1054,8 @@ reglas:
       Es un nombre de ataque, no de un adjunto normal.'
     fase: 2
     variables_inspeccionadas:
+    - FILES
     - FILES_NAMES
-    - REQUEST_BODY
     operador: '@rx'
     transformaciones:
     - t:none
@@ -911,7 +1073,7 @@ reglas:
       metodo: POST
       dispara: true
       ejecucion: automatizada
-      notas: El cuerpo trae filename="<?php. 403 es el status de esta regla. La aproximación vive en tests/unit/test_php_upload_progress.py
+      notas: FILES trae <?php. 403 es el status de esta regla. La aproximación vive en tests/unit/test_php_upload_progress.py
         y no es el motor ModSecurity.
       status: 403
     casos_de_prueba_negativos:
@@ -933,9 +1095,10 @@ reglas:
         hostium-1.0.0.zip ni el ZIP de esta versión.
   - id: 5500613
     nombre: PHPSESSID como campo
-    descripcion: Niega si algún nombre de argumento es exactamente PHPSESSID. Es sensible a mayúsculas.
-      Hay informes externos, no reproducidos en este repositorio, de que el arreglo 8.2.35 sigue tomando
-      el sid por formulario si cleanup=0.
+    descripcion: Niega si algún nombre de argumento es PHPSESSID o PHPSESSID seguido de hasta ocho
+      índices entre corchetes. Es sensible a mayúsculas. PHPSESSID[0] entra. Hay informes externos, no
+      reproducidos en este repositorio, de que el arreglo 8.2.35 sigue tomando el sid por formulario si
+      cleanup=0.
     categoria: php-upload-progress
     modulo: REQUEST-410-PHP-UPLOAD-PROGRESS
     archivo: rules/hostium/REQUEST-410-PHP-UPLOAD-PROGRESS.conf
@@ -953,7 +1116,7 @@ reglas:
     fase: 2
     variables_inspeccionadas:
     - ARGS_NAMES
-    operador: '@streq'
+    operador: '@rx'
     transformaciones:
     - t:none
     accion: deny
@@ -1007,9 +1170,10 @@ reglas:
     - https://github.com/php/php-src/security/advisories/GHSA-6wmf-4rv5-p3rp
     - https://github.com/owasp-modsecurity/ModSecurity/wiki/Reference-Manual-(v2.x)
     falsos_positivos_probables: Cualquier POST que lleve código PHP o lo mencione con la etiqueta. Va a
-      ser ruidoso en paneles de archivos y en WordPress.
+      ser ruidoso en paneles de archivos y en WordPress. El byte de un archivo subido no está en ARGS.
     fase: 2
     variables_inspeccionadas:
+    - ARGS
     - REQUEST_BODY
     operador: '@rx'
     transformaciones:
@@ -1067,8 +1231,8 @@ reglas:
     falsos_positivos_probables: Un importador que publique 500 partes form-data en un solo cuerpo.
     fase: 2
     variables_inspeccionadas:
-    - REQUEST_BODY
-    operador: '@rx'
+    - TX:hostium_parts
+    operador: '@ge'
     transformaciones:
     - t:none
     accion: deny
@@ -1164,8 +1328,8 @@ reglas:
         hostium-1.0.0.zip ni el ZIP de esta versión.
   - id: 5500617
     nombre: PHPSESSID de respuesta demasiado largo
-    descripcion: Niega en fase 3 si Set-Cookie trae PHPSESSID= seguido de 200 o más caracteres que no sean
-      punto y coma ni espacio. Apunta a un id de sesión inflado con datos del heap.
+    descripcion: Niega en fase 3 si Set-Cookie trae PHPSESSID= seguido de 257 o más caracteres que no sean
+      punto y coma ni espacio. Un id de 1 a 256 caracteres, el tope de session.sid_length, no niega.
     categoria: php-upload-progress
     modulo: REQUEST-410-PHP-UPLOAD-PROGRESS
     archivo: rules/hostium/REQUEST-410-PHP-UPLOAD-PROGRESS.conf
@@ -1178,8 +1342,8 @@ reglas:
     referencias:
     - https://github.com/php/php-src/security/advisories/GHSA-w8hw-w9fx-j79w
     - https://github.com/owasp-modsecurity/ModSecurity/wiki/Reference-Manual-(v2.x)
-    falsos_positivos_probables: Una aplicación que emita a propósito un PHPSESSID de más de 200 caracteres.
-      PHP, con sid_length 256, puede hacerlo si alguien lo configuró así.
+    falsos_positivos_probables: Una aplicación que emita a propósito un PHPSESSID de 257 caracteres o más.
+      Un id de 256, el máximo de session.sid_length, no dispara.
     fase: 3
     variables_inspeccionadas:
     - RESPONSE_HEADERS:Set-Cookie
@@ -1195,12 +1359,12 @@ reglas:
     modo_por_defecto: deny
     incluir_en_paquete: true
     casos_de_prueba_positivos:
-    - titulo: cookie de 200
+    - titulo: cookie de 257
       path: /
       metodo: GET
       dispara: true
       ejecucion: automatizada
-      notas: Set-Cookie con 200 letras. 403 es el status de esta regla. La aproximación vive en tests/unit/test_php_upload_progress.py
+      notas: Set-Cookie con 257 letras. 256 no niega. 403 es el status de esta regla. La aproximación vive en tests/unit/test_php_upload_progress.py
         y no es el motor ModSecurity.
       status: 403
     casos_de_prueba_negativos:
@@ -1240,7 +1404,7 @@ reglas:
     falsos_positivos_probables: Un nombre de archivo legítimo de 64 KiB. En la práctica es el ataque.
     fase: 2
     variables_inspeccionadas:
-    - FILES_NAMES
+    - FILES
     - REQUEST_BODY
     operador: '@rx'
     transformaciones:
@@ -1483,8 +1647,8 @@ reglas:
     referencias:
     - https://github.com/php/php-src/security/advisories/GHSA-6wmf-4rv5-p3rp
     - https://github.com/owasp-modsecurity/ModSecurity/wiki/Reference-Manual-(v2.x)
-    falsos_positivos_probables: Un texto legítimo que mencione /tmp/sess_ y seis caracteres de id. Poco
-      habitual fuera de un exploit o de un postmortem.
+    falsos_positivos_probables: Un argumento cuyo valor entero es la ruta de sesión. Una frase que la
+      menciona en el medio no coincide.
     fase: 2
     variables_inspeccionadas:
     - ARGS
@@ -1672,6 +1836,7 @@ reglas:
     operador: '@contains'
     transformaciones:
     - t:none
+    - t:lowercase
     accion: deny
     severidad: CRITICAL
     etiquetas:

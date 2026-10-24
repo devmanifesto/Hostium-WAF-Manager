@@ -19,10 +19,10 @@ Un ZIP que ya pasó `package verify`. El origen es `publish/` en este repositori
 El origen es el propio repositorio, en `publish/stable/`. Las URL que WHM tiene que poder bajar sin usuario son:
 
 - `https://raw.githubusercontent.com/devmanifesto/Hostium-WAF-Manager/main/publish/stable/meta_hostium.yaml`
-- `https://raw.githubusercontent.com/devmanifesto/Hostium-WAF-Manager/main/publish/stable/hostium-1.1.1.zip`
+- `https://raw.githubusercontent.com/devmanifesto/Hostium-WAF-Manager/main/publish/stable/hostium-1.1.2.zip`
 - `https://raw.githubusercontent.com/devmanifesto/Hostium-WAF-Manager/main/publish/stable/hostium-1.0.0.zip`
 
-La metadata nombra `hostium-1.1.1`. El ZIP `hostium-1.0.0.zip` queda en el directorio. El 23 de octubre de 2026 un GET sin sesión de la metadata y del ZIP 1.0.0 devolvió 200. Ese ZIP tiene 877 bytes y MD5 `3aea69ba720a6508b54999ca5aa42038`. El MD5 y el SHA512 los compara cPanel después de bajar el archivo. Si el repo volviera a privado, `modsec_vendor` recibiría 404: no envía `Authorization`.
+La metadata nombra `hostium-1.1.2`. Los ZIP `hostium-1.0.0.zip` y `hostium-1.1.1.zip` quedan en el directorio. El 23 de octubre de 2026 un GET sin sesión de la metadata y del ZIP 1.0.0 devolvió 200. Ese ZIP tiene 877 bytes y MD5 `3aea69ba720a6508b54999ca5aa42038`. El MD5 y el SHA512 los compara cPanel después de bajar el archivo. Si el repo volviera a privado, `modsec_vendor` recibiría 404: no envía `Authorization`.
 
 ## Orden, cuando alguien publique de verdad
 

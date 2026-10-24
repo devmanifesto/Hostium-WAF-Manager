@@ -6,7 +6,7 @@ Decir qué se corrió, qué se omitió y qué no prueba protección en un cPanel
 
 ## Audiencia
 
-Quien lea el estado de stable. Hoy `publish/stable/meta_hostium.yaml` nombra `hostium-1.1.1`. La bitácora del 23 de octubre, más abajo, es de esa fecha. La del 24 está en «Corrida del 24 de octubre de 2026» y en `docs/22-QA-TRES-PASADAS.md`.
+Quien lea el estado de stable. Hoy `publish/stable/meta_hostium.yaml` nombra `hostium-1.1.2`. La bitácora del 23 de octubre, más abajo, es de esa fecha. La del 24 está en «Corrida del 24 de octubre de 2026» y en `docs/22-QA-TRES-PASADAS.md`.
 
 ## Prerrequisitos
 
@@ -18,8 +18,8 @@ El entorno de `docs/04-INSTALACION-DESARROLLO.md`.
 python -m ruff check src tests
 python -m pytest
 python -m pytest -m integration --override-ini="addopts=" -rs
-python -m hostium_waf package build --version 1.1.1 --engine 2.9.15
-python -m hostium_waf package verify --zip dist/hostium-1.1.1.zip --metadata dist/meta_hostium.yaml
+python -m hostium_waf package build --version 1.1.2 --engine 2.9.15
+python -m hostium_waf package verify --zip dist/hostium-1.1.2.zip --metadata dist/meta_hostium.yaml
 ```
 
 `package build --version 1.0.0` en este árbol termina en error. La 1.0.0 publicada no se reconstruye.

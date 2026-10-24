@@ -90,6 +90,18 @@ def test_severidad_invalida() -> None:
     assert any(item.codigo == "severidad" for item in issues)
 
 
+def test_fase_del_conf_no_coincide() -> None:
+    settings = load_settings(ROOT)
+    data = _manifiesto()
+    politica = load_yaml(ROOT / "config" / "policy.example.yaml")
+    for regla in data["reglas"]:
+        if regla["incluir_en_paquete"]:
+            regla["fase"] = 9
+            break
+    _, _, issues = validar_repositorio(ROOT, settings, data, politica)
+    assert any(item.codigo == "fase" for item in issues)
+
+
 def test_yaml_del_manifiesto_es_mapa() -> None:
     texto = (ROOT / "rules" / "manifests" / "rules.yaml").read_text(encoding="utf-8")
     assert isinstance(yaml.safe_load(texto), dict)

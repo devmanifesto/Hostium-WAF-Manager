@@ -29,13 +29,13 @@ Solo `produccion` con `incluir_en_paquete: true` entra al ZIP, y solo si la pol�
 
 ## Qué número sube
 
-Se compara con el ZIP que `publish/stable/meta_hostium.yaml` nombra. Hoy es `hostium-1.1.1`. Sube un solo componente, el más alto que corresponda.
+Se compara con el ZIP que `publish/stable/meta_hostium.yaml` nombra. Hoy es `hostium-1.1.2`. Cada release que se arme sube solo el sub-sub (`1.1.3` después de esta), salvo que quien opera pida sub o mayor. La tabla dice qué significa cada componente.
 
 | Cambio respecto de esa distribution | Número | Ejemplo ya subido |
 | --- | --- | --- |
 | Un id publicado cambia de `deny` a `pass`, de `pass` a `deny` o de fase; se elimina un `.conf` que esa distribution instala; se reutiliza un id; cambia el contrato del vendor | mayor, `2.0.0` | Todavía no hubo |
 | Entra un `.conf` o ids nuevos, y los ids ya instalados conservan id, fase y acción | sub, `1.2.0` | `1.0.0` tenía un set. La línea `1.1` agregó `REQUEST-410` |
-| Mismos sets, mismos ids, misma fase y misma acción. O la regla nunca estuvo en la metadata de stable | sub-sub, `1.1.2` | `1.1.1` sacó del ZIP las reglas de fase 4. La metadata no había nombrado `hostium-1.1.0` |
+| Mismos sets, mismos ids, misma fase y misma acción. O la regla nunca estuvo en la metadata de stable | sub-sub, `1.1.3` | `1.1.1` sacó del ZIP las reglas de fase 4. La `1.1.2` se publicó como sub-sub por pedido e incorpora los contadores `5500606`, `5500607` y `5500608` |
 
 Docs, tests o CLI sin otro contenido de reglas no publican distribution nueva.
 

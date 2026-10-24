@@ -1,8 +1,8 @@
 """Casos HTTP contra Apache aislado. No sustituyen una prueba en cPanel.
 
-Solo se piden los casos del `.conf` montado en ese contenedor. Los POST de
-REQUEST-410 no entran: el manifiesto no trae el cuerpo, y un POST sin
-Content-Length deja a Apache esperando hasta el timeout.
+La suite general solo pide los GET del `.conf` montado. Un POST sin
+Content-Length deja a Apache esperando. `test_motor_ve_las_reglas_410`
+manda multipart con Content-Length.
 """
 
 from __future__ import annotations
@@ -386,3 +386,96 @@ def test_sintaxis_del_conf_empaquetado(tmp_path: Path) -> None:
             pytest.fail(sintaxis.stdout + sintaxis.stderr)
     finally:
         _docker("rm", "-f", contenedor)
+
+
+def _cuerpo(partes: list[bytes]) -> tuple[str, bytes]:
+    boundary = "----hostiumqa"
+    marca = boundary.encode()
+    trozos = [b"--" + marca + b"\r\n" + parte for parte in partes]
+    trozos.append(b"--" + marca + b"--\r\n")
+    return boundary, b"".join(trozos)
+
+
+def _parte(nombre: str, valor: str, *, filename: str | None = None, extra: str = "") -> bytes:
+    disp = f'Content-Disposition: form-data; name="{nombre}"'
+    if filename is not None:
+        disp += f'; filename="{filename}"'
+    return (disp + "\r\n" + extra + "\r\n" + valor + "\r\n").encode()
+
+
+def _post_multipart(base: str, path: str, boundary: str, cuerpo: bytes) -> int:
+    peticion = urllib.request.Request(base + path, data=cuerpo, method="POST")
+    peticion.add_header("Content-Type", f"multipart/form-data; boundary={boundary}")
+    try:
+        with urllib.request.urlopen(peticion, timeout=15) as respuesta:
+            return respuesta.status
+    except urllib.error.HTTPError as exc:
+        return exc.code
+
+
+@pytest.mark.integration
+def test_motor_ve_las_reglas_410(tmp_path: Path) -> None:
+    """POST con Content-Length contra la imagen Debian. No es el RPM 2.9.15 de cPanel."""
+    _exigir_docker()
+    _construir()
+    origen = ROOT / "rules" / "hostium" / "REQUEST-410-PHP-UPLOAD-PROGRESS.conf"
+    shutil.copy(origen, tmp_path / origen.name)
+    nombre = "hostium-waf-410"
+    _docker("rm", "-f", nombre)
+    alta = _docker(
+        "run",
+        "-d",
+        "--name",
+        nombre,
+        "-p",
+        "127.0.0.1::80",
+        *_montaje(tmp_path, "/etc/modsecurity/hostium"),
+        IMAGE,
+    )
+    if alta.returncode != 0:
+        pytest.fail(alta.stderr[-2000:])
+    try:
+        base = _publicar(nombre, "80")
+        _esperar(base + "/")
+        sintaxis = _docker("exec", nombre, "apache2ctl", "configtest")
+        if sintaxis.returncode != 0:
+            pytest.fail(sintaxis.stdout + sintaxis.stderr)
+
+        def post(path: str, partes: list[bytes]) -> tuple[int, str]:
+            boundary, cuerpo = _cuerpo(partes)
+            antes = _logs(nombre)
+            status = _post_multipart(base, path, boundary, cuerpo)
+            despues = _logs(nombre)
+            delta = despues[len(antes) :] if despues.startswith(antes) else despues
+            return status, delta
+
+        status, delta = post("/up-sid", [_parte("PHPSESSID", "abc")])
+        assert status == 403 and _id_en_esta_uri(delta, 5500613, "/up-sid")
+
+        status, delta = post("/up-idx", [_parte("PHPSESSID[0]", "abc")])
+        assert status == 403 and _id_en_esta_uri(delta, 5500613, "/up-idx")
+
+        status, delta = post("/up-ok", [_parte("titulo", "hola")])
+        assert status == 404 and not _id_en_esta_uri(delta, 5500613, "/up-ok")
+
+        cien = "".join(f"X-H{i}: a\r\n" for i in range(100))
+        status, delta = post("/up-x100", [_parte("f", "v", extra=cien)])
+        assert status == 403 and _id_en_esta_uri(delta, 5500602, "/up-x100")
+
+        noventa = "".join(f"X-H{i}: a\r\n" for i in range(99))
+        status, delta = post("/up-x99", [_parte("f", "v", extra=noventa)])
+        assert status != 403 and not _id_en_esta_uri(delta, 5500602, "/up-x99")
+
+        status, delta = post("/up-php", [_parte("nota", "hola <?php echo 1;")])
+        assert status != 403 and _id_en_esta_uri(delta, 5500614, "/up-php")
+
+        status, delta = post("/up-vacio", [_parte("f", "v", filename="")])
+        assert status != 403
+
+        antes = _logs(nombre)
+        status, _ = _pedir(base, {"path": "/P2S_8512_SHELL.PHP", "metodo": "GET"})
+        despues = _logs(nombre)
+        delta = despues[len(antes) :] if despues.startswith(antes) else despues
+        assert status == 403 and _id_en_esta_uri(delta, 5500625, "/P2S_8512_SHELL.PHP")
+    finally:
+        _docker("rm", "-f", nombre)
