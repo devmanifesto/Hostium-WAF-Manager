@@ -12,12 +12,19 @@ GIT = re.compile(r"(?:^|/)\.git/config(?:$|[./?])")
 
 
 def normalizar(valor: str) -> str:
+    """Mismo orden que el .conf: dos urlDecode, entidades, minúsculas, ruta, nulos.
+
+    unquote no es t:urlDecodeUni y html.unescape no es t:htmlEntityDecode.
+    No modela REQUEST_FILENAME contra PATH_INFO.
+    """
     valor = unquote(unquote(valor))
     valor = html.unescape(valor)
-    valor = valor.lower().replace("\x00", "")
+    valor = valor.lower()
     if valor.startswith("/"):
-        return posixpath.normpath(valor)
-    return posixpath.normpath("/" + valor)
+        valor = posixpath.normpath(valor)
+    else:
+        valor = posixpath.normpath("/" + valor)
+    return valor.replace("\x00", "")
 
 
 def test_env_positivo_y_negativo() -> None:

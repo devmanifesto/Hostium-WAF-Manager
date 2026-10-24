@@ -582,8 +582,9 @@ reglas:
         hostium-1.0.0.zip ni el ZIP de esta versión.
   - id: 5500602
     nombre: Cabeceras de parte amplificadas
-    descripcion: Niega un cuerpo con 100 o más cabeceras X- seguidas. El aviso dice que representar esas
-      cabeceras en PHP gasta mucha más memoria que el tamaño en el cable.
+    descripcion: Niega cuando el contador de cabeceras X- de parte llega a 100. 5500606 suma cada
+      miembro de MULTIPART_PART_HEADERS. En ModSecurity 2 el cuerpo crudo no está en REQUEST_BODY
+      si el procesador ya es MULTIPART.
     categoria: php-upload-progress
     modulo: REQUEST-410-PHP-UPLOAD-PROGRESS
     archivo: rules/hostium/REQUEST-410-PHP-UPLOAD-PROGRESS.conf

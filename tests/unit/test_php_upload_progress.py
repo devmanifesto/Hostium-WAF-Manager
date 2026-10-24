@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[2]
 CONF = ROOT / "rules" / "hostium" / "REQUEST-410-PHP-UPLOAD-PROGRESS.conf"
 EXAMPLE = ROOT / "rules" / "hostium" / "REQUEST-411-PHP-UPLOAD-PROGRESS-RESPONSE.conf.example"
 
-PASS = {5500600, 5500614, 5500619, 5500623, 5500624, 5500626}
+PASS = {5500600, 5500606, 5500607, 5500608, 5500614, 5500619, 5500623, 5500624, 5500626}
 IDS = {
     5500600,
     5500601,
@@ -19,6 +19,9 @@ IDS = {
     5500603,
     5500604,
     5500605,
+    5500606,
+    5500607,
+    5500608,
     5500611,
     5500612,
     5500613,
@@ -100,7 +103,10 @@ def test_ids_acciones_y_version() -> None:
     assert regex_peligrosa(activas) is False
     assert "SecResponseBodyAccess" not in activas
     for identificador, partes in REGLAS.items():
-        assert "ver:'hostium/1.1.0'" in partes[0].acciones
+        if identificador in {5500606, 5500607, 5500608}:
+            assert "ver:'hostium/1.2.0'" in partes[0].acciones
+        else:
+            assert "ver:'hostium/1.1.0'" in partes[0].acciones
         if identificador in PASS:
             assert "pass" in partes[0].acciones
             assert "deny" not in partes[0].acciones
@@ -137,33 +143,42 @@ def test_5500601_chunked_multipart() -> None:
 
 
 def test_5500602_cabeceras_de_parte() -> None:
-    rx = _rx(5500602)
-    assert rx.search("\r\nX-Pad: a" * 100)
-    assert rx.search("\r\nX-Pad: a" * 99) is None
-    assert rx.search("\r\nY-Pad: a" * 100) is None
+    cuenta = _rx(5500606)
+    umbral = int(REGLAS[5500602][0].operador.removeprefix("@ge "))
+    assert umbral == 100
+    assert cuenta.search("X-Pad: a")
+    assert cuenta.search("X-Pad : a")
+    assert cuenta.search("x-pad: a")
+    assert cuenta.search("Content-Disposition: form-data;") is None
+    assert cuenta.search("Y-Pad: a") is None
+    assert "setvar:tx.hostium_xhdr=+1" in REGLAS[5500606][0].acciones
+    assert REGLAS[5500602][0].variables == "TX:hostium_xhdr"
 
 
 def test_5500603_anidacion() -> None:
     rx = _rx(5500603)
 
-    def nombre(niveles: int, igual: bool) -> str:
-        base = "a" + ("[0]" * niveles)
-        return base + ("=1" if igual else "")
+    def nombre(niveles: int, igual: bool, clave: str = "0", base: str = "a") -> str:
+        arma = base + (("[" + clave + "]") * niveles)
+        return arma + ("=1" if igual else "")
 
     assert rx.search(nombre(40, True))
     assert rx.search(nombre(39, True)) is None
     assert rx.search(nombre(40, False))
+    assert rx.search(nombre(40, True, clave="k" * 33))
+    assert rx.search(nombre(40, True, base="n" * 65))
     assert rx.search('name="' + "campo" + ("[0]" * 40) + '"')
     assert rx.search("nombre=juan") is None
 
 
 def test_5500604_filename_vacio() -> None:
-    rx = _rx(5500604)
-    unidad = 'filename=""\r\nContent-Type: text/plain\r\n\r\n--b\r\nContent-Disposition: form-data; '
-    assert rx.search(unidad * 50)
-    assert rx.search(unidad * 49) is None
-    legitimo = 'Content-Disposition: form-data; name="f"; filename="a.txt"\r\n\r\nhola'
-    assert rx.search(legitimo) is None
+    assert REGLAS[5500607][0].variables == "FILES"
+    assert REGLAS[5500607][0].operador == "@rx ^$"
+    assert "setvar:tx.hostium_emptyfile=+1" in REGLAS[5500607][0].acciones
+    assert REGLAS[5500604][0].variables == "TX:hostium_emptyfile"
+    assert int(REGLAS[5500604][0].operador.removeprefix("@ge ")) == 50
+    assert _rx(5500607).search("")
+    assert _rx(5500607).search("a.txt") is None
 
 
 def test_5500605_cantidad_de_archivos() -> None:
@@ -177,7 +192,7 @@ def test_5500605_cantidad_de_archivos() -> None:
 
 def test_5500611_valor_serializado() -> None:
     rx = _rx(5500611)
-    for muestra in ('<?php phpinfo();', "<?=1", 'O:8:"stdClass"', "a:1:{", "s:1:{", "|O:1", "|o:1"):
+    for muestra in ('<?php phpinfo();', "<?=1", 'O:8:"stdClass"', "a:1:{", 's:1:"abc";', 'C:8:"stdClass":0:{}', "|O:1", "|o:1"):
         assert rx.search(muestra), muestra
     for muestra in ("foto.jpg", "progreso", "O:no", "a:x:{"):
         assert rx.search(muestra) is None, muestra
@@ -185,22 +200,29 @@ def test_5500611_valor_serializado() -> None:
 
 def test_5500612_filename_con_carga() -> None:
     rx = _rx(5500612)
-    assert rx.search('filename="<?php')
-    assert rx.search('filename="O:8:"')
-    assert rx.search('filename="foto.jpg"') is None
-    assert rx.search("<?php") is None
+    assert REGLAS[5500612][0].variables == "FILES|FILES_NAMES"
+    assert rx.search("<?php")
+    assert rx.search("aaaa<?php")
+    assert rx.search('O:8:"')
+    assert rx.search('s:1:"abc";')
+    assert rx.search('C:8:"stdClass"')
+    assert rx.search("foto.jpg") is None
 
 
 def test_5500613_phpsessid_como_campo() -> None:
     parte = REGLAS[5500613][0]
     assert parte.variables == "ARGS_NAMES"
-    assert parte.operador == "@streq PHPSESSID"
-    assert "PHPSESSID" == "PHPSESSID"
-    assert "phpSESSID" != "PHPSESSID"
-    assert "MY_PHPSESSID" != "PHPSESSID"
+    rx = _rx(5500613)
+    assert rx.search("PHPSESSID")
+    assert rx.search("PHPSESSID[0]")
+    assert rx.search("PHPSESSID[abc]")
+    assert rx.search("phpSESSID") is None
+    assert rx.search("MY_PHPSESSID") is None
+    assert rx.search("PHPSESSID-extra") is None
 
 
 def test_5500614_etiqueta_php_no_niega() -> None:
+    assert REGLAS[5500614][0].variables == "ARGS|REQUEST_BODY"
     rx = _rx(5500614)
     assert rx.search("hola <?php echo 1;")
     assert rx.search("<?PHP")
@@ -208,12 +230,14 @@ def test_5500614_etiqueta_php_no_niega() -> None:
 
 
 def test_5500615_inundacion_de_partes() -> None:
-    rx = _rx(5500615)
-    linea = "Content-Disposition: form-data;\r\n"
-    assert rx.search(linea * 500)
-    assert rx.search(linea * 499) is None
-    assert rx.search("content-disposition: form-data;\r\n" * 500)
-    assert rx.search("Content-Disposition: attachment;\r\n" * 500) is None
+    cuenta = _rx(5500608)
+    assert cuenta.search("Content-Disposition: form-data; name=\"f\"")
+    assert cuenta.search("Content-Disposition: form-data ; name=\"f\"")
+    assert cuenta.search("content-disposition:\tform-data;")
+    assert cuenta.search("Content-Disposition: attachment;") is None
+    assert "setvar:tx.hostium_parts=+1" in REGLAS[5500608][0].acciones
+    assert REGLAS[5500615][0].variables == "TX:hostium_parts"
+    assert int(REGLAS[5500615][0].operador.removeprefix("@ge ")) == 500
 
 
 def test_5500616_pipe_inicial() -> None:
@@ -226,15 +250,17 @@ def test_5500616_pipe_inicial() -> None:
 
 def test_5500617_set_cookie_largo() -> None:
     rx = _rx(5500617)
-    assert rx.search("PHPSESSID=" + ("a" * 200))
-    assert rx.search("PHPSESSID=" + ("a" * 199)) is None
+    assert rx.search("PHPSESSID=" + ("a" * 257))
+    assert rx.search("PHPSESSID=" + ("a" * 256)) is None
     assert rx.search("PHPSESSID=" + ("a" * 32) + "; Path=/") is None
 
 
 def test_5500618_filename_gigante() -> None:
     rx = _rx(5500618)
+    assert REGLAS[5500618][0].variables == "FILES|REQUEST_BODY"
+    assert rx.search("a" * 65535)
     assert rx.search('filename="' + ("a" * 65535))
-    assert rx.search('filename="' + ("a" * 65534)) is None
+    assert rx.search("a" * 65534) is None
 
 
 def test_5500619_campo_presente() -> None:
@@ -287,6 +313,7 @@ def test_5500622_ruta_de_sesion() -> None:
     assert rx.search("/tmp/sess_abc") is None
     assert rx.search("/etc/sess_abcdef") is None
     assert rx.search("/blog/post") is None
+    assert rx.search("el error fue /tmp/sess_abcdef al guardar") is None
 
 
 def test_5500623_oom() -> None:
@@ -307,8 +334,10 @@ def test_5500625_webshell() -> None:
     parte = REGLAS[5500625][0]
     assert parte.variables == "REQUEST_URI|ARGS"
     assert parte.operador == "@contains p2s_8512_shell.php"
-    assert "p2s_8512_shell.php" in "/p2s_8512_shell.php"
-    assert "p2s_8512_shell.php" not in "/shell.php"
+    assert "t:lowercase" in parte.acciones
+    assert "p2s_8512_shell.php" in "/p2s_8512_shell.php".lower()
+    assert "p2s_8512_shell.php" in "/P2S_8512_SHELL.PHP".lower()
+    assert "p2s_8512_shell.php" not in "/shell.php".lower()
 
 
 def test_5500626_marcador() -> None:
