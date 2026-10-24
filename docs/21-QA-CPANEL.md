@@ -10,13 +10,15 @@ Quien vaya a correr `modsec_vendor add` o a leer qué hay en stable.
 
 ## Fecha
 
-24 de octubre de 2026. No se tocó calcium. `publish/stable/meta_hostium.yaml` pasa a `hostium-1.1.1`. `hostium-1.0.0.zip` no se reescribe.
+24 de octubre de 2026. No se tocó calcium. `publish/stable/meta_hostium.yaml` pasa a `hostium-1.1.2`. `hostium-1.0.0.zip` y `hostium-1.1.1.zip` no se reescriben.
 
 ## Lo que WHM instalaría hoy
 
-`publish/stable/meta_hostium.yaml` apunta a `hostium-1.1.1.zip`. Esa distribution trae dos `.conf`: `REQUEST-100-SENSITIVE-FILES.conf` y `REQUEST-410-PHP-UPLOAD-PROGRESS.conf`.
+`publish/stable/meta_hostium.yaml` apunta a `hostium-1.1.2.zip`. Esa distribution trae dos `.conf`: `REQUEST-100-SENSITIVE-FILES.conf` y `REQUEST-410-PHP-UPLOAD-PROGRESS.conf`. Suma `5500606`, `5500607` y `5500608`. Los ids que ya estaban conservan fase y acción. `5500617` niega un `PHPSESSID` de respuesta de 257 caracteres o más.
 
-`modsec_vendor add` de la URL del runbook 09 instala esa 1.1.1. Un vendor ya instalado cambia cuando `upcp` relee la metadata, si las actualizaciones están activas. Este repositorio no ejecutó `upcp`. `package build --version 1.0.0` falla para no reutilizar la distribution publicada.
+`modsec_vendor add` de la URL del runbook 09 instala esa 1.1.2. Un vendor ya instalado cambia cuando `upcp` relee la metadata, si las actualizaciones están activas. Este repositorio no ejecutó `upcp`. `package build --version 1.0.0` falla para no reutilizar la distribution publicada.
+
+La tabla siguiente es la lectura de la 1.1.1, antes de este ZIP.
 
 ## Controles
 
@@ -40,21 +42,21 @@ Quien vaya a correr `modsec_vendor add` o a leer qué hay en stable.
 | `enable-updates` / `enable_updates` | No se ejecutó |
 | `ultima_validacion` de las reglas | Sigue vacía |
 
-## Riesgos que quedan con la 1.1.1 cargada
+## Riesgos que quedan
 
-El vendor, cuando está habilitado, vale para todas las cuentas.
+El vendor, cuando está habilitado, vale para todas las cuentas. Esto vale para la 1.1.2.
 
 - `5500601` niega un multipart con `Transfer-Encoding: chunked`. Una subida legítima por HTTP/1.1 con esa codificación cae. La excepción es el id, no apagar el vendor.
-- `5500613` niega el campo de formulario `PHPSESSID`. Una aplicación con `session.use_only_cookies=0` cae.
-- `5500614` registra `<?php` en el cuerpo y no niega. En el administrador de archivos y en subidas de plugins el audit log puede crecer.
-- `5500617` niega un `Set-Cookie` cuyo `PHPSESSID` mide 200 caracteres o más. `session.sid_length` admite hasta 256. Un id válido de 200 a 256 caracteres dispara esta regla. La de pedido (`5500621`) acepta hasta 256.
-- `5500600` guarda otra copia del multipart en memoria, hasta el límite que ya tenga el servidor. En un cPanel con OWASP3 ese límite suele ser el de CRS, no uno de este repo.
+- `5500613` niega el campo `PHPSESSID` y `PHPSESSID` con hasta ocho índices entre corchetes. Una aplicación con `session.use_only_cookies=0` cae.
+- `5500614` registra `<?php` en `ARGS` o `REQUEST_BODY` y no niega. En multipart el archivo no está en esas variables. En el administrador de archivos y en subidas de plugins el audit log puede crecer.
+- `5500617` niega un `Set-Cookie` cuyo `PHPSESSID` mide 257 caracteres o más. Un id de 256, el máximo de `session.sid_length`, no dispara. La de pedido (`5500621`) acepta hasta 256.
+- `5500600` sigue en el ZIP y no niega. En ModSecurity 2 no llena `REQUEST_BODY` si el procesador ya es MULTIPART.
 
 phpMyAdmin, webmail y el administrador de archivos no se ejercitaron. El repaso es de diseño, no de tráfico.
 
 ## Cómo salir
 
-Si la 1.1.1 llega a un servidor, `modsec_vendor disable hostium` la saca y OWASP3 tiene que seguir enabled. Volver a la 1.0.0 es publicar de nuevo la metadata que apunta a `hostium-1.0.0.zip`, no un parche del ZIP. No se reescribe `hostium-1.0.0.zip`.
+Si la 1.1.2 llega a un servidor, `modsec_vendor disable hostium` la saca y OWASP3 tiene que seguir enabled. Volver a la 1.1.1 es publicar de nuevo la metadata que apunta a `hostium-1.1.1.zip`, no un parche del ZIP. No se reescriben `hostium-1.1.1.zip` ni `hostium-1.0.0.zip`.
 
 ## Referencias
 

@@ -43,4 +43,4 @@ Leer la descripción del vendor OWASP en `modsec_vendor list` como si fuera la v
 
 ## Limitaciones
 
-La celda Debian usa el paquete que imprimió el contenedor. La celda CRS usa `apachectl` y una cadena del `.so`. Ninguna de las dos es el RPM `2.9.15-2.3.1.cpanel`. En la imagen local, `apache2ctl configtest` aceptó los dos `.conf` que entran al ZIP 1.1.1. El 24 de octubre de 2026 se repitió ese `configtest` con los bytes del ZIP y hubo pedidos HTTP de algunos ids PHP. El detalle, y los ids que no se enviaron, está en `docs/22-QA-TRES-PASADAS.md`. El example de fase 4 no se montó.
+La celda Debian usa el paquete que imprimió el contenedor. La celda CRS usa `apachectl` y una cadena del `.so`. Ninguna de las dos es el RPM `2.9.15-2.3.1.cpanel`. En la imagen local, `apache2ctl configtest` aceptó los dos `.conf` que entran al ZIP. El 24 de octubre de 2026 se repitió ese `configtest` y `test_motor_ve_las_reglas_410` pidió los casos de `docs/22-QA-TRES-PASADAS.md` ya cerrados en la 1.1.2. El example de fase 4 no se montó.

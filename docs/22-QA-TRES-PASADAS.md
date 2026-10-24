@@ -138,7 +138,9 @@ Docs que esta corrida dejaba atrás: la audiencia y el conteo de `docs/11-PRUEBA
 
 ## Qué queda anotado
 
-Un arreglo de `REQUEST_BODY`, de `PHPSESSID[0]`, de la grafía del webshell o de las expresiones de arriba sería `1.1.2` o mayor. Este informe no empaqueta eso.
+Esos huecos se empaquetaron en `hostium-1.1.2`. Los ids nuevos son `5500606`, `5500607` y `5500608`. Los ids que ya estaban conservan fase y acción. `5500617` niega desde 257 caracteres. El ZIP `hostium-1.1.1.zip` no se reescribió. Las tablas de arriba describen la 1.1.1 y se dejan como estaban.
+
+`test_motor_ve_las_reglas_410`, el mismo día, contra `modsecurity 2.9.7-1+deb12u2`, vio 403 con id en `5500613` para `PHPSESSID` y para `PHPSESSID[0]`, 403 con id en `5500602` a las 100 cabeceras `X-`, 403 con id en `5500625` para `/P2S_8512_SHELL.PHP`, y `5500614` en el log sin 403. 99 cabeceras y un filename vacío no negaron. `apache2ctl configtest` imprimió `Syntax OK`. No es el RPM `2.9.15` de cPanel. `ultima_validacion` sigue vacía.
 
 Sigue sin hacerse en cPanel: `modsec_vendor`, `httpd -t`, `DUMP_INCLUDES`, Hits List, choque de ids contra el OWASP3 instalado, `upcp`, `enable-updates`, `deploy apply` y `rollback apply`.
 
