@@ -1,3 +1,4 @@
+# Reglas complementarias de seguridad administradas por Hostium 1.1.0
 # Reglas de RESPONSE_BODY para PHP2Shell. No entran al ZIP.
 # En cPanel el vendor se incluye para todo el servidor. Encender
 # SecResponseBodyAccess desde aquí bufferizaría la respuesta de todas las cuentas.

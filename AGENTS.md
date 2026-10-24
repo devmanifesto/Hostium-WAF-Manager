@@ -24,6 +24,10 @@ Una tarea está terminada cuando el comando que dice implementar existe, falla d
 4. Construí con un SemVer nuevo. Si `dist/releases/hostium-1.0.0.zip` ya existe con otros bytes, el build debe fallar.
 5. No reutilices `distribution: hostium-1.0.0` para otro contenido.
 
+## Cada serie de cambios
+
+Al cerrar una serie, hacé un commit y subí el parche del ruleset: el tercer número SemVer (`1.1.0`, después `1.1.1`). La distribution nueva es `hostium-<semver>`. No reutilices el número anterior ni reescribas su ZIP. El build escribe esa versión en la primera línea de cada `.conf` empaquetado y en `attributes.description`.
+
 ## Qué no tocar
 
 - Servidores reales, incluido calcium, sin un pedido explícito de esa operación.

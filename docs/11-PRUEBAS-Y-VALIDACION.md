@@ -18,8 +18,8 @@ El entorno de `docs/04-INSTALACION-DESARROLLO.md`.
 python -m ruff check src tests
 python -m pytest
 python -m pytest -m integration --override-ini="addopts=" -rs
-python -m hostium_waf package build --version 1.1.0 --engine 2.9.15
-python -m hostium_waf package verify --zip dist/hostium-1.1.0.zip --metadata dist/meta_hostium.yaml
+python -m hostium_waf package build --version 1.1.1 --engine 2.9.15
+python -m hostium_waf package verify --zip dist/hostium-1.1.1.zip --metadata dist/meta_hostium.yaml
 ```
 
 `package build --version 1.0.0` en este árbol termina en error. La 1.0.0 publicada no se reconstruye.

@@ -64,7 +64,7 @@ Manual v2.x y la guía de excepciones de CRS.
 
 ## Módulo 1.1.0, PHP upload progress
 
-Ids `5500600`–`5500626`. Los de pedido están en `REQUEST-410-PHP-UPLOAD-PROGRESS.conf` y entran al ZIP 1.1.0. Los de `RESPONSE_BODY` están en el example 411 y no entran. Cubren vectores publicados de CVE-2026-109618 y CVE-2026-109619. No cubren CVE-2026-115560 y no reemplazan PHP 8.2.35, 8.3.36, 8.4.27 u 8.5.12.
+Ids `5500600`–`5500626`. Los de pedido están en `REQUEST-410-PHP-UPLOAD-PROGRESS.conf` y entran al ZIP 1.1.1. Los de `RESPONSE_BODY` están en el example 411 y no entran. Cubren vectores publicados de CVE-2026-109618 y CVE-2026-109619. No cubren CVE-2026-115560 y no reemplazan PHP 8.2.35, 8.3.36, 8.4.27 u 8.5.12.
 
 Mientras el parche no esté, el aviso de PHP pide `session.upload_progress.enabled=0` en `php.ini` o en el pool, y reiniciar los workers. `ini_set` y `.user.ini` no alcanzan: el parseo ocurre antes.
 

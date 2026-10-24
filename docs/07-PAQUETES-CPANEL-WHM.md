@@ -42,8 +42,8 @@ Esa URL es la del archivo en git. `package verify` no la descarga. El repositori
 ## Comandos
 
 ```powershell
-python -m hostium_waf package build --version 1.1.0 --engine 2.9.15
-python -m hostium_waf package verify --zip dist/hostium-1.1.0.zip --metadata dist/meta_hostium.yaml
+python -m hostium_waf package build --version 1.1.1 --engine 2.9.15
+python -m hostium_waf package verify --zip dist/hostium-1.1.1.zip --metadata dist/meta_hostium.yaml
 python -m hostium_waf metadata show --file dist/meta_hostium.yaml
 ```
 
