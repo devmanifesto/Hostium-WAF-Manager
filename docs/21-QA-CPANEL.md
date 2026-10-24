@@ -6,23 +6,23 @@ Decir si el ruleset de este árbol se puede cargar como vendor de WHM, y qué no
 
 ## Audiencia
 
-Quien vaya a correr `modsec_vendor add` o a publicar una 1.1.0.
+Quien vaya a correr `modsec_vendor add` o a leer qué hay en stable.
 
 ## Fecha
 
-23 de octubre de 2026. No se tocó calcium. No se reescribió `publish/stable/`.
+24 de octubre de 2026. No se tocó calcium. `publish/stable/meta_hostium.yaml` pasa a `hostium-1.1.1`. `hostium-1.0.0.zip` no se reescribe.
 
 ## Lo que WHM instalaría hoy
 
-`publish/stable/meta_hostium.yaml` apunta a `hostium-1.0.0.zip`. Esa distribution trae `REQUEST-100-SENSITIVE-FILES.conf`, ids `5500100` y `5500101`.
+`publish/stable/meta_hostium.yaml` apunta a `hostium-1.1.1.zip`. Esa distribution trae dos `.conf`: `REQUEST-100-SENSITIVE-FILES.conf` y `REQUEST-410-PHP-UPLOAD-PROGRESS.conf`.
 
-`modsec_vendor add` de la URL del runbook 09 instala esa 1.0.0. No instala el módulo PHP. La 1.1.0 existe en el árbol y se construye con `package build --version 1.1.0`. `package build --version 1.0.0` falla para no reutilizar la distribution publicada.
+`modsec_vendor add` de la URL del runbook 09 instala esa 1.1.1. Un vendor ya instalado cambia cuando `upcp` relee la metadata, si las actualizaciones están activas. Este repositorio no ejecutó `upcp`. `package build --version 1.0.0` falla para no reutilizar la distribution publicada.
 
 ## Controles
 
 | Control | Estado |
 | --- | --- |
-| ZIP 1.1.0 con raíz `hostium/` y solo los `.conf` de la política | Pasó en local. La suite espera `REQUEST-100-SENSITIVE-FILES.conf` y `REQUEST-410-PHP-UPLOAD-PROGRESS.conf` |
+| ZIP 1.1.1 con raíz `hostium/` y solo los `.conf` de la política | La suite de 1.1.0 espera `REQUEST-100-SENSITIVE-FILES.conf` y `REQUEST-410-PHP-UPLOAD-PROGRESS.conf`. El ZIP publicado es el 1.1.1, con esos dos archivos |
 | `distribution: hostium-1.0.0` no se regenera | Pasó en local. El build de 1.0.0 termina en error |
 | `SecResponseBodyAccess` fuera del ZIP | Corregido. El conf empaquetado no tiene la directiva activa. En cPanel el vendor aplica a todo el servidor |
 | Reglas de fase 4 (`5500620`, `5500623`, `5500624`, `5500626`) | Fuera del paquete, en `REQUEST-411-PHP-UPLOAD-PROGRESS-RESPONSE.conf.example`, estado experimental |

@@ -10,8 +10,8 @@ La persona con acceso root al piloto y aprobación para tocarlo.
 
 ## Prerrequisitos
 
-- Artefacto publicado y verificado: `publish/stable/hostium-1.0.0.zip` y `publish/stable/meta_hostium.yaml`. Están en git. Esa metadata instala solo `5500100` y `5500101`. No trae el módulo PHP de la 1.1.0.
-- La 1.1.0 se construye en local con `package build --version 1.1.0`. No está en `publish/stable/` y este runbook no la publica. `package build --version 1.0.0` falla a propósito para no reescribir la distribution ya publicada.
+- Artefacto publicado: `publish/stable/meta_hostium.yaml` apunta a `hostium-1.1.1.zip`. Ese ZIP trae dos sets, `REQUEST-100-SENSITIVE-FILES.conf` y `REQUEST-410-PHP-UPLOAD-PROGRESS.conf`. `hostium-1.0.0.zip` sigue en el directorio y no se reescribe.
+- `package build --version 1.0.0` falla a propósito para no reescribir la distribution ya publicada. `hostium-1.1.0` no se publicó.
 - Ventana acordada.
 - Un dominio de prueba autorizado, no un sitio de cliente al azar.
 - Copia de la salida de solo lectura de antes del cambio.
@@ -39,7 +39,7 @@ Solo con aprobación, y solo cuando la metadata sea alcanzable por HTTPS:
 /usr/local/cpanel/scripts/modsec_vendor add 'https://raw.githubusercontent.com/devmanifesto/Hostium-WAF-Manager/main/publish/stable/meta_hostium.yaml'
 ```
 
-Esa URL es la metadata de la 1.0.0. El alta instala el ZIP que esa metadata nombra, hoy `hostium-1.0.0.zip`, con los ids `5500100` y `5500101`. No instala `5500600` ni el resto del módulo PHP. Publicar la 1.1.0 es otro cambio de metadata y no se hace desde este runbook.
+Esa URL es la metadata de stable. El alta instala el ZIP que esa metadata nombra, hoy `hostium-1.1.1.zip`. Un servidor que ya tiene el vendor no cambia solo por este commit: lo hace `upcp` si las actualizaciones del vendor están activas. Este runbook no ejecutó ese script.
 
 Esa URL es pública. No uses un HTTP ni pegues un PAT en la URL. El alta modifica el piloto y no se ejecutó desde este repositorio.
 
