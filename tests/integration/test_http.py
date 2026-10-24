@@ -1,4 +1,9 @@
-"""Casos HTTP contra Apache aislado. No sustituyen una prueba en cPanel."""
+"""Casos HTTP contra Apache aislado. No sustituyen una prueba en cPanel.
+
+Solo se piden los casos del `.conf` montado en ese contenedor. Los POST de
+REQUEST-410 no entran: el manifiesto no trae el cuerpo, y un POST sin
+Content-Length deja a Apache esperando hasta el timeout.
+"""
 
 from __future__ import annotations
 
@@ -19,6 +24,8 @@ ROOT = Path(__file__).resolve().parents[2]
 IMAGE = "hostium-waf-apache:local"
 CRS_TAG = "owasp/modsecurity-crs:3.3.10-apache-202610180210-lts"
 CRS_DIGEST_FILE = ROOT / "docker" / "crs-image.txt"
+ARCHIVO_SENSITIVE = "rules/hostium/REQUEST-100-SENSITIVE-FILES.conf"
+ARCHIVO_SELFTEST = "rules/hostium/REQUEST-000-SELFTEST.conf.example"
 
 
 def _montaje(origen: Path, destino: str, *, solo_lectura: bool = True) -> list[str]:
@@ -101,8 +108,14 @@ def _logs(contenedor: str) -> str:
 
 
 def _pedir(base: str, caso: dict) -> tuple[int, float]:
-    peticion = urllib.request.Request(base + caso["path"], method=caso["metodo"])
+    metodo = caso["metodo"]
+    # data vacío cierra el cuerpo con Content-Length: 0. Sin eso, un POST
+    # mantiene el socket abierto y Apache no responde.
+    data = b"" if metodo in {"POST", "PUT", "PATCH"} else None
+    peticion = urllib.request.Request(base + caso["path"], data=data, method=metodo)
     for clave, valor in (caso.get("headers") or {}).items():
+        if clave.lower() == "transfer-encoding":
+            continue
         peticion.add_header(clave, valor)
     inicio = time.perf_counter()
     try:
@@ -110,13 +123,19 @@ def _pedir(base: str, caso: dict) -> tuple[int, float]:
             status = respuesta.status
     except urllib.error.HTTPError as exc:
         status = exc.code
+    except TimeoutError as exc:
+        raise AssertionError(
+            f"Sin respuesta en 10 s para {metodo} {caso['path']} ({caso.get('titulo')})."
+        ) from exc
     return status, (time.perf_counter() - inicio) * 1000
 
 
-def _casos(ejecucion: str) -> list[tuple[int, dict]]:
+def _casos(ejecucion: str, archivos: frozenset[str] | None = None) -> list[tuple[int, dict]]:
     data = yaml.safe_load((ROOT / "rules" / "manifests" / "rules.yaml").read_text(encoding="utf-8"))
     encontrados = []
     for regla in data["reglas"]:
+        if archivos is not None and regla["archivo"] not in archivos:
+            continue
         for grupo in ("casos_de_prueba_positivos", "casos_de_prueba_negativos"):
             for caso in regla[grupo]:
                 if caso["ejecucion"] == ejecucion:
@@ -154,10 +173,19 @@ def _id_en_esta_uri(texto: str, regla_id: int, path: str) -> bool:
     return False
 
 
-def _evaluar(base: str, contenedor: str, ejecucion: str, informe: str) -> list[dict]:
+def _evaluar(
+    base: str,
+    contenedor: str,
+    ejecucion: str,
+    informe: str,
+    archivos: frozenset[str],
+) -> list[dict]:
     resultados = []
     fallos = []
-    for regla_id, caso in _casos(ejecucion):
+    casos = _casos(ejecucion, archivos)
+    if not casos:
+        raise AssertionError(f"No hay casos {ejecucion} para {sorted(archivos)}")
+    for regla_id, caso in casos:
         antes = _logs(contenedor)
         status, milisegundos = _pedir(base, caso)
         despues = _logs(contenedor)
@@ -218,7 +246,13 @@ def apache_hostium(tmp_path_factory: pytest.TempPathFactory):
 @pytest.mark.integration
 def test_reglas_productivas_sin_crs(apache_hostium: dict) -> None:
     _marcar("ejecutada")
-    _evaluar(apache_hostium["base"], apache_hostium["nombre"], "automatizada", "sin-crs")
+    _evaluar(
+        apache_hostium["base"],
+        apache_hostium["nombre"],
+        "automatizada",
+        "sin-crs",
+        frozenset({ARCHIVO_SENSITIVE}),
+    )
     (ROOT / "reports" / "modsec-version.txt").write_text(apache_hostium["version"], encoding="utf-8")
 
 
@@ -238,7 +272,7 @@ def test_selftest_solo_en_laboratorio(apache_hostium: dict) -> None:
         pytest.fail(recarga.stderr)
     time.sleep(1)
     try:
-        _evaluar(base, nombre, "laboratorio", "laboratorio")
+        _evaluar(base, nombre, "laboratorio", "laboratorio", frozenset({ARCHIVO_SELFTEST}))
     finally:
         (reglas / "REQUEST-000-SELFTEST.conf").unlink(missing_ok=True)
 
@@ -294,7 +328,7 @@ def test_coexistencia_con_crs() -> None:
     try:
         base = _publicar(nombre, "8080")
         _esperar(base + "/")
-        _evaluar(base, nombre, "automatizada", "con-crs")
+        _evaluar(base, nombre, "automatizada", "con-crs", frozenset({ARCHIVO_SENSITIVE}))
         version = _docker(
             "exec",
             nombre,
@@ -306,6 +340,16 @@ def test_coexistencia_con_crs() -> None:
         _marcar("ejecutada")
     finally:
         _docker("rm", "-f", nombre)
+
+
+def test_la_suite_http_no_envia_los_post_de_php() -> None:
+    """Los casos 410 siguen automatizados para el validador, pero este Apache no los carga."""
+    sensibles = _casos("automatizada", frozenset({ARCHIVO_SENSITIVE}))
+    todos = _casos("automatizada")
+    assert sensibles
+    assert len(sensibles) < len(todos)
+    assert {regla_id for regla_id, _ in sensibles} <= {5500100, 5500101}
+    assert all(caso["metodo"] == "GET" for _, caso in sensibles)
 
 
 @pytest.mark.integration

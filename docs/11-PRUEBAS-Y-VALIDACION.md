@@ -37,6 +37,8 @@ La primera línea es lint. La segunda es la suite unitaria y excluye la marca `i
 
 La corrida de abajo es la de los ids `5500100` y `5500101`. Los ids de PHP upload progress no están en esa tabla. Los de fase 4 no entran al ZIP. Su control automático es `tests/unit/test_php_upload_progress.py`, que aplica las expresiones en Python. El `configtest` del conf empaquetado está en `tests/integration/test_http.py` y se omite si Docker no está. No hubo un POST de prueba ni un 403 observado para esos ids, y `ultima_validacion` sigue vacía. El informe de cPanel está en `docs/21-QA-CPANEL.md`.
 
+La suite HTTP solo pide casos del `.conf` montado en ese contenedor, hoy `REQUEST-100-SENSITIVE-FILES.conf`. Los POST de `REQUEST-410` siguen en el manifiesto como `ejecucion: automatizada` porque la regla entra al ZIP, pero no se envían a este Apache: el caso no trae cuerpo y, sin `Content-Length`, el servidor espera el cuerpo hasta cortar por timeout. Ese corte no es un bloqueo.
+
 ## Resultado de la corrida de cierre
 
 Corrida en esta máquina el 23 de octubre de 2026. La bitácora UTC del contenedor CRS de una corrida anterior cayó ya en el 24. Si esta sección y una corrida nueva no coinciden, manda la salida nueva.
