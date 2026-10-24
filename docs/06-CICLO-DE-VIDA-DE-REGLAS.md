@@ -24,8 +24,20 @@ Solo `produccion` con `incluir_en_paquete: true` entra al ZIP, y solo si la pol�
 2. Agregá el manifiesto completo y el `.conf`. Si todavía no hay evidencia, el archivo termina en `.example`, el estado es `borrador` y los casos dicen `ejecucion: pendiente`.
 3. Cuando los casos sean `automatizada`, el estado puede pasar a `produccion` y el módulo entra en la política. Eso es un cambio de archivo en git, no un cambio en un servidor.
 4. Revisión humana si la acción es `deny`.
-5. `package build` con un SemVer nuevo.
+5. `package build` con un SemVer nuevo, elegido contra la distribution que nombra la metadata de stable.
 6. La persona que opera el piloto, en otra ventana y con aprobación, sigue `docs/09-DESPLIEGUE-CALCIUM.md`. Este ciclo no lo hace.
+
+## Qué número sube
+
+Se compara con el ZIP que `publish/stable/meta_hostium.yaml` nombra. Hoy es `hostium-1.1.1`. Sube un solo componente, el más alto que corresponda.
+
+| Cambio respecto de esa distribution | Número | Ejemplo ya subido |
+| --- | --- | --- |
+| Un id publicado cambia de `deny` a `pass`, de `pass` a `deny` o de fase; se elimina un `.conf` que esa distribution instala; se reutiliza un id; cambia el contrato del vendor | mayor, `2.0.0` | Todavía no hubo |
+| Entra un `.conf` o ids nuevos, y los ids ya instalados conservan id, fase y acción | sub, `1.2.0` | `1.0.0` tenía un set. La línea `1.1` agregó `REQUEST-410` |
+| Mismos sets, mismos ids, misma fase y misma acción. O la regla nunca estuvo en la metadata de stable | sub-sub, `1.1.2` | `1.1.1` sacó del ZIP las reglas de fase 4. La metadata no había nombrado `hostium-1.1.0` |
+
+Docs, tests o CLI sin otro contenido de reglas no publican distribution nueva.
 
 ## Rollback de la regla
 

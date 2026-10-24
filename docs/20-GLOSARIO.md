@@ -17,7 +17,8 @@ Quien lee un ticket o un informe y no mantiene el ruleset.
 | CRS / OWASP3 | El vendor que instala el RPM de cPanel. No lo editamos |
 | Vendor | Un origen de reglas que WHM descarga con `modsec_vendor` |
 | `vendor_id` | El nombre corto. El nuestro es `hostium` porque el archivo se llama `meta_hostium.yaml` |
-| `distribution` | El identificador inmutable de una release, `hostium-1.0.0` |
+| `distribution` | El identificador inmutable de una release. Stable nombra hoy `hostium-1.1.1` |
+| Mayor, sub, sub-sub | Los tres números del ruleset. `2.0.0` rompe un id ya instalado. `1.2.0` agrega sets o ids. `1.1.2` no cambia ids, fase ni acción |
 | DetectionOnly | Modo global del motor: las reglas no niegan. No es lo mismo que una regla escrita con `pass,log` |
 | deny | La regla interrumpe con el status que declare, en la nuestra 403 |
 | Id | El número de la regla. Los nuestros están entre 5500000 y 5509999 |

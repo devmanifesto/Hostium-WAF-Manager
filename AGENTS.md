@@ -26,7 +26,15 @@ Una tarea está terminada cuando el comando que dice implementar existe, falla d
 
 ## Cada serie de cambios
 
-Al cerrar una serie, hacé un commit y subí el parche del ruleset: el tercer número SemVer (`1.1.0`, después `1.1.1`). La distribution nueva es `hostium-<semver>`. No reutilices el número anterior ni reescribas su ZIP. El build escribe esa versión en la primera línea de cada `.conf` empaquetado y en `attributes.description`.
+Al cerrar una serie, hacé un commit. El número de ruleset se mira contra la distribution que nombra `publish/stable/meta_hostium.yaml`, hoy `hostium-1.1.1`. No reutilices ese número ni reescribas su ZIP. Si hay ZIP nuevo, el build escribe la versión en la primera línea de cada `.conf` empaquetado y en `attributes.description`.
+
+El número es `mayor.sub.subsub` (`2.0.0`, `1.2.0`, `1.1.2`). Sube uno solo, el más alto que corresponda.
+
+- **Mayor.** Un id que esa distribution ya instala cambia de `deny` a `pass`, de `pass` a `deny`, o de fase. Se saca del ZIP un `.conf` que esa distribution instala. Se reutiliza un id. Cambia `vendor_id`, la raíz `hostium/` o el contrato de la metadata.
+- **Sub.** Entra un `.conf` nuevo o ids nuevos, y los ids ya instalados conservan id, fase y acción. En WHM, Sets Included sube. Así pasó de `1.0.0` (un set, `5500100` y `5500101`) a la línea `1.1` (el módulo `REQUEST-410`).
+- **Sub-sub.** Mismos sets, mismos ids, misma fase y misma acción. Se ajusta una expresión y el caso documentado sigue cubierto. También docs, tests o CLI. La `1.1.1` es este caso sobre la `1.1.0`: salieron del ZIP reglas de fase 4 que la metadata de stable nunca había nombrado.
+
+Si la serie no cambia reglas empaquetadas, el commit no crea otra distribution. Un ZIP igual haría que WHM lo baje sin reglas nuevas.
 
 ## Qué no tocar
 
