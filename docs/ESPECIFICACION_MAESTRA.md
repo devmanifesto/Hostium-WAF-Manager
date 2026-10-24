@@ -221,7 +221,7 @@ attributes:
   vendor_url: 'https://hostium.com'
 ```
 
-El generador debe publicar SHA512 y MD5 porque forman parte del contrato de cPanel, pero explicar que un checksum descargado junto con metadata no autentica por sí solo al publicador. Evaluá firma **externa al mecanismo nativo de WHM** (por ejemplo cosign/minisign/GPG) y verificación con clave fijada en el pipeline propio; **no afirmes que cPanel valida esa firma**.
+La URL operativa quedó en `config/settings.example.yaml`: el raw de `devmanifesto/Hostium-WAF-Manager`, rama `main`, carpeta `publish`. El ejemplo de arriba conserva la forma del contrato. El generador debe publicar SHA512 y MD5 porque forman parte del contrato de cPanel, pero explicar que un checksum descargado junto con metadata no autentica por sí solo al publicador ni abre un repositorio privado. Evaluá firma **externa al mecanismo nativo de WHM** (por ejemplo cosign/minisign/GPG) y verificación con clave fijada en el pipeline propio; **no afirmes que cPanel valida esa firma**.
 
 Tomá la versión del motor desde inventario, no la del paquete de reglas ni el número de versión de Apache. No inventes la disponibilidad de versiones en repositorios.
 

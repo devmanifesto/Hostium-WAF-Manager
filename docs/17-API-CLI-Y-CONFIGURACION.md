@@ -48,7 +48,7 @@ Instalación del documento 04.
 
 ## Configuración
 
-`config/settings.example.yaml` apunta al manifiesto y a la política de ejemplo, con `base_url: https://waf.hostium.com`. `init` copia settings y hace que la copia use `config/policy.yaml`.
+`config/settings.example.yaml` apunta al manifiesto y a la política de ejemplo, con `base_url` en el raw de `devmanifesto/Hostium-WAF-Manager`, rama `main`, carpeta `publish`. `init` copia settings y hace que la copia use `config/policy.yaml`.
 
 Variables: `HOSTIUM_WAF_ROOT` fuerza la raíz. `HOSTIUM_REQUIRE_INTEGRATION=1` hace fallar la prueba si la imagen CRS no descarga, en lugar de omitirla.
 

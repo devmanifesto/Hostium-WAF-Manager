@@ -3,8 +3,10 @@ vendor_id: hostium
 nombre_visible: Hostium WAF Ruleset
 descripcion: Reglas complementarias de seguridad administradas por Hostium
 vendor_url: https://hostium.com
-# URL de diseño. Este repositorio no aprovisiona waf.hostium.com.
-base_url: https://waf.hostium.com
+# WHM baja por HTTPS este prefijo. El canal y el nombre del ZIP se agregan solos.
+# El repo es privado: sin header Authorization, raw.githubusercontent.com responde 404.
+# El MD5, el SHA512 y el commit no autentican esa descarga.
+base_url: https://raw.githubusercontent.com/devmanifesto/Hostium-WAF-Manager/main/publish
 motor_por_defecto: "2.9.15"
 canal_por_defecto: stable
 manifiesto: rules/manifests/rules.yaml

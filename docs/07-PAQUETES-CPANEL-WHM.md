@@ -29,14 +29,14 @@ Tutorial oficial de vendor, consultado el 23 de octubre de 2026.
   MD5: '<32 hex>'
   SHA512: '<128 hex>'
   distribution: 'hostium-1.0.0'
-  url: 'https://waf.hostium.com/stable/hostium-1.0.0.zip'
+  url: 'https://raw.githubusercontent.com/devmanifesto/Hostium-WAF-Manager/main/publish/stable/hostium-1.0.0.zip'
 attributes:
   name: 'Hostium WAF Ruleset'
   description: 'Reglas complementarias de seguridad administradas por Hostium'
   vendor_url: 'https://hostium.com'
 ```
 
-Esa URL es de diseño. `package verify` no la descarga.
+Esa URL es la del archivo en git. `package verify` no la descarga. Mientras el repositorio siga privado, un cliente sin `Authorization` recibe 404.
 
 ## Comandos
 

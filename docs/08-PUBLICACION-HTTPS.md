@@ -10,13 +10,18 @@ Quien administre el origen desde el que WHM descarga el vendor.
 
 ## Prerrequisitos
 
-Un ZIP que ya pasó `package verify`. Un host HTTPS que este repositorio no crea. Certificado vigente, acceso de escritura acotado y, si se puede, allowlist de las IP de los cPanel.
+Un ZIP que ya pasó `package verify`. El origen es `publish/` en este repositorio, servido por `raw.githubusercontent.com`. Mientras el repo sea privado, esa URL no es descargable por WHM.
 
 ## Estado real
 
 `publish plan` describe los pasos y no sube nada. `publish apply` sale con código 3. `scripts/publish-local.sh` solo copia a un directorio local.
 
-`waf.hostium.com` no está provisionado por este proyecto.
+El origen es el propio repositorio, en `publish/stable/`. Las URL que WHM tiene que poder bajar sin usuario son:
+
+- `https://raw.githubusercontent.com/devmanifesto/Hostium-WAF-Manager/main/publish/stable/meta_hostium.yaml`
+- `https://raw.githubusercontent.com/devmanifesto/Hostium-WAF-Manager/main/publish/stable/hostium-1.0.0.zip`
+
+El repositorio `devmanifesto/Hostium-WAF-Manager` es privado. Un GET sin header `Authorization` recibe 404. Lo comprobé el 23 de octubre de 2026 contra el README en raw. El MD5 y el SHA512 viajan en la metadata para que cPanel compare el archivo después de bajarlo: no sirven de contraseña. Un commit en la ruta tampoco abre el repo. `modsec_vendor` hace un GET simple y no manda `Authorization`. Un PAT en la URL quedaría en git y en el servidor, y GitHub no lo acepta como query en raw. La vía que sí baja es hacer público el repositorio, o publicar esos dos archivos en un HTTPS que no pida sesión.
 
 ## Orden, cuando alguien publique de verdad
 
@@ -28,7 +33,7 @@ Un ZIP que ya pasó `package verify`. Un host HTTPS que este repositorio no crea
 
 ## Canales
 
-`https://waf.hostium.com/stable/meta_hostium.yaml` y `https://waf.hostium.com/canary/meta_hostium.yaml` serían dos altas distintas en WHM. No es una función nativa de canales.
+`.../main/publish/stable/meta_hostium.yaml` y `.../main/publish/canary/meta_hostium.yaml` serían dos altas distintas en WHM. No es una función nativa de canales. El canary todavía no tiene archivos.
 
 ## Firma
 
@@ -56,4 +61,4 @@ Tutorial de vendor. El script `update` de `modsec_vendor` usa la URL con la que 
 
 ## Limitaciones
 
-No hay allowlist, certificado ni log de acceso del publicador porque el host no existe en este repositorio. El endpoint no debe quedar escribible por cuentas de clientes de cPanel; eso se diseña en el servidor de archivos, no en el ZIP.
+GitHub pone el certificado. No hay allowlist de las IP de los cPanel. El archivo en `publish/stable/` no debe reescribirse con otros bytes para el mismo nombre `hostium-1.0.0.zip`. Cuentas de clientes de cPanel no tienen que poder cambiar ese archivo.

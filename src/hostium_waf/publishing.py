@@ -9,7 +9,7 @@ from hostium_waf.packaging import verify_package
 
 _MOTIVO_REMOTO = (
     "La publicación HTTP está bloqueada. v1 solo describe el orden atómico. "
-    "No se sube nada a waf.hostium.com ni a otro host."
+    "No se sube nada a GitHub ni a otro host."
 )
 
 

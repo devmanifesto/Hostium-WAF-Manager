@@ -10,7 +10,7 @@ La persona con acceso root al piloto y aprobación para tocarlo.
 
 ## Prerrequisitos
 
-- Artefacto verificado `hostium-1.0.0.zip` y `meta_hostium.yaml` servidos por HTTPS. Hoy esa URL es de diseño y no está publicada.
+- Artefacto verificado `publish/stable/hostium-1.0.0.zip` y `publish/stable/meta_hostium.yaml`. Están en git. El repo privado responde 404 a WHM.
 - Ventana acordada.
 - Un dominio de prueba autorizado, no un sitio de cliente al azar.
 - Copia de la salida de solo lectura de antes del cambio.
@@ -35,10 +35,10 @@ Guardá la salida fuera del git. Anotá si `httpd -t -D DUMP_INCLUDES` muestra l
 Solo con aprobación, y solo cuando la metadata sea alcanzable por HTTPS:
 
 ```sh
-/usr/local/cpanel/scripts/modsec_vendor add 'https://waf.hostium.com/stable/meta_hostium.yaml'
+/usr/local/cpanel/scripts/modsec_vendor add 'https://raw.githubusercontent.com/devmanifesto/Hostium-WAF-Manager/main/publish/stable/meta_hostium.yaml'
 ```
 
-Esa URL hay que reemplazarla por la que realmente exista. No uses un HTTP.
+Esa URL existe en el repo. Hoy el repo es privado y el script no envía `Authorization`, así que el alta falla con 404 hasta que el contenido sea público. No uses un HTTP ni pegues un PAT en la URL.
 
 Después, solo lectura:
 

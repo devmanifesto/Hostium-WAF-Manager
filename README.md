@@ -2,7 +2,7 @@
 
 Herramienta para mantener un ruleset ModSecurity propio, empaquetarlo como proveedor de cPanel/WHM y auditar una flota sin tocarla por defecto.
 
-La versión 1.0.0 construye y verifica el ZIP en esta máquina. No instala nada en calcium, no publica `waf.hostium.com` y no trata una sintaxis válida como una prueba de bloqueo en producción.
+La versión 1.0.0 construye y verifica el ZIP en esta máquina. No instala nada en calcium y no trata una sintaxis válida como una prueba de bloqueo en producción.
 
 ## Requisitos
 
@@ -31,7 +31,7 @@ Solo `rules/hostium/REQUEST-100-SENSITIVE-FILES.conf`, con los id `5500100` (`/.
 
 El ZIP extrae un único directorio `hostium/`. La metadata se llama `meta_hostium.yaml`. La clave `'2.9.15'` es la versión del motor, no la del ruleset. `distribution: hostium-1.0.0` identifica la release.
 
-La URL `https://waf.hostium.com/...` es de diseño. Este repositorio no aprovisiona ese host.
+La metadata apunta a `https://raw.githubusercontent.com/devmanifesto/Hostium-WAF-Manager/main/publish/stable/`. El repositorio es privado: WHM, sin header `Authorization`, recibe 404. Un hash del ZIP o un PAT dentro de la URL no abre esa descarga.
 
 ## Comandos que no actúan
 

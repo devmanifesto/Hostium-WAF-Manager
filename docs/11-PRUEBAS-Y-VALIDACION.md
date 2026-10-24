@@ -119,7 +119,7 @@ Dos `package build --version 1.0.0 --engine 2.9.15` seguidos escribieron el mism
 - SHA-512 `fdd1aafb8c37953451561f83a8f13a229b6ba62252a5774261e70fe0f9314f48da3afdb501003bd1bcdef23820c141e51168836359f2fa4285f686b29fae7d56`
 - SHA-256 `657ad987ae9cf236ced5d31825ebc4870acd316472e47e80aa9581c2bc076012`
 
-La URL del metadata sigue siendo `https://waf.hostium.com/stable/hostium-1.0.0.zip` con `url_provisionada: false`. El único archivo dentro del ZIP es `hostium/REQUEST-100-SENSITIVE-FILES.conf`.
+En esa corrida la URL del metadata era `https://waf.hostium.com/stable/hostium-1.0.0.zip`, de diseño y sin host. El único archivo dentro del ZIP es `hostium/REQUEST-100-SENSITIVE-FILES.conf`. Después, el 23 de octubre de 2026, la URL pasó al raw de `devmanifesto/Hostium-WAF-Manager` sin cambiar los bytes del ZIP.
 
 Barrido del árbol versionado: no apareció un bloque `BEGIN PRIVATE KEY` ni una clave `AKIA` de 16 caracteres. La cadena `StrictHostKeyChecking=no` solo está en la prohibición de la documentación, en la especificación y en las pruebas que exigen que el cliente SSH no la use. `ultima_validacion` de las reglas sigue en null.
 
