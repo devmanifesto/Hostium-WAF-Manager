@@ -31,7 +31,36 @@ python -m hostium_waf package verify --zip dist/hostium-1.1.0.zip --metadata dis
 
 El ZIP extrae un único directorio `hostium/`. La metadata se llama `meta_hostium.yaml`. La clave `'2.9.15'` es la versión del motor, no la del ruleset. `distribution: hostium-1.1.0` identifica esta release. `hostium-1.0.0` sigue siendo el artefacto ya publicado y `package build --version 1.0.0` falla a propósito.
 
-La metadata apunta a `https://raw.githubusercontent.com/devmanifesto/Hostium-WAF-Manager/main/publish/stable/`. El repositorio es público y esas URL se bajan sin sesión. Este repositorio no ejecuta el alta en calcium.
+## Sumarlo en cPanel
+
+La ruta que hay que dar de alta es la metadata. WHM lee ese YAML y baja el ZIP que figura adentro. Las dos URL son públicas y responden sin sesión:
+
+- Metadata: `https://raw.githubusercontent.com/devmanifesto/Hostium-WAF-Manager/main/publish/stable/meta_hostium.yaml`
+- ZIP: `https://raw.githubusercontent.com/devmanifesto/Hostium-WAF-Manager/main/publish/stable/hostium-1.0.0.zip`
+
+Esa alta instala `hostium-1.0.0`, con las reglas `5500100` (`/.env`) y `5500101` (`/.git/config`). `package build --version 1.1.0` arma otro ZIP en `dist/` y no lo publica: `publish/stable/` sigue en 1.0.0.
+
+En el servidor, como root:
+
+```sh
+/usr/local/cpanel/scripts/modsec_vendor add 'https://raw.githubusercontent.com/devmanifesto/Hostium-WAF-Manager/main/publish/stable/meta_hostium.yaml'
+```
+
+En la interfaz es el mismo dato: WHM » Security Center » ModSecurity Vendors, y la URL de configuración del vendor es la de la metadata.
+
+Después, solo lectura:
+
+```sh
+/usr/local/cpanel/scripts/modsec_vendor list
+httpd -t
+httpd -t -D DUMP_INCLUDES
+```
+
+El `vendor_id` queda `hostium`. No ejecutes `enable-updates` ni `enable_updates`: la documentación de cPanel no usa una sola grafía. Para retirarlo, `modsec_vendor disable hostium`. OWASP3 tiene que seguir habilitado.
+
+En un dominio de prueba, `https://<dominio>/.env` tiene que responder 403 con el id `5500100` en el Hits List o en el audit log. `https://<dominio>/environment` no tiene que mostrar ese id. Un 403 sin `5500100` no cuenta como éxito de esta regla.
+
+Ese `modsec_vendor add` modifica el servidor. No se ejecutó desde este repositorio.
 
 ## Comandos que no actúan
 
