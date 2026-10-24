@@ -31,7 +31,7 @@ Solo `rules/hostium/REQUEST-100-SENSITIVE-FILES.conf`, con los id `5500100` (`/.
 
 El ZIP extrae un único directorio `hostium/`. La metadata se llama `meta_hostium.yaml`. La clave `'2.9.15'` es la versión del motor, no la del ruleset. `distribution: hostium-1.0.0` identifica la release.
 
-La metadata apunta a `https://raw.githubusercontent.com/devmanifesto/Hostium-WAF-Manager/main/publish/stable/`. El repositorio es privado: WHM, sin header `Authorization`, recibe 404. Un hash del ZIP o un PAT dentro de la URL no abre esa descarga.
+La metadata apunta a `https://raw.githubusercontent.com/devmanifesto/Hostium-WAF-Manager/main/publish/stable/`. El repositorio es público y esas URL se bajan sin sesión. Este repositorio no ejecuta el alta en calcium.
 
 ## Comandos que no actúan
 

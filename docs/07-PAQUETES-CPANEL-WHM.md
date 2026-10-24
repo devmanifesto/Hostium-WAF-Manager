@@ -36,7 +36,7 @@ attributes:
   vendor_url: 'https://hostium.com'
 ```
 
-Esa URL es la del archivo en git. `package verify` no la descarga. Mientras el repositorio siga privado, un cliente sin `Authorization` recibe 404.
+Esa URL es la del archivo en git. `package verify` no la descarga. El repositorio es público: un GET anónimo del ZIP devolvió 200 y los mismos 877 bytes.
 
 ## Comandos
 

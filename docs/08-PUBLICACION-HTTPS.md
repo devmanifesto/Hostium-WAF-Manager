@@ -10,7 +10,7 @@ Quien administre el origen desde el que WHM descarga el vendor.
 
 ## Prerrequisitos
 
-Un ZIP que ya pasó `package verify`. El origen es `publish/` en este repositorio, servido por `raw.githubusercontent.com`. Mientras el repo sea privado, esa URL no es descargable por WHM.
+Un ZIP que ya pasó `package verify`. El origen es `publish/` en este repositorio, servido por `raw.githubusercontent.com`. El repositorio es público.
 
 ## Estado real
 
@@ -21,7 +21,7 @@ El origen es el propio repositorio, en `publish/stable/`. Las URL que WHM tiene 
 - `https://raw.githubusercontent.com/devmanifesto/Hostium-WAF-Manager/main/publish/stable/meta_hostium.yaml`
 - `https://raw.githubusercontent.com/devmanifesto/Hostium-WAF-Manager/main/publish/stable/hostium-1.0.0.zip`
 
-El repositorio `devmanifesto/Hostium-WAF-Manager` es privado. Un GET sin header `Authorization` recibe 404. Lo comprobé el 23 de octubre de 2026 contra el README en raw. El MD5 y el SHA512 viajan en la metadata para que cPanel compare el archivo después de bajarlo: no sirven de contraseña. Un commit en la ruta tampoco abre el repo. `modsec_vendor` hace un GET simple y no manda `Authorization`. Un PAT en la URL quedaría en git y en el servidor, y GitHub no lo acepta como query en raw. La vía que sí baja es hacer público el repositorio, o publicar esos dos archivos en un HTTPS que no pida sesión.
+El repositorio `devmanifesto/Hostium-WAF-Manager` es público desde el 23 de octubre de 2026. Un GET sin sesión de las dos URL devolvió 200. El ZIP bajado coincide con el del repositorio: 877 bytes, MD5 `3aea69ba720a6508b54999ca5aa42038`. El MD5 y el SHA512 los compara cPanel después de bajar el archivo. Si el repo volviera a privado, `modsec_vendor` recibiría 404: no envía `Authorization`.
 
 ## Orden, cuando alguien publique de verdad
 

@@ -311,7 +311,7 @@ def package_build(
             f"metadata {artefacto.metadata_path}\n"
             f"MD5 {artefacto.md5}\n"
             f"SHA512 {artefacto.sha512}\n"
-            f"URL {artefacto.url} (repo privado: WHM no la baja sin Authorization)"
+            f"URL {artefacto.url} (raw público; este comando no llama a WHM)"
         )
         _emitir(ctx, datos, texto)
 
