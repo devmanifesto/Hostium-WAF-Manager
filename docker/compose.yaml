@@ -1,0 +1,19 @@
+# Imagen owasp/modsecurity-crs:3.3.10-apache-202610180210-lts
+# Digest medido el 23 oct 2026: sha256:98fb77754c674c235b05ed7883974d7dea6f1ab9ff4ae0f08fd40456ba9d2aec
+# apachectl -v imprimio Apache/2.4.69. El .so contiene ModSecurity-2.9.15/apache2 y tambien la cadena 2.9.14.
+# No es el RPM de cPanel. No editar los rules de CRS: solo se monta el .conf de Hostium.
+services:
+  waf-crs:
+    image: owasp/modsecurity-crs:3.3.10-apache-202610180210-lts@sha256:98fb77754c674c235b05ed7883974d7dea6f1ab9ff4ae0f08fd40456ba9d2aec
+    profiles: ["crs"]
+    ports:
+      - "127.0.0.1:18080:8080"
+    environment:
+      BACKEND: http://127.0.0.1:9
+      SERVER_NAME: localhost
+      PORT: "8080"
+      MODSEC_RULE_ENGINE: "On"
+      MODSEC_AUDIT_ENGINE: RelevantOnly
+      MODSEC_STATUS_ENGINE: "Off"
+    volumes:
+      - ../rules/hostium/REQUEST-100-SENSITIVE-FILES.conf:/etc/modsecurity.d/owasp-crs/rules/REQUEST-100-HOSTIUM-SENSITIVE-FILES.conf:ro

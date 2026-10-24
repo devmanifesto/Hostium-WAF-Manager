@@ -1,0 +1,3 @@
+version_esquema: 1
+modulos_habilitados:
+  - REQUEST-100-SENSITIVE-FILES

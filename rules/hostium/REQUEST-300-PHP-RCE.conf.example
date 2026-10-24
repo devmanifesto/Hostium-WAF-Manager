@@ -1,0 +1,4 @@
+# INCOMPLETO — borrador PHP RCE.
+# No hay una SecRule activa. Un patrón que bloquee cualquier POST, cualquier base64
+# o cualquier llamada a una función PHP sería un falso positivo masivo. No habilitar
+# sin un vector acotado, prueba positiva, prueba negativa y medición de rendimiento.

@@ -1,0 +1,5 @@
+version_esquema: 1
+# Plantilla vacía. Una exclusión real necesita motivo, owner y fecha de revisión.
+# runtime se configura antes de CRS. configure-time se configura después de incluir CRS.
+# Este archivo no entra al ZIP del vendor: WHM no garantiza el orden del proveedor.
+exclusiones: []

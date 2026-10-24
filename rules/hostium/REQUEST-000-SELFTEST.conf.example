@@ -1,0 +1,23 @@
+# INCOMPLETO — selftest de laboratorio.
+# Este archivo termina en .example y no entra al ZIP estable.
+# No es autenticación: cualquiera que pueda enviar la cabecera dispara la regla.
+# Activación temporal, solo en un Apache de laboratorio:
+# 1. Copiar este archivo a un nombre .conf que ese Apache incluya.
+# 2. Recargar Apache en la ventana de prueba.
+# 3. Pedir cualquier ruta con la cabecera X-Hostium-Selftest: lab-selftest-5500000.
+# 4. Esperar HTTP 403 y el id 5500000 en el log de auditoría.
+# 5. Quitar el archivo y recargar. No lo dejes cargado en un sitio público.
+
+SecRule REQUEST_HEADERS:X-Hostium-Selftest "@streq lab-selftest-5500000" \
+    "id:5500000,\
+phase:1,\
+deny,\
+status:403,\
+log,\
+auditlog,\
+t:none,\
+msg:'Hostium WAF selftest de laboratorio',\
+logdata:'%{MATCHED_VAR_NAME}',\
+tag:'hostium-selftest',\
+severity:'NOTICE',\
+ver:'hostium/1.0.0'"

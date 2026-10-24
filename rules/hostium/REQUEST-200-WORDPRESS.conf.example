@@ -1,0 +1,5 @@
+# INCOMPLETO — borrador WordPress/WooCommerce.
+# No hay una SecRule activa. No bloquear wp-login.php, xmlrpc.php, wp-json ni
+# admin-ajax.php con un patrón amplio. Antes de habilitar una regla hacen falta
+# casos de login legítimo, REST, carrito y checkout, y una revisión de solapamiento
+# con OWASP CRS. Este archivo no entra al paquete.

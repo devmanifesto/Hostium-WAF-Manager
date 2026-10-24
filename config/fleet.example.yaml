@@ -1,0 +1,16 @@
+version_esquema: 1
+es_ejemplo: true
+# Hosts de documentación. No son calcium ni ningún nodo de Hostium.
+servers:
+  - name: calcium
+    ssh_host: calcium.example.invalid
+    ssh_user: root
+    ring: pilot
+    environment: production
+    tags: [cpanel, cloudlinux, apache, possible-nginx]
+  - name: node-example
+    ssh_host: node.example.invalid
+    ssh_user: root
+    ring: canary
+    environment: staging
+    tags: [cpanel, apache]

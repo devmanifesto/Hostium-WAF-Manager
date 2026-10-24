@@ -1,0 +1,15 @@
+version_esquema: 1
+vendor_id: hostium
+nombre_visible: Hostium WAF Ruleset
+descripcion: Reglas complementarias de seguridad administradas por Hostium
+vendor_url: https://hostium.com
+# URL de diseño. Este repositorio no aprovisiona waf.hostium.com.
+base_url: https://waf.hostium.com
+motor_por_defecto: "2.9.15"
+canal_por_defecto: stable
+manifiesto: rules/manifests/rules.yaml
+politica: config/policy.example.yaml
+directorio_salida: dist
+rango_ids:
+  inicio: 5500000
+  fin: 5509999

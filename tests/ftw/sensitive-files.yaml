@@ -1,0 +1,22 @@
+# Formato propio, inspirado en go-ftw.
+# El runner de este repositorio es pytest, no el binario go-ftw.
+# Los casos automatizados también están en rules/manifests/rules.yaml.
+meta:
+  regla: 5500100
+  motor: aproximacion
+tests:
+  - test_title: env directo
+    stages:
+      - input:
+          method: GET
+          uri: /.env
+        output:
+          status: 403
+          log_contains: "5500100"
+  - test_title: environment legitimo
+    stages:
+      - input:
+          method: GET
+          uri: /environment
+        output:
+          log_absent: "5500100"

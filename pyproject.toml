@@ -1,0 +1,48 @@
+[project]
+name = "hostium-waf-manager"
+version = "1.0.0"
+description = "Ruleset ModSecurity, empaquetado cPanel y operación de flota para Hostium WAF Manager"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+authors = [{ name = "Hostium" }]
+dependencies = [
+    "typer>=0.12.5",
+    "rich>=13.7",
+    "pyyaml>=6.0.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.2",
+    "ruff>=0.6",
+]
+
+[project.scripts]
+hostium-waf = "hostium_waf.cli:app"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+markers = [
+    "integration: requiere Docker; no forma parte de la suite por defecto",
+]
+addopts = "-m 'not integration'"
+
+[tool.ruff]
+line-length = 180
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["hostium_waf"]

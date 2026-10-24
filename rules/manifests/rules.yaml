@@ -1,0 +1,441 @@
+version_esquema: 1
+rango_ids:
+  inicio: 5500000
+  fin: 5509999
+reglas:
+  - id: 5500000
+    nombre: Selftest de laboratorio
+    descripcion: >
+      Responde 403 solo si llega la cabecera de laboratorio. No autentica nada y
+      no forma parte del paquete estable.
+    categoria: laboratorio
+    modulo: REQUEST-000-SELFTEST
+    archivo: rules/hostium/REQUEST-000-SELFTEST.conf.example
+    version_de_introduccion: "1.0.0"
+    autor: Hostium
+    owner: equipo-seguridad-hostium
+    motivacion: Comprobar en un Apache de prueba que ModSecurity aplica una regla Hostium y deja el id en el log.
+    tipo_de_ataque: comprobacion
+    referencias:
+      - https://github.com/owasp-modsecurity/ModSecurity/wiki/Reference-Manual-(v2.x)
+    falsos_positivos_probables: Cualquier cliente que envíe la cabecera dispara la regla. Por eso el archivo no se publica.
+    fase: 1
+    variables_inspeccionadas:
+      - REQUEST_HEADERS:X-Hostium-Selftest
+    operador: "@streq"
+    transformaciones:
+      - t:none
+    accion: deny
+    severidad: NOTICE
+    etiquetas:
+      - hostium-selftest
+    estado: experimental
+    modo_por_defecto: deny
+    incluir_en_paquete: false
+    casos_de_prueba_positivos:
+      - titulo: cabecera de laboratorio
+        path: /
+        metodo: GET
+        dispara: true
+        status: 403
+        ejecucion: laboratorio
+        headers:
+          X-Hostium-Selftest: lab-selftest-5500000
+        notas: Montar el example solo en el perfil de laboratorio.
+    casos_de_prueba_negativos:
+      - titulo: sin cabecera
+        path: /
+        metodo: GET
+        dispara: false
+        ejecucion: laboratorio
+        notas: La misma ruta sin la cabecera no debe mostrar el id 5500000.
+    impacto_previsto: Ninguno en el paquete estable, porque el archivo no se incluye.
+    fecha_de_revision: "2026-10-23"
+    ultima_validacion: null
+    excepciones: []
+    registro_de_cambio:
+      - version: "1.0.0"
+        fecha: "2026-10-23"
+        nota: Alta del selftest excluido del ZIP estable.
+  - id: 5500100
+    nombre: Archivo secreto .env
+    descripcion: >
+      Niega peticiones cuya ruta normalizada pide un archivo .env o .env.algo.
+      No cubre parámetros ni cuerpos.
+    categoria: sensitive-files
+    modulo: REQUEST-100-SENSITIVE-FILES
+    archivo: rules/hostium/REQUEST-100-SENSITIVE-FILES.conf
+    version_de_introduccion: "1.0.0"
+    autor: Hostium
+    owner: equipo-seguridad-hostium
+    motivacion: Los archivos .env concentran secretos y aparecen en escaneos oportunistas.
+    tipo_de_ataque: information-disclosure
+    referencias:
+      - https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/02-Configuration_and_Deployment_Management_Testing/04-Review_Old_Backup_and_Unreferenced_Files_for_Sensitive_Information
+      - https://cwe.mitre.org/data/definitions/538.html
+    falsos_positivos_probables: Una ruta legítima que termine en el segmento .env o .env.algo. No coincide con /environment ni con /.environment.
+    fase: 1
+    variables_inspeccionadas:
+      - REQUEST_FILENAME
+      - REQUEST_BASENAME
+    operador: "@rx"
+    transformaciones:
+      - t:none
+      - t:urlDecodeUni
+      - t:urlDecodeUni
+      - t:htmlEntityDecode
+      - t:lowercase
+      - t:normalizePath
+      - t:removeNulls
+    accion: deny
+    severidad: CRITICAL
+    etiquetas:
+      - hostium-sensitive-files
+      - attack-disclosure
+    estado: produccion
+    modo_por_defecto: deny
+    incluir_en_paquete: true
+    casos_de_prueba_positivos:
+      - titulo: env directo
+        path: /.env
+        metodo: GET
+        dispara: true
+        status: 403
+        ejecucion: automatizada
+      - titulo: env local
+        path: /.env.local
+        metodo: GET
+        dispara: true
+        status: 403
+        ejecucion: automatizada
+      - titulo: env anidado
+        path: /app/.env
+        metodo: GET
+        dispara: true
+        status: 403
+        ejecucion: automatizada
+      - titulo: env en mayusculas
+        path: /.ENV
+        metodo: GET
+        dispara: true
+        status: 403
+        ejecucion: automatizada
+      - titulo: traversal
+        path: /foo/../.env
+        metodo: GET
+        dispara: true
+        status: 403
+        ejecucion: automatizada
+    casos_de_prueba_negativos:
+      - titulo: environment
+        path: /environment
+        metodo: GET
+        dispara: false
+        ejecucion: automatizada
+      - titulo: punto environment
+        path: /.environment
+        metodo: GET
+        dispara: false
+        ejecucion: automatizada
+      - titulo: javascript env
+        path: /assets/env.js
+        metodo: GET
+        dispara: false
+        ejecucion: automatizada
+      - titulo: my env
+        path: /my.env
+        metodo: GET
+        dispara: false
+        ejecucion: automatizada
+      - titulo: login de wordpress
+        path: /wp-login.php
+        metodo: GET
+        dispara: false
+        ejecucion: automatizada
+        notas: Esta regla no debe negar el login. CRS puede tener su propio criterio.
+    impacto_previsto: Niega la descarga de archivos .env por la ruta. No inspecciona el disco ni el cuerpo.
+    fecha_de_revision: "2026-10-23"
+    ultima_validacion: null
+    excepciones: []
+    registro_de_cambio:
+      - version: "1.0.0"
+        fecha: "2026-10-23"
+        nota: Primera regla productiva del ruleset.
+  - id: 5500101
+    nombre: Archivo secreto .git/config
+    descripcion: Niega la ruta .git/config, incluidas variantes .git/config.bak y la misma ruta anidada.
+    categoria: sensitive-files
+    modulo: REQUEST-100-SENSITIVE-FILES
+    archivo: rules/hostium/REQUEST-100-SENSITIVE-FILES.conf
+    version_de_introduccion: "1.0.0"
+    autor: Hostium
+    owner: equipo-seguridad-hostium
+    motivacion: .git/config filtra remotos y a veces credenciales embebidas en la URL del remote.
+    tipo_de_ataque: information-disclosure
+    referencias:
+      - https://cwe.mitre.org/data/definitions/538.html
+      - https://git-scm.com/docs/git-config
+    falsos_positivos_probables: Un archivo legítimo cuyo nombre empiece por config dentro de una carpeta .git. /.gitignore no coincide.
+    fase: 1
+    variables_inspeccionadas:
+      - REQUEST_FILENAME
+      - REQUEST_BASENAME
+    operador: "@rx"
+    transformaciones:
+      - t:none
+      - t:urlDecodeUni
+      - t:urlDecodeUni
+      - t:htmlEntityDecode
+      - t:lowercase
+      - t:normalizePath
+      - t:removeNulls
+    accion: deny
+    severidad: CRITICAL
+    etiquetas:
+      - hostium-sensitive-files
+      - attack-disclosure
+    estado: produccion
+    modo_por_defecto: deny
+    incluir_en_paquete: true
+    casos_de_prueba_positivos:
+      - titulo: git config
+        path: /.git/config
+        metodo: GET
+        dispara: true
+        status: 403
+        ejecucion: automatizada
+      - titulo: git config bak
+        path: /.git/config.bak
+        metodo: GET
+        dispara: true
+        status: 403
+        ejecucion: automatizada
+      - titulo: git config anidado
+        path: /app/.git/config
+        metodo: GET
+        dispara: true
+        status: 403
+        ejecucion: automatizada
+    casos_de_prueba_negativos:
+      - titulo: git sin punto
+        path: /git/config
+        metodo: GET
+        dispara: false
+        ejecucion: automatizada
+      - titulo: gitignore
+        path: /.gitignore
+        metodo: GET
+        dispara: false
+        ejecucion: automatizada
+      - titulo: nota de blog
+        path: /blog/post
+        metodo: GET
+        dispara: false
+        ejecucion: automatizada
+    impacto_previsto: Niega la lectura de .git/config por HTTP. No audita el repositorio en disco.
+    fecha_de_revision: "2026-10-23"
+    ultima_validacion: null
+    excepciones: []
+    registro_de_cambio:
+      - version: "1.0.0"
+        fecha: "2026-10-23"
+        nota: Segunda regla productiva, mismo módulo que .env.
+  - id: 5500200
+    nombre: Borrador WordPress
+    descripcion: INCOMPLETO. Reserva el id. No hay regla activa y no entra al paquete.
+    categoria: wordpress
+    modulo: REQUEST-200-WORDPRESS
+    archivo: rules/hostium/REQUEST-200-WORDPRESS.conf.example
+    version_de_introduccion: "1.0.0"
+    autor: Hostium
+    owner: equipo-seguridad-hostium
+    motivacion: Dejar constancia de que xmlrpc, wp-json y admin-ajax necesitan casos legítimos antes de cualquier deny.
+    tipo_de_ataque: abuso-de-endpoint
+    referencias:
+      - https://developer.wordpress.org/rest-api/
+    falsos_positivos_probables: Login, REST, admin-ajax, carrito y checkout de WooCommerce si la regla fuera amplia.
+    fase: 1
+    variables_inspeccionadas:
+      - REQUEST_FILENAME
+    operador: "@rx"
+    transformaciones:
+      - t:none
+    accion: log
+    severidad: WARNING
+    etiquetas:
+      - hostium-wordpress
+      - incompleto
+    estado: borrador
+    modo_por_defecto: log-only
+    incluir_en_paquete: false
+    casos_de_prueba_positivos:
+      - titulo: xmlrpc especulativo
+        path: /xmlrpc.php
+        metodo: POST
+        dispara: true
+        status: 403
+        ejecucion: pendiente
+        notas: No ejecutar hasta definir el vector. Un POST vacío no es una prueba de ataque.
+    casos_de_prueba_negativos:
+      - titulo: login legitimo
+        path: /wp-login.php
+        metodo: GET
+        dispara: false
+        ejecucion: pendiente
+    impacto_previsto: Ninguno mientras el archivo siga siendo un example sin SecRule activa.
+    fecha_de_revision: "2026-10-23"
+    ultima_validacion: null
+    excepciones: []
+    registro_de_cambio:
+      - version: "1.0.0"
+        fecha: "2026-10-23"
+        nota: Reserva de id y casos, sin regla disruptiva.
+  - id: 5500300
+    nombre: Borrador PHP RCE
+    descripcion: INCOMPLETO. No bloquea POST, base64 ni funciones PHP genéricas.
+    categoria: php-rce
+    modulo: REQUEST-300-PHP-RCE
+    archivo: rules/hostium/REQUEST-300-PHP-RCE.conf.example
+    version_de_introduccion: "1.0.0"
+    autor: Hostium
+    owner: equipo-seguridad-hostium
+    motivacion: Evitar que un borrador se confunda con una mitigación de ejecución de código.
+    tipo_de_ataque: rce
+    referencias:
+      - https://owasp.org/www-community/attacks/Code_Injection
+    falsos_positivos_probables: APIs JSON, cargas multipart y plugins que envían código o firmas en el cuerpo.
+    fase: 2
+    variables_inspeccionadas:
+      - REQUEST_BODY
+    operador: "@rx"
+    transformaciones:
+      - t:none
+    accion: log
+    severidad: WARNING
+    etiquetas:
+      - hostium-php-rce
+      - incompleto
+    estado: borrador
+    modo_por_defecto: log-only
+    incluir_en_paquete: false
+    casos_de_prueba_positivos:
+      - titulo: vector aun no definido
+        path: /index.php
+        metodo: POST
+        dispara: true
+        status: 403
+        ejecucion: pendiente
+        notas: Falta el vector concreto. No usar este caso como evidencia.
+    casos_de_prueba_negativos:
+      - titulo: json de api
+        path: /api/v1/health
+        metodo: POST
+        dispara: false
+        ejecucion: pendiente
+    impacto_previsto: Ninguno. No hay regla activa.
+    fecha_de_revision: "2026-10-23"
+    ultima_validacion: null
+    excepciones: []
+    registro_de_cambio:
+      - version: "1.0.0"
+        fecha: "2026-10-23"
+        nota: Reserva documental.
+  - id: 5500400
+    nombre: Borrador CVE
+    descripcion: INCOMPLETO. No es un virtual patch. No hay CVE seleccionado ni PoC en este repositorio.
+    categoria: cve
+    modulo: REQUEST-400-CVE
+    archivo: rules/hostium/REQUEST-400-CVE.conf.example
+    version_de_introduccion: "1.0.0"
+    autor: Hostium
+    owner: equipo-seguridad-hostium
+    motivacion: Separar la reserva de un id de la afirmación de que un CVE está mitigado.
+    tipo_de_ataque: virtual-patch
+    referencias:
+      - https://owasp.org/www-community/Virtual_Patching_Best_Practices
+    falsos_positivos_probables: Dependen del vector que todavía no existe.
+    fase: 2
+    variables_inspeccionadas:
+      - REQUEST_URI
+    operador: "@rx"
+    transformaciones:
+      - t:none
+    accion: log
+    severidad: WARNING
+    etiquetas:
+      - hostium-cve
+      - incompleto
+    estado: borrador
+    modo_por_defecto: log-only
+    incluir_en_paquete: false
+    casos_de_prueba_positivos:
+      - titulo: poc no definida
+        path: /no-definido
+        metodo: GET
+        dispara: true
+        status: 403
+        ejecucion: pendiente
+    casos_de_prueba_negativos:
+      - titulo: home
+        path: /
+        metodo: GET
+        dispara: false
+        ejecucion: pendiente
+    impacto_previsto: Ninguno. No afirmar mitigación de ningún CVE.
+    fecha_de_revision: "2026-10-23"
+    ultima_validacion: null
+    excepciones: []
+    registro_de_cambio:
+      - version: "1.0.0"
+        fecha: "2026-10-23"
+        nota: Reserva documental sin PoC.
+  - id: 5500500
+    nombre: Borrador de escáneres
+    descripcion: INCOMPLETO. No bloquea user agents desconocidos.
+    categoria: scanners
+    modulo: REQUEST-500-SCANNERS
+    archivo: rules/hostium/REQUEST-500-SCANNERS.conf.example
+    version_de_introduccion: "1.0.0"
+    autor: Hostium
+    owner: equipo-seguridad-hostium
+    motivacion: Un deny por user agent genérico rompe clientes legítimos y APIs.
+    tipo_de_ataque: reconocimiento
+    referencias:
+      - https://owasp.org/www-project-automated-threats-to-web-applications/
+    falsos_positivos_probables: Aplicaciones móviles, monitores y clientes HTTP de integraciones.
+    fase: 1
+    variables_inspeccionadas:
+      - REQUEST_HEADERS:User-Agent
+    operador: "@rx"
+    transformaciones:
+      - t:none
+    accion: log
+    severidad: NOTICE
+    etiquetas:
+      - hostium-scanners
+      - incompleto
+    estado: borrador
+    modo_por_defecto: log-only
+    incluir_en_paquete: false
+    casos_de_prueba_positivos:
+      - titulo: firma aun no elegida
+        path: /
+        metodo: GET
+        dispara: true
+        status: 403
+        ejecucion: pendiente
+        notas: No hay firma activa.
+    casos_de_prueba_negativos:
+      - titulo: navegador habitual
+        path: /
+        metodo: GET
+        dispara: false
+        ejecucion: pendiente
+    impacto_previsto: Ninguno. No hay regla activa.
+    fecha_de_revision: "2026-10-23"
+    ultima_validacion: null
+    excepciones: []
+    registro_de_cambio:
+      - version: "1.0.0"
+        fecha: "2026-10-23"
+        nota: Reserva documental.

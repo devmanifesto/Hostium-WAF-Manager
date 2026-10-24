@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+dist/
+reports/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+config/settings.yaml
+config/fleet.yaml
+config/policy.yaml
+config/exclusions.yaml
+!config/*.example.yaml

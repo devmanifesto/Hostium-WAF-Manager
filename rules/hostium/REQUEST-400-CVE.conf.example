@@ -1,0 +1,4 @@
+# INCOMPLETO — borrador de virtual patch.
+# No hay una SecRule activa. Una regla no es una mitigación de CVE si no tiene el
+# vector de explotación, una prueba que lo reproduzca, una prueba que una petición
+# legítima no dispare y las limitaciones escritas. No inventar parches en este archivo.

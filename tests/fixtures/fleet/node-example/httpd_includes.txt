@@ -1,0 +1,1 @@
+(FIXTURE) /etc/apache2/conf.d/modsec_vendor_configs/OWASP3/crs-setup.conf

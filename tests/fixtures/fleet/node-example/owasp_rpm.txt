@@ -1,0 +1,1 @@
+ea-modsec2-rules-owasp-crs-3.3.10-fixture
