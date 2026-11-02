@@ -34,9 +34,11 @@ Coincide con `/.git/config` y con sufijos como `.git/config.bak`. No coincide co
 
 `@streq` sobre una cabecera, sin transformaciones. Si el archivo se carga, cualquiera que mande la cabecera obtiene 403. Por eso no va al ZIP.
 
-## Solapamiento con CRS
+## Solapamiento con CRS 3.3.10
 
-CRS puede tener controles parecidos. Estas reglas existen para gobernarlas con id propios. No afirmamos que CRS no bloqueara el mismo camino.
+`5500100` y `5500101` salieron del ZIP en `hostium-2.0.0`. `930130` mira `REQUEST_FILENAME` con la frase `/.env` y la frase `/.git/` de `restricted-files.data`, paranoia 1, score crítico. Con umbral 5, `949110` corta el mismo path. `920` de esa versión no las trae. El cruce es el tag upstream `v3.3.10`. No se releyó el archivo instalado por el RPM.
+
+`5500615` no tiene equivalente en `922`. `5500611` ya no niega `<?php` ni `<?=`: eso lo suma `933100`.
 
 ## Ejemplo de log que sí cuenta
 
@@ -64,7 +66,7 @@ Manual v2.x y la guía de excepciones de CRS.
 
 ## Módulo 1.1.0, PHP upload progress
 
-Ids `5500600`–`5500626`. Los de pedido están en `REQUEST-410-PHP-UPLOAD-PROGRESS.conf` y entran al ZIP 1.1.2. Los de `RESPONSE_BODY` están en el example 411 y no entran. Cubren vectores publicados de CVE-2026-109618 y CVE-2026-109619. No cubren CVE-2026-115560 y no reemplazan PHP 8.2.35, 8.3.36, 8.4.27 u 8.5.12.
+Ids `5500600`–`5500626`. Los de pedido están en `REQUEST-410-PHP-UPLOAD-PROGRESS.conf` y entran al ZIP 2.0.0. Los de `RESPONSE_BODY` están en el example 411 y no entran. Cubren vectores publicados de CVE-2026-109618 y CVE-2026-109619. No cubren CVE-2026-115560 y no reemplazan PHP 8.2.35, 8.3.36, 8.4.27 u 8.5.12.
 
 Mientras el parche no esté, el aviso de PHP pide `session.upload_progress.enabled=0` en `php.ini` o en el pool, y reiniciar los workers. `ini_set` y `.user.ini` no alcanzan: el parseo ocurre antes.
 
@@ -73,10 +75,10 @@ Decisiones respecto del borrador que llegó con ids `1006101`–`1006126`:
 - Esos ids están fuera de `5500000`–`5509999`. No se usan.
 - `deny,status:403` en lugar de `block` o `406`, para no depender de `SecDefaultAction`.
 - `5500601` es la única `chain`: Content-Type multipart y Transfer-Encoding `chunked` tienen que coincidir juntos.
-- `5500600` hace `ctl:forceRequestBodyVariable=On` en multipart y no niega. El manual v2.x solo llena `REQUEST_BODY` con ese ctl cuando no hay procesador de cuerpo. Multipart ya elige MULTIPART, y en la imagen Debian `REQUEST_BODY` quedó vacío. Las reglas de 1.1.2 leen `ARGS`, `FILES` y `MULTIPART_PART_HEADERS`. `5500606` cuenta cabeceras `X-` y `5500602` niega en 100. `5500607` cuenta filenames vacíos y `5500604` niega en 50. `5500608` cuenta partes `form-data` y `5500615` niega en 500.
+- `5500600` hace `ctl:forceRequestBodyVariable=On` en multipart y no niega. El manual v2.x solo llena `REQUEST_BODY` con ese ctl cuando no hay procesador de cuerpo. Multipart ya elige MULTIPART, y en la imagen Debian `REQUEST_BODY` quedó vacío. Las reglas de 2.0.0 leen `ARGS`, `FILES` y `MULTIPART_PART_HEADERS`. `5500606` cuenta cabeceras `X-` y `5500602` niega en 100. `5500607` cuenta filenames vacíos y `5500604` niega en 50. `5500608` cuenta partes sin nombre y `5500615` niega en 500. Un campo con `name` no vacío no suma.
 - `SecRequestBodyAccess On` está en el conf empaquetado. `SecResponseBodyAccess` no. En cPanel el include del vendor vale para todo el servidor y bufferizar cada respuesta queda fuera del ZIP.
 - Las reglas `5500620`, `5500623`, `5500624` y `5500626` están en `REQUEST-411-PHP-UPLOAD-PROGRESS-RESPONSE.conf.example`. No se empaquetan. `RESPONSE_BODY` es fase 4 y no corre si el administrador no enciende el acceso al cuerpo fuera del vendor.
-- `5500614` (`<?php` en `ARGS` o `REQUEST_BODY`) hace `pass`. En multipart el byte del archivo no está en esas variables. Negar la etiqueta en cualquier cuerpo rompería uploads de PHP, editores y tickets. `5500611` y `5500612` siguen negando los carriers concretos.
+- `5500614` (`<?php` en `ARGS` o `REQUEST_BODY`) hace `pass`. En multipart el byte del archivo no está en esas variables. Negar la etiqueta en cualquier cuerpo rompería uploads de PHP, editores y tickets. CRS `933100` ya suma score crítico por `<?php` en `ARGS`. `5500611` niega las semillas de serialización que `933170` no cubre. `5500612` sigue negando el filename.
 - La cookie `PHPSESSID` acepta hasta 256 caracteres, el máximo de `session.sid_length`. El borrador cortaba en 128.
 - `5500616` acepta `|O:` además de `|o:`. `O:` es un objeto serializado.
 

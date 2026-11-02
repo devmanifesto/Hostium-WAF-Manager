@@ -14,9 +14,9 @@ Quien vaya a correr `modsec_vendor add` o a leer qué hay en stable.
 
 ## Lo que WHM instalaría hoy
 
-`publish/stable/meta_hostium.yaml` apunta a `hostium-1.1.2.zip`. Esa distribution trae dos `.conf`: `REQUEST-100-SENSITIVE-FILES.conf` y `REQUEST-410-PHP-UPLOAD-PROGRESS.conf`. Suma `5500606`, `5500607` y `5500608`. Los ids que ya estaban conservan fase y acción. `5500617` niega un `PHPSESSID` de respuesta de 257 caracteres o más.
+`publish/stable/meta_hostium.yaml` apunta a `hostium-2.0.0.zip`. Esa distribution trae un `.conf`: `REQUEST-410-PHP-UPLOAD-PROGRESS.conf`. `5500100` y `5500101` no entran. `5500608` cuenta partes sin nombre y `5500615` niega en 500. `5500611` no niega `<?php`.
 
-`modsec_vendor add` de la URL del runbook 09 instala esa 1.1.2. Un vendor ya instalado cambia cuando `upcp` relee la metadata, si las actualizaciones están activas. Este repositorio no ejecutó `upcp`. `package build --version 1.0.0` falla para no reutilizar la distribution publicada.
+`modsec_vendor add` de la URL del runbook 09 instala esa 2.0.0. Un vendor ya instalado cambia cuando `upcp` relee la metadata, si las actualizaciones están activas. Este repositorio no ejecutó `upcp`. `package build --version 1.0.0` falla para no reutilizar la distribution publicada.
 
 La tabla siguiente es la lectura de la 1.1.1, antes de este ZIP.
 

@@ -60,8 +60,9 @@ reglas:
   - id: 5500100
     nombre: Archivo secreto .env
     descripcion: >
-      Niega peticiones cuya ruta normalizada pide un archivo .env o .env.algo.
-      No cubre parámetros ni cuerpos.
+      Retirada del paquete en 2.0.0. CRS 3.3.10, regla 930130, ya niega la frase
+      /.env en REQUEST_FILENAME con score crítico. La expresión sigue en el .conf
+      y no entra al ZIP. No cubre parámetros ni cuerpos.
     categoria: sensitive-files
     modulo: REQUEST-100-SENSITIVE-FILES
     archivo: rules/hostium/REQUEST-100-SENSITIVE-FILES.conf
@@ -92,9 +93,9 @@ reglas:
     etiquetas:
       - hostium-sensitive-files
       - attack-disclosure
-    estado: produccion
+    estado: retirado
     modo_por_defecto: deny
-    incluir_en_paquete: true
+    incluir_en_paquete: false
     casos_de_prueba_positivos:
       - titulo: env directo
         path: /.env
@@ -153,17 +154,20 @@ reglas:
         dispara: false
         ejecucion: automatizada
         notas: Esta regla no debe negar el login. CRS puede tener su propio criterio.
-    impacto_previsto: Niega la descarga de archivos .env por la ruta. No inspecciona el disco ni el cuerpo.
-    fecha_de_revision: "2026-10-23"
+    impacto_previsto: Desde 2.0.0 no se instala. El corte de /.env queda en CRS 930130. No inspecciona el disco ni el cuerpo.
+    fecha_de_revision: "2026-11-02"
     ultima_validacion: null
     excepciones: []
     registro_de_cambio:
       - version: "1.0.0"
         fecha: "2026-10-23"
         nota: Primera regla productiva del ruleset.
+      - version: "2.0.0"
+        fecha: "2026-11-02"
+        nota: Sale del ZIP. 930130 PL1 cubre /.env. Para volver, republicá la metadata de hostium-1.1.2. No reescribas ese ZIP.
   - id: 5500101
     nombre: Archivo secreto .git/config
-    descripcion: Niega la ruta .git/config, incluidas variantes .git/config.bak y la misma ruta anidada.
+    descripcion: Retirada del paquete en 2.0.0. CRS 3.3.10, regla 930130, ya niega la frase /.git/ en REQUEST_FILENAME. La expresión sigue en el .conf y no entra al ZIP.
     categoria: sensitive-files
     modulo: REQUEST-100-SENSITIVE-FILES
     archivo: rules/hostium/REQUEST-100-SENSITIVE-FILES.conf
@@ -194,9 +198,9 @@ reglas:
     etiquetas:
       - hostium-sensitive-files
       - attack-disclosure
-    estado: produccion
+    estado: retirado
     modo_por_defecto: deny
-    incluir_en_paquete: true
+    incluir_en_paquete: false
     casos_de_prueba_positivos:
       - titulo: git config
         path: /.git/config
@@ -232,14 +236,17 @@ reglas:
         metodo: GET
         dispara: false
         ejecucion: automatizada
-    impacto_previsto: Niega la lectura de .git/config por HTTP. No audita el repositorio en disco.
-    fecha_de_revision: "2026-10-23"
+    impacto_previsto: Desde 2.0.0 no se instala. El corte de /.git/config queda en CRS 930130. No audita el repositorio en disco.
+    fecha_de_revision: "2026-11-02"
     ultima_validacion: null
     excepciones: []
     registro_de_cambio:
       - version: "1.0.0"
         fecha: "2026-10-23"
         nota: Segunda regla productiva, mismo módulo que .env.
+      - version: "2.0.0"
+        fecha: "2026-11-02"
+        nota: Sale del ZIP. 930130 PL1 cubre /.git/. Para volver, republicá la metadata de hostium-1.1.2. No reescribas ese ZIP.
   - id: 5500200
     nombre: Borrador WordPress
     descripcion: INCOMPLETO. Reserva el id. No hay regla activa y no entra al paquete.
@@ -924,8 +931,8 @@ reglas:
         hostium-1.1.1.zip ni hostium-1.0.0.zip.
   - id: 5500608
     nombre: Contador de partes form-data
-    descripcion: Suma uno por cada Content-Disposition form-data de una parte. No niega. 5500615 niega
-      cuando el contador llega a 500. Un espacio antes del punto y coma sigue contando.
+    descripcion: Suma uno por cada parte form-data sin filename y sin name no vacío. Un campo
+      con nombre no suma. 5500615 niega cuando el contador llega a 500. No niega por sí sola.
     categoria: php-upload-progress
     modulo: REQUEST-410-PHP-UPLOAD-PROGRESS
     archivo: rules/hostium/REQUEST-410-PHP-UPLOAD-PROGRESS.conf
@@ -952,34 +959,38 @@ reglas:
     modo_por_defecto: log-only
     incluir_en_paquete: true
     casos_de_prueba_positivos:
-    - titulo: una parte form-data
+    - titulo: parte sin nombre
       path: /index.php
       metodo: POST
       dispara: true
       ejecucion: automatizada
-      notas: pass y nolog. La negación la hace 5500615.
+      notas: pass y nolog. Content-Disposition form-data sin name. La negación la hace 5500615.
       status: 200
     casos_de_prueba_negativos:
-    - titulo: Content-Disposition attachment
+    - titulo: campo con nombre
       path: /index.php
       metodo: POST
       dispara: false
       ejecucion: automatizada
-      notas: attachment no suma.
+      notas: name="campo" no suma. attachment tampoco. filename= lo cubren 5500604 y 5500605.
     impacto_previsto: No cambia el status. ultima_validacion queda vacía hasta un cPanel real.
-    fecha_de_revision: '2026-10-24'
+    fecha_de_revision: '2026-11-02'
     ultima_validacion: null
     excepciones: []
     registro_de_cambio:
     - version: 1.1.2
       fecha: '2026-10-24'
-      nota: Alta en 1.1.2. Para salir, sacá el módulo de la política y publicá otra release. No reescribas
-        hostium-1.1.1.zip ni hostium-1.0.0.zip.
+      nota: Alta en 1.1.2. Contaba cada form-data.
+    - version: 2.0.0
+      fecha: '2026-11-02'
+      nota: Deja de contar campos con name no vacío y partes con filename. El falso positivo fue un POST
+        de 723 campos el 2026-11-02. No reescribas hostium-1.1.2.zip.
   - id: 5500611
     nombre: Carga serializada en upload progress
-    descripcion: 'Niega si el valor de PHP_SESSION_UPLOAD_PROGRESS trae una etiqueta PHP, un objeto O:,
-      un array a:, un tipo con llave o un pipe seguido de tipo. El valor puede guardarse como clave de sesión.
-      Se aceptan letras de tipo en mayúscula porque O: es la forma de un objeto.'
+    descripcion: 'Niega si el valor de PHP_SESSION_UPLOAD_PROGRESS trae un objeto O:, un array a:,
+      un tipo con llave o un pipe seguido de tipo. <?php y <?= en ARGS los corta CRS 933100.
+      El valor puede guardarse como clave de sesión. Se aceptan letras de tipo en mayúscula
+      porque O: es la forma de un objeto.'
     categoria: php-upload-progress
     modulo: REQUEST-410-PHP-UPLOAD-PROGRESS
     archivo: rules/hostium/REQUEST-410-PHP-UPLOAD-PROGRESS.conf
@@ -992,8 +1003,8 @@ reglas:
     referencias:
     - https://github.com/php/php-src/security/advisories/GHSA-6wmf-4rv5-p3rp
     - https://github.com/owasp-modsecurity/ModSecurity/wiki/Reference-Manual-(v2.x)
-    falsos_positivos_probables: Un texto legítimo que incluya la secuencia <?php o O:8:" dentro de ese campo.
-      No es un valor de barra de progreso.
+    falsos_positivos_probables: Un texto legítimo que incluya O:8:" dentro de ese campo.
+      No es un valor de barra de progreso. <?php en el mismo campo lo niega CRS 933100.
     fase: 2
     variables_inspeccionadas:
     - ARGS:PHP_SESSION_UPLOAD_PROGRESS
@@ -1026,7 +1037,7 @@ reglas:
       notas: Un identificador opaco sin metacaracteres de serialización.
     impacto_previsto: 'Niega la petición antes de PHP. No es el parche: hay que actualizar a 8.2.35, 8.3.36,
       8.4.27 u 8.5.12. No cubre CVE-2026-115560. ultima_validacion queda vacía hasta un cPanel real.'
-    fecha_de_revision: '2026-10-23'
+    fecha_de_revision: '2026-11-02'
     ultima_validacion: null
     excepciones: []
     registro_de_cambio:
@@ -1034,6 +1045,10 @@ reglas:
       fecha: '2026-10-23'
       nota: Alta en 1.1.0. Para salir, sacá el módulo de la política y publicá otra release. No reescribas
         hostium-1.0.0.zip ni el ZIP de esta versión.
+    - version: 2.0.0
+      fecha: '2026-11-02'
+      nota: Salen <?php y <?=. CRS 933100 ya suma score crítico sobre ese byte en ARGS. Quedan las semillas
+        que 933170 no mata.
   - id: 5500612
     nombre: Carga en el filename
     descripcion: 'Niega si FILES o FILES_NAMES traen <?php, <?=, un objeto O:, una cadena s: o un
@@ -1214,8 +1229,9 @@ reglas:
         hostium-1.0.0.zip ni el ZIP de esta versión.
   - id: 5500615
     nombre: Inundación de partes
-    descripcion: Niega 500 o más líneas Content-Disposition de tipo form-data seguidas. El borrador lo asocia
-      a preparar el heap. No afirma que este repositorio haya medido el allocator de Zend.
+    descripcion: Niega cuando 5500608 contó 500 o más partes form-data sin nombre útil. No cuenta
+      campos con name no vacío ni partes con filename. El 500 salió de los PoC del CVE, no de un
+      formulario de cientos de campos. No afirma que este repositorio haya medido el allocator de Zend.
     categoria: php-upload-progress
     modulo: REQUEST-410-PHP-UPLOAD-PROGRESS
     archivo: rules/hostium/REQUEST-410-PHP-UPLOAD-PROGRESS.conf
@@ -1228,7 +1244,8 @@ reglas:
     referencias:
     - https://github.com/php/php-src/security/advisories/GHSA-w8hw-w9fx-j79w
     - https://github.com/owasp-modsecurity/ModSecurity/wiki/Reference-Manual-(v2.x)
-    falsos_positivos_probables: Un importador que publique 500 partes form-data en un solo cuerpo.
+    falsos_positivos_probables: Quinientas partes multipart sin name en un solo cuerpo. Un formulario
+      de 800 campos con nombre no dispara esta regla.
     fase: 2
     variables_inspeccionadas:
     - TX:hostium_parts
@@ -1244,31 +1261,35 @@ reglas:
     modo_por_defecto: deny
     incluir_en_paquete: true
     casos_de_prueba_positivos:
-    - titulo: quinientas partes
+    - titulo: quinientas partes sin nombre
       path: /index.php
       metodo: POST
       dispara: true
       ejecucion: automatizada
-      notas: 500 líneas Content-Disposition form-data. 403 es el status de esta regla. La aproximación vive
+      notas: 500 cabeceras form-data sin name. 403 es el status de esta regla. La aproximación vive
         en tests/unit/test_php_upload_progress.py y no es el motor ModSecurity.
       status: 403
     casos_de_prueba_negativos:
-    - titulo: un formulario
+    - titulo: ochocientos campos con nombre
       path: /index.php
       metodo: POST
       dispara: false
       ejecucion: automatizada
-      notas: Una sola parte no alcanza. attachment tampoco coincide.
+      notas: name="campo" no incrementa TX:hostium_parts. El POST de 723 campos del 2026-11-02 no tiene
+        que negar.
     impacto_previsto: 'Niega la petición antes de PHP. No es el parche: hay que actualizar a 8.2.35, 8.3.36,
       8.4.27 u 8.5.12. No cubre CVE-2026-115560. ultima_validacion queda vacía hasta un cPanel real.'
-    fecha_de_revision: '2026-10-23'
+    fecha_de_revision: '2026-11-02'
     ultima_validacion: null
     excepciones: []
     registro_de_cambio:
     - version: 1.1.0
       fecha: '2026-10-23'
-      nota: Alta en 1.1.0. Para salir, sacá el módulo de la política y publicá otra release. No reescribas
-        hostium-1.0.0.zip ni el ZIP de esta versión.
+      nota: Alta en 1.1.0. El corte era 500 partes form-data de cualquier nombre.
+    - version: 2.0.0
+      fecha: '2026-11-02'
+      nota: El umbral sigue en 500 y la fase y el deny no cambian. El contador ya no incluye campos con
+        nombre. No reescribas hostium-1.1.2.zip.
   - id: 5500616
     nombre: Semilla con pipe
     descripcion: Niega si el valor de PHP_SESSION_UPLOAD_PROGRESS empieza con un pipe y una letra de tipo,

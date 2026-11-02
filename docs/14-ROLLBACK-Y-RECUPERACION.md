@@ -23,7 +23,7 @@ La salida de `modsec_vendor list` de antes del cambio, y el ZIP de la release an
 
 ### Versionada
 
-1. Elegí la release anterior cuyo ZIP y metadata ya verificaste. Para salir de la 1.1.2, el artefacto anterior es `publish/stable/hostium-1.1.1.zip`. Para salir de la 1.1.1, el artefacto que la metadata de stable sí nombró antes es `publish/stable/hostium-1.0.0.zip`. `hostium-1.1.0.zip` está en el directorio y esa metadata no lo nombró. No regeneres la 1.0.0 ni la 1.1.1 desde este árbol.
+1. Elegí la release anterior cuyo ZIP y metadata ya verificaste. Para salir de la 2.0.0, el artefacto anterior es `publish/stable/hostium-1.1.2.zip`. Para salir de la 1.1.2, el artefacto anterior es `publish/stable/hostium-1.1.1.zip`. Para salir de la 1.1.1, el artefacto que la metadata de stable sí nombró antes es `publish/stable/hostium-1.0.0.zip`. `hostium-1.1.0.zip` está en el directorio y esa metadata no lo nombró. No regeneres un ZIP ya publicado desde este árbol.
 2. MODIFICA el origen: publicá primero ese ZIP, comprobá el hash bajándolo, y después la metadata. El orden está en el documento 08.
 3. Antes de `enable` otra vez, confirmá que una actualización automática no vuelve a traer la versión que acabás de sacar.
 4. Si el flag de updates sigue activo, `upcp` puede volver a traer la release que acabás de sacar. Apagalo con `modsec_vendor disable-updates hostium` o publicá antes la metadata de la release anterior.
@@ -36,7 +36,7 @@ No hay un tiempo medido. No se publica una cifra.
 
 ## Verificación
 
-`/.env` en el dominio de prueba deja de mostrar 5500100 después del disable, y un control que solo CRS cubriera sigue comportándose como antes. Si no tenés ese control anotado, no inventes el resultado.
+`/.env` en el dominio de prueba deja de mostrar `5500100` porque ese id no está en el ZIP 2.0.0. El 403 de ese path, si CRS está enabled, tiene que mostrar `930130`. Si no tenés ese control anotado, no inventes el resultado.
 
 ## Deshacer el rollback
 

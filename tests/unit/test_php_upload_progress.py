@@ -103,8 +103,10 @@ def test_ids_acciones_y_version() -> None:
     assert regex_peligrosa(activas) is False
     assert "SecResponseBodyAccess" not in activas
     for identificador, partes in REGLAS.items():
-        if identificador in {5500606, 5500607, 5500608}:
+        if identificador in {5500606, 5500607}:
             assert "ver:'hostium/1.1.2'" in partes[0].acciones
+        elif identificador in {5500608, 5500611, 5500615}:
+            assert "ver:'hostium/2.0.0'" in partes[0].acciones
         else:
             assert "ver:'hostium/1.1.0'" in partes[0].acciones
         if identificador in PASS:
@@ -192,9 +194,9 @@ def test_5500605_cantidad_de_archivos() -> None:
 
 def test_5500611_valor_serializado() -> None:
     rx = _rx(5500611)
-    for muestra in ('<?php phpinfo();', "<?=1", 'O:8:"stdClass"', "a:1:{", 's:1:"abc";', 'C:8:"stdClass":0:{}', "|O:1", "|o:1"):
+    for muestra in ('O:8:"stdClass"', "a:1:{", 's:1:"abc";', 'C:8:"stdClass":0:{}', "|O:1", "|o:1"):
         assert rx.search(muestra), muestra
-    for muestra in ("foto.jpg", "progreso", "O:no", "a:x:{"):
+    for muestra in ("foto.jpg", "progreso", "O:no", "a:x:{", "<?php phpinfo();", "<?=1"):
         assert rx.search(muestra) is None, muestra
 
 
@@ -231,10 +233,17 @@ def test_5500614_etiqueta_php_no_niega() -> None:
 
 def test_5500615_inundacion_de_partes() -> None:
     cuenta = _rx(5500608)
-    assert cuenta.search("Content-Disposition: form-data; name=\"f\"")
-    assert cuenta.search("Content-Disposition: form-data ; name=\"f\"")
-    assert cuenta.search("content-disposition:\tform-data;")
+    assert cuenta.search("Content-Disposition: form-data;")
+    assert cuenta.search("Content-Disposition: form-data; name=\"\"")
+    assert cuenta.search("content-disposition:\tform-data")
+    assert cuenta.search('Content-Disposition: form-data; name="f"') is None
+    assert cuenta.search('Content-Disposition: form-data; name="campo 1"') is None
+    assert cuenta.search('Content-Disposition: form-data; name=plano') is None
+    assert cuenta.search('Content-Disposition: form-data; name="f"; filename=""') is None
+    assert cuenta.search('Content-Disposition: form-data; filename="a.txt"') is None
     assert cuenta.search("Content-Disposition: attachment;") is None
+    assert all(cuenta.search(f'Content-Disposition: form-data; name="c{i}"') is None for i in range(800))
+    assert sum(1 for i in range(500) if cuenta.search("Content-Disposition: form-data;")) == 500
     assert "setvar:tx.hostium_parts=+1" in REGLAS[5500608][0].acciones
     assert REGLAS[5500615][0].variables == "TX:hostium_parts"
     assert int(REGLAS[5500615][0].operador.removeprefix("@ge ")) == 500

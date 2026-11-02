@@ -27,7 +27,7 @@ flowchart TD
 
 `ctl:ruleRemoveById` tiene que correr antes de la regla CRS que quiere anular. `SecRuleRemoveById` y `SecRuleUpdateTargetById` se declaran después de que CRS ya fue incluido. El ZIP de Hostium no es el lugar de esas directivas: WHM no promete que el vendor cargue antes o después de OWASP3. Comprobalo con `httpd -t -D DUMP_INCLUDES`.
 
-Las reglas Hostium de esta versión hacen `deny` por su cuenta. No suman al anomaly score de CRS. Una exclusión de un id 9xxxxx de CRS no apaga 5500100. Si hay que exceptuar la nuestra, el id es 5500100 o 5500101, con el mismo cuidado de orden respecto de nuestro include.
+Las reglas Hostium de esta versión hacen `deny` por su cuenta. No suman al anomaly score de CRS. Una exclusión de un id 9xxxxx de CRS no apaga un id 5500. `5500100` y `5500101` no están en el ZIP 2.0.0. Si hay que exceptuar una regla que sí se instala, el id es el de Hostium, con el mismo cuidado de orden respecto de nuestro include.
 
 ## Datos de cada excepción
 
@@ -44,7 +44,7 @@ La excepción se hace por id, con fecha de revisión. No se edita el ZIP.
 | 5500605 | Un POST con 300 archivos o más |
 | 5500613 | Una aplicación que manda `PHPSESSID` como campo porque no usa solo cookies |
 | 5500614 | Cualquier cuerpo con `<?php`. No niega; si el log estorba, se saca el id |
-| 5500615 | Un POST con 500 partes `form-data` o más |
+| 5500615 | Quinientas partes sin `name` útil. Un formulario de campos con nombre no entra |
 | 5500617 | Un `PHPSESSID` de respuesta de más de 200 caracteres |
 | 5500619 | Una barra de progreso real. No niega |
 | 5500621 | Un id de cookie fuera de `[A-Za-z0-9,-]` o de más de 256 caracteres |

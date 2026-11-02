@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.0.0 — 2026-11-02
+
+Sale del ZIP `REQUEST-100-SENSITIVE-FILES.conf`. `5500100` y `5500101` quedan en el repo con estado retirado. CRS 3.3.10, regla `930130`, PL1, ya pone score crítico 5 sobre las frases `/.env` y `/.git/` de `restricted-files.data`, y el umbral de `949110` es 5. El cruce es contra el tag upstream `v3.3.10`. No se releyó el `restricted-files.data` del RPM en un servidor.
+
+`5500608` deja de contar cada `Content-Disposition: form-data`. Suma una parte sin `filename` y sin `name` no vacío. `5500615` sigue en fase 2, `deny,status:403`, corte `@ge 500` sobre ese contador. Un formulario de 800 campos con nombre no incrementa `TX:hostium_parts`. El 500 de `hostium-1.1.2` cortó un POST real de 723 campos el 2026-11-02. `5500611` deja de negar `<?php` y `<?=`: ese byte en `ARGS` lo suma `933100`. Quedan las semillas que `933170` no mata.
+
+`publish/stable/meta_hostium.yaml` pasa a `hostium-2.0.0`. No se reescriben los ZIP anteriores. `ultima_validacion` sigue vacía. No se ejecutó `upcp` ni `modsec_vendor`. El ZIP trae un solo set, `REQUEST-410-PHP-UPLOAD-PROGRESS.conf`.
+
 ## 1.1.2 — 2026-10-24
 
 En ModSecurity 2, `REQUEST_BODY` queda vacío cuando el procesador ya es MULTIPART. `5500600` se conserva y no niega. Entran `5500606`, `5500607` y `5500608`: cuentan cabeceras `X-` de parte, filenames vacíos y partes `form-data`. Siguen negando, con la misma fase, `5500602` (100), `5500604` (50) y `5500615` (500). `5500613` también niega `PHPSESSID[0]`. `5500625` pasa a minúsculas. `5500617` niega desde 257 caracteres. `5500612` mira `FILES` y `FILES_NAMES`. `5500622` exige que el argumento entero sea la ruta de sesión.

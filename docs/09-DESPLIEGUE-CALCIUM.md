@@ -10,7 +10,7 @@ La persona con acceso root al piloto y aprobación para tocarlo.
 
 ## Prerrequisitos
 
-- Artefacto publicado: `publish/stable/meta_hostium.yaml` apunta a `hostium-1.1.2.zip`. Ese ZIP trae dos sets, `REQUEST-100-SENSITIVE-FILES.conf` y `REQUEST-410-PHP-UPLOAD-PROGRESS.conf`. `hostium-1.0.0.zip` y `hostium-1.1.1.zip` siguen en el directorio y no se reescriben.
+- Artefacto publicado: `publish/stable/meta_hostium.yaml` apunta a `hostium-2.0.0.zip`. Ese ZIP trae un set, `REQUEST-410-PHP-UPLOAD-PROGRESS.conf`. `5500100` y `5500101` no se empaquetan. Los ZIP anteriores siguen en el directorio y no se reescriben.
 - `package build --version 1.0.0` falla a propósito para no reescribir la distribution ya publicada. `hostium-1.1.0.zip` está en `publish/stable/` y `meta_hostium.yaml` no lo nombra. WHM no lo instala con el alta de este runbook.
 - Ventana acordada.
 - Un dominio de prueba autorizado, no un sitio de cliente al azar.
@@ -39,7 +39,7 @@ Solo con aprobación, y solo cuando la metadata sea alcanzable por HTTPS:
 /usr/local/cpanel/scripts/modsec_vendor add 'https://raw.githubusercontent.com/devmanifesto/Hostium-WAF-Manager/main/publish/stable/meta_hostium.yaml'
 ```
 
-Esa URL es la metadata de stable. El alta instala el ZIP que esa metadata nombra, hoy `hostium-1.1.2.zip`. Un servidor que ya tiene el vendor no cambia solo por este commit: lo hace `upcp` si las actualizaciones del vendor están activas. Este runbook no ejecutó ese script.
+Esa URL es la metadata de stable. El alta instala el ZIP que esa metadata nombra, hoy `hostium-2.0.0.zip`. Un servidor que ya tiene el vendor no cambia solo por este commit: lo hace `upcp` si las actualizaciones del vendor están activas. Un vendor deshabilitado no aplica las reglas. Este runbook no ejecutó ese script.
 
 Esa URL es pública. No uses un HTTP ni pegues un PAT en la URL. El alta modifica el piloto y no se ejecutó desde este repositorio.
 
@@ -57,9 +57,9 @@ No asumas que el alta recargó Apache. Si la configuración es válida y el incl
 
 1. SOLO LECTURA del estado por dominio en cPanel: ModSecurity puede estar apagado en ese dominio aunque el motor global esté On.
 2. Pedí `https://<dominio-de-prueba>/.env`.
-3. Esperá 403 y el id `5500100` en el Hits List o en el audit log.
-4. Pedí `https://<dominio-de-prueba>/environment`. No tiene que aparecer `5500100`.
-5. Un 403 sin ese id no cuenta como éxito de esta regla. Puede ser CRS, NGINX o una regla de la cuenta.
+3. Esperá 403 y el id `930130` en el Hits List o en el audit log. `5500100` no tiene que aparecer.
+4. Pedí `https://<dominio-de-prueba>/environment`. No tiene que aparecer `930130` por la frase `/.env`.
+5. Un 403 sin `930130` no cuenta como cobertura de ese path. Puede ser otro id de CRS, NGINX o una regla de la cuenta.
 
 No actives el selftest en este piloto. El archivo no está en el ZIP. Si alguien lo copia a mano, lo saca al terminar y recarga.
 
