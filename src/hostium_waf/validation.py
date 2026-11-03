@@ -639,7 +639,7 @@ def _revisar_forma_exclusion(activas: str, relativo: str) -> list[Issue]:
             issues.append(Issue("exclusion", "no se pudo verificar la base estable", relativo))
     plano = re.sub(r"\\\s*\n", " ", activas)
     bloques = re.split(
-        r'(?=SecRule\s+REQUEST_HEADERS:Host|SecRule\s+REQUEST_URI|SecRule\s+REQUEST_FILENAME "@beginsWith)',
+        r'(?=SecRule\s+REQUEST_HEADERS:Host|SecRule\s+REQUEST_URI|SecRule\s+REQUEST_FILENAME "@beginsWith [^"]+"\s+"id:)',
         plano,
     )
     for bloque in bloques:
@@ -651,7 +651,7 @@ def _revisar_forma_exclusion(activas: str, relativo: str) -> list[Issue]:
         )
         if inactiva:
             continue
-        if re.search(r'SecRule REQUEST_FILENAME "@beginsWith ', bloque) and "REQUEST_HEADERS:Host" not in bloque:
+        if re.search(r'SecRule REQUEST_FILENAME "@beginsWith [^"]+"\s+"id:', bloque) and "REQUEST_HEADERS:Host" not in bloque:
             if not re.search(r'SecRule REQUEST_FILENAME "@beginsWith /[^"\s]*/"', bloque):
                 issues.append(Issue("regla_prohibida", "el prefijo de path debe terminar en /", relativo))
             if len(re.findall(r"\bchain\b", bloque)) != 1 or 'SecRule REQUEST_METHOD "@rx \\A(?:GET)\\z"' not in bloque:

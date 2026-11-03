@@ -2,9 +2,9 @@
 
 Herramienta para mantener un ruleset ModSecurity propio, empaquetarlo como proveedor de cPanel/WHM y auditar una flota sin tocarla por defecto.
 
-La estable de este árbol es **2.1.3**. Corrige el guardado de plantillas WHMCS en `clientes.hostium.com/admin1911/configgeneral.php`: excluye 921130 únicamente de `emailglobalheader` y `emailglobalfooter`, solo en ese dominio, endpoint y método POST. No excluye toda la familia attack-protocol.
+La estable de este árbol es **2.1.4**. Suma `5500905`: en GET, si el path empieza por `/pluginfile.php/`, quita solo `REQUEST_FILENAME` de la regla CRS 933210. No lleva dominio. Conserva la corrección WHMCS de 2.1.3.
 
-La publicación fue autorizada por el operador; la actualización de calcium queda a su cargo. No se ejecutó SSH ni se marcó ultima_validacion. El estado de publicación y sus hashes se registran en [QA de la release](docs/24-RELEASE-2.1.3.md).
+La publicación fue autorizada por el operador; la actualización de calcium queda a su cargo. No se ejecutó SSH ni se marcó ultima_validacion. El estado de esta release está en [QA de la release](docs/25-RELEASE-2.1.4.md). La anterior quedó en [2.1.3](docs/24-RELEASE-2.1.3.md).
 
 ## Requisitos
 
@@ -21,8 +21,8 @@ python -m pip install -e ".[dev]"
 python -m hostium_waf version
 python -m hostium_waf doctor --local
 python -m hostium_waf rules validate
-python -m hostium_waf package build --version 2.1.3 --output dist/release-2.1.3 --engine 2.9.15
-python -m hostium_waf package verify --zip dist/release-2.1.3/hostium-2.1.3.zip --metadata dist/release-2.1.3/meta_hostium.yaml
+python -m hostium_waf package build --version 2.1.4 --output dist/release-2.1.4 --engine 2.9.15
+python -m hostium_waf package verify --zip dist/release-2.1.4/hostium-2.1.4.zip --metadata dist/release-2.1.4/meta_hostium.yaml
 ```
 
 `python -m pytest` corre la suite unitaria. `python -m pytest -m integration --override-ini="addopts="` levanta Apache. Si Docker no está en marcha, esa prueba se omite y el informe lo dice: una omisión no es un bloqueo comprobado.
@@ -36,11 +36,11 @@ python -m hostium_waf logs analyze --input C:/evidencias/error.log --server nodo
 
 El analizador agrupa por transacción, ID, variable, dominio y ruta; oculta ubicaciones por defecto y elimina query, valores y cuerpos. `--include-locations` permite investigar las rutas explícitamente. Ver [observabilidad](docs/12-OBSERVABILIDAD-Y-LOGS.md).
 
-Las nuevas exclusiones requieren dominio exacto, ruta sin query, método y parámetro. WHMCS ya tiene alcance confirmado y regresiones HTTP. Las otras cuatro excepciones se conservan temporalmente desde la 2.1.1 para no restaurar falsos positivos existentes: son una deuda explícita de alcance, no exclusiones nuevas. El modo heredado solo acepta los controles e IDs del ZIP base fijado por SHA256; no permite ampliarlos. PrestaShop selecciona path sin query.
+Las nuevas exclusiones con dominio exigen dominio exacto, ruta sin query, método y parámetro. 5500905 es la excepción de path: sin dominio, solo GET y el prefijo `/pluginfile.php/`. WHMCS ya tiene alcance confirmado. Las otras cuatro excepciones se conservan temporalmente desde la 2.1.1: son una deuda explícita de alcance. El modo heredado solo acepta los controles e IDs del ZIP base fijado por SHA256; no permite ampliarlos. PrestaShop selecciona path sin query.
 
-La candidata local 2.1.2 no se publicó ni reescribió; 2.1.3 tiene bytes nuevos. [Guía de tuning](docs/13-FALSOS-POSITIVOS-Y-EXCEPCIONES.md).
+La candidata local 2.1.2 no se publicó ni reescribió. [Guía de tuning](docs/13-FALSOS-POSITIVOS-Y-EXCEPCIONES.md).
 
-## Contenido de la estable 2.1.3
+## Contenido de la estable 2.1.4
 
 Dos conf: REQUEST-410-PHP-UPLOAD-PROGRESS y REQUEST-900-CRS-EXCLUSIONS. Conserva IDs, fases y acciones de 2.1.1; REQUEST-410 solo actualiza trazabilidad ver y encabezado. No entra REQUEST-910, no se instala hostium-tune ni se cambia el puntaje global. No se empaquetan ejemplos o reglas de fase 4.
 
@@ -51,9 +51,9 @@ El ZIP extrae bajo hostium/. La metadata es meta_hostium.yaml y la clave 2.9.15 
 La ruta que hay que dar de alta es la metadata. WHM lee ese YAML y baja el ZIP que figura adentro. Las dos URL son públicas y responden sin sesión:
 
 - Metadata: `https://raw.githubusercontent.com/devmanifesto/Hostium-WAF-Manager/main/publish/stable/meta_hostium.yaml`
-- ZIP: `https://raw.githubusercontent.com/devmanifesto/Hostium-WAF-Manager/main/publish/stable/hostium-2.1.3.zip`
+- ZIP: `https://raw.githubusercontent.com/devmanifesto/Hostium-WAF-Manager/main/publish/stable/hostium-2.1.4.zip`
 
-Esa metadata instala `hostium-2.1.3`: dos sets, `REQUEST-410` y `REQUEST-900`. Es el único meta de instalación. Los ZIP anteriores siguen en el mismo directorio y no se reescriben. Un cPanel que ya tiene el vendor hostium relee esta metadata cuando corre `upcp`, si las actualizaciones del vendor están activas. Un vendor deshabilitado no aplica las reglas aunque baje el ZIP. Este repositorio no ejecutó `upcp`, `modsec_vendor` ni `httpd -t`.
+Esa metadata instala `hostium-2.1.4`: dos sets, `REQUEST-410` y `REQUEST-900`. Es el único meta de instalación. Los ZIP anteriores, incluido `hostium-2.1.3.zip`, siguen en el mismo directorio y no se reescriben. Un cPanel que ya tiene el vendor hostium relee esta metadata cuando corre `upcp`, si las actualizaciones del vendor están activas. Un vendor deshabilitado no aplica las reglas aunque baje el ZIP. Este repositorio no ejecutó `upcp`, `modsec_vendor` ni `httpd -t`.
 
 En el servidor, como root:
 
@@ -102,7 +102,7 @@ El operador pidió ejecutar este paso por su cuenta en calcium:
 ```sh
 # PRODUCCIÓN: ejecutar solo después de guardar estado previo y verificar la publicación.
 /usr/local/cpanel/scripts/modsec_vendor update hostium
-# SOLO LECTURA: comprobar versión 2.1.3, 2/2 sets e includes.
+# SOLO LECTURA: comprobar versión 2.1.4, 2/2 sets e includes.
 /usr/local/cpanel/scripts/modsec_vendor list
 httpd -t
 httpd -t -D DUMP_INCLUDES

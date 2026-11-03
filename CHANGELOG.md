@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.1.4 — 2026-11-02
+
+Publicación estable autorizada por el operador. Nuevo id 5500905 en REQUEST-900, generado desde exclusions.yaml. Fase 1, pass, nolog. En GET, si REQUEST_FILENAME empieza por /pluginfile.php/, el ctl quita solo REQUEST_FILENAME de 933210. No lleva dominio, no toca ARGS ni desactiva la regla. Los controles de 5500900–5500904 no cambian. No entra REQUEST-910 ni se refresca hostium-tune. hostium-2.1.3.zip no se reescribe. ultima_validacion continúa null. Ver docs/25-RELEASE-2.1.4.md.
+
 ## 2.1.3 — 2026-11-02
 
 Publicación estable autorizada por el operador; actualización de calcium a cargo suyo. WHMCS 5500902 ahora aplica solo en POST clientes.hostium.com/admin1911/configgeneral.php, excluyendo 921130 en emailglobalheader/emailglobalfooter además de las exclusiones XSS/RCE previas. No se excluye attack-protocol completo; 921120 y los demás argumentos siguen inspeccionados. Regresión HTTP de ambos campos y del selector real, sin 921130 ni 949110 en la plantilla de laboratorio.

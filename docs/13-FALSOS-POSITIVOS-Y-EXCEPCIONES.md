@@ -2,7 +2,7 @@
 
 ## Estado y objetivo
 
-La estable preparada para publicación es **2.1.3**, autorizada por el operador. Corrige el bloqueo WHMCS que sobrevivía a las exclusiones XSS/RCE: 921130 aportaba los 5 puntos que disparaban 949110. En CRS 3.3.10 el patrón incluye `<html` y `<meta`; el texto DOCTYPE por sí solo no es ese patrón. Se reproduce con una plantilla que contiene `<html`.
+La estable preparada para publicación es **2.1.4**, autorizada por el operador. 5500905 exceptúa el GET cuyo path empieza por `/pluginfile.php/`: quita solo `REQUEST_FILENAME` de 933210 y no lleva dominio. La 2.1.3 ya corrigió el bloqueo WHMCS que sobrevivía a las exclusiones XSS/RCE: 921130 aportaba los 5 puntos que disparaban 949110. En CRS 3.3.10 el patrón incluye `<html` y `<meta`; el texto DOCTYPE por sí solo no es ese patrón. Se reproduce con una plantilla que contiene `<html`.
 
 El control agregado es `ruleRemoveTargetById=921130`, para emailglobalheader y emailglobalfooter. No se elimina attack-protocol completo: 921120 continúa bloqueando un payload de cabecera en el mismo campo. El selector es Host clientes.hostium.com, REQUEST_FILENAME exacto /admin1911/configgeneral.php y método POST. La query action=save no cambia el selector; otros campos siguen inspeccionados.
 
@@ -50,7 +50,9 @@ exclusiones:
 
 El dominio es exacto, sin comodines ni IP. Se permiten varios dominios explícitos si el mismo caso está confirmado para cada uno. Host es un selector del virtualhost, no autenticación. La configuración del servidor debe rechazar hosts ajenos al sitio; esta excepción no acredita permisos del usuario.
 
-`@streq` exige el endpoint completo. `@beginsWith` solo admite directorios terminados en `/`, por ejemplo `/admin1911/sell/catalog/products/`; exige confirmar que todo ese subárbol merece la excepción. Se usa `REQUEST_FILENAME`, que no incluye query string. No se admiten `@contains`, regex arbitrarias, rutas `/`, escapes ni toda la colección `ARGS`. Los parámetros soportados son nombres simples `ARGS:nombre`; otros formatos requieren implementar y probar soporte específico.
+`@streq` exige el endpoint completo. `@beginsWith` solo admite directorios terminados en `/`, por ejemplo `/admin1911/sell/catalog/products/`; exige confirmar que todo ese subárbol merece la excepción. Se usa `REQUEST_FILENAME`, que no incluye query string. No se admiten `@contains`, regex arbitrarias, rutas `/`, escapes ni toda la colección `ARGS`. Los parámetros soportados son nombres simples `ARGS:nombre`.
+
+Una regla con `selector: path` no lleva dominio. Hoy el único caso es 5500905: métodos `["GET"]`, prefijo `/pluginfile.php/` y un ctl `REQUEST_FILENAME`. No se marca `heredada_estable` y no se inventa una lista de hosts. El ctl va en el eslabón del método, así un POST al mismo prefijo no lo ejecuta.
 
 Los controles admitidos son `ruleRemoveTargetById` y `ruleRemoveTargetByTag`; preferir IDs individuales. Excluir tags amplía el impacto y exige justificar cada familia afectada. No se admiten `allow`, quita de reglas completas ni apagado del motor.
 
@@ -73,6 +75,8 @@ Las exclusiones runtime deben ejecutarse antes de las reglas afectadas. En labor
 Los IDs 5500900, 5500901, 5500903 y 5500904 conservan los controles del ZIP 2.1.1, fijado al SHA256 `231a9d1746faa26f6f98580602f01bcd82174587c6d5cdeaef9ee8475e685d31`. `heredada_estable: true` solo se permite para esos cuatro IDs, con controles idénticos, dominios/metodos vacíos y motivo pendiente. No admite casos nuevos, agregar controles ni cambiar selectores. El único ajuste del selector heredado es REQUEST_FILENAME en 5500903, que elimina coincidencias por query sin ampliar el alcance.
 
 Es una excepción temporal a la exigencia de dominio para no romper operaciones actualmente exceptuadas. Su alcance amplio sigue siendo una limitación: faltan dominios/endpoints confirmados para firma, selección de cuentas, PrestaShop y turnero. Para migrar cada caso, quitar heredada_estable, completar dominio/ruta/método/parámetro, probar y publicar otra versión. No presentar estos cuatro casos como alcance ya corregido.
+
+5500905 no es heredada. Evidencia del 2026-11-02, 22:32–22:46 ART, CRS 3.3.10: 933210 (crítica, 5) coincide en `REQUEST_FILENAME` con el nombre de una portada y 949110 devuelve el bloqueo. El host visto no entra en la regla: el mismo path tiene que pasar en cualquier servidor de la flota. No se limita por extensión ni se escribe una regex del `(1)`. Un nombre con `system(` fuera de `/pluginfile.php/` sigue sumando 5 por las reglas PHP que no son esta excepción. ARGS, cookies y headers de 933210 no se quitan.
 
 WHMCS 5500902 no admite modo heredado: su alcance fue confirmado por el usuario y las regresiones incluyen ambos campos, dominio ajeno, otro argumento y la regla 921120 todavía activa. La fixture de laboratorio tiene dominios sintéticos; no reemplaza el ensayo de cPanel.
 

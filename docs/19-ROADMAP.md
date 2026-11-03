@@ -2,7 +2,7 @@
 
 ## Estado al 2 de noviembre de 2026
 
-Estable 2.1.3 preparada y autorizada para publicar. WHMCS tiene dominio/ruta confirmados y corrección 921130 verificada en laboratorio. La actualización de calcium la hará el operador. Los otros cuatro casos mantienen compatibilidad transitoria con la estable 2.1.1; siguen pendientes de delimitar. La candidata 2.1.2 no se publicó ni se reescribe.
+Estable 2.1.4 publicada en el origen. 5500905 cubre el GET de `/pluginfile.php/` sin dominio. WHMCS sigue con dominio, ruta y POST confirmados. La actualización de calcium la hará el operador. Los otros cuatro casos mantienen compatibilidad transitoria con la estable 2.1.1; siguen pendientes de delimitar. La candidata 2.1.2 no se publicó ni se reescribe. `hostium-2.1.3.zip` queda inmutable.
 
 ## Prioridad inmediata
 
