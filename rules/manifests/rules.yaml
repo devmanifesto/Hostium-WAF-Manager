@@ -1959,7 +1959,7 @@ reglas:
     categoria: exclusion-crs
     modulo: REQUEST-900-CRS-EXCLUSIONS
     archivo: rules/hostium/REQUEST-900-CRS-EXCLUSIONS.conf
-    version_de_introduccion: 2.1.0
+    version_de_introduccion: 2.1.1
     autor: Hostium
     owner: equipo-seguridad-hostium
     motivacion: El caso srv-admin 2026-11-02-siga-xqempresas-aceptar manda la firma como JPEG en data-URI.
@@ -2014,7 +2014,7 @@ reglas:
     categoria: exclusion-crs
     modulo: REQUEST-900-CRS-EXCLUSIONS
     archivo: rules/hostium/REQUEST-900-CRS-EXCLUSIONS.conf
-    version_de_introduccion: 2.1.0
+    version_de_introduccion: 2.1.1
     autor: Hostium
     owner: equipo-seguridad-hostium
     motivacion: El valor es una lista de cuentas unida con dos barras verticales. 942100 es detectSQLi.
@@ -2067,7 +2067,7 @@ reglas:
     categoria: exclusion-crs
     modulo: REQUEST-900-CRS-EXCLUSIONS
     archivo: rules/hostium/REQUEST-900-CRS-EXCLUSIONS.conf
-    version_de_introduccion: 2.1.0
+    version_de_introduccion: 2.1.1
     autor: Hostium
     owner: equipo-seguridad-hostium
     motivacion: El caso srv-admin 2026-11-02-whmcs-configgeneral-save sumó 55 entre reglas 941 y 932 sobre
@@ -2123,7 +2123,7 @@ reglas:
     categoria: exclusion-crs
     modulo: REQUEST-900-CRS-EXCLUSIONS
     archivo: rules/hostium/REQUEST-900-CRS-EXCLUSIONS.conf
-    version_de_introduccion: 2.1.0
+    version_de_introduccion: 2.1.1
     autor: Hostium
     owner: equipo-seguridad-hostium
     motivacion: El campo es ARGS, genérico. El selector es el fragmento de path, no el directorio de admin,
@@ -2177,7 +2177,7 @@ reglas:
     categoria: exclusion-crs
     modulo: REQUEST-900-CRS-EXCLUSIONS
     archivo: rules/hostium/REQUEST-900-CRS-EXCLUSIONS.conf
-    version_de_introduccion: 2.1.0
+    version_de_introduccion: 2.1.1
     autor: Hostium
     owner: equipo-seguridad-hostium
     motivacion: El campo ARGS:datos es genérico. El valor de este caso es un stdClass serializado. 933170
@@ -2225,10 +2225,10 @@ reglas:
         hostium-2.0.0.zip.
   - id: 5500910
     nombre: Anomaly score de cinco archivos CRS
-    descripcion: SecAction pass, nolog, fase 1. No entra al ZIP de hostium. El conf REQUEST-910
-      es el vendor hostium-tune. Repite SecRuleUpdateActionById para el anomaly score crítico de 911,
-      922, 932, 934 y 944. Cada directiva resta el crítico y suma el warning. Neto 3. Los id coinciden
-      en los tags upstream 3.3.9 y 3.3.10.
+    descripcion: No es una SecRule y no entra al ZIP de hostium. El conf REQUEST-910 no es un vendor.
+      srv-admin lo lee después de modsec2.conf. Repite SecRuleUpdateActionById para el anomaly score
+      crítico de 911, 922, 932, 934 y 944. Cada directiva resta el crítico y suma el warning. Neto 3.
+      Los id coinciden en los tags upstream 3.3.9 y 3.3.10.
     categoria: exclusion-crs
     modulo: REQUEST-910-CRS-ANOMALY-SCORE
     archivo: rules/hostium/REQUEST-910-CRS-ANOMALY-SCORE.conf

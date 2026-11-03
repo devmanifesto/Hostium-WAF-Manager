@@ -42,14 +42,14 @@ Esa URL es la del archivo en git. `package verify` no la descarga. El repositori
 ## Comandos
 
 ```powershell
-python -m hostium_waf package build --version 2.1.0 --engine 2.9.15
-python -m hostium_waf package verify --zip dist/hostium-2.1.0.zip --metadata dist/meta_hostium.yaml
+python -m hostium_waf package build --version 2.1.1 --engine 2.9.15
+python -m hostium_waf package verify --zip dist/hostium-2.1.1.zip --metadata dist/meta_hostium.yaml
 python -m hostium_waf metadata show --file dist/meta_hostium.yaml
 ```
 
 Son locales. No modifican un servidor.
 
-`package build --version 1.0.0`, `--version 1.1.2` y `--version 2.0.0` fallan en este árbol: el paquete incluye reglas introducidas en 2.1.0 y no se reutiliza una distribution ya publicada. Los ZIP anteriores que están en `publish/stable/` quedan como estaban. La release de hostium es `2.1.0` y trae dos `.conf`: `REQUEST-410` y `REQUEST-900`. WHM cuenta dos sets. `package build-tune` arma `hostium-tune-2.1.1`, con `REQUEST-910`, para darlo de alta después de OWASP3. `hostium-tune-2.1.0.zip` no se reescribe.
+`package build --version 1.0.0`, `--version 1.1.2`, `--version 2.0.0` y `--version 2.1.0` fallan en este árbol: el paquete incluye reglas con `ver` de 2.1.1 y no se reutiliza una distribution ya publicada. Los ZIP anteriores que están en `publish/stable/` quedan como estaban. La release de hostium es `2.1.1` y trae dos `.conf`: `REQUEST-410` y `REQUEST-900`. WHM cuenta dos sets. `REQUEST-910` no entra. `hostium-tune-2.1.0.zip` no se reescribe y no se ofrece para instalar.
 
 ## Qué rechaza el validador
 

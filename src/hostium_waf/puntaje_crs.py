@@ -10,7 +10,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from hostium_waf.crs_vendor import ARCHIVO_PUNTAJE, ARCHIVOS_PUNTAJE, DIR_CRS, VERSION_TUNE
+from hostium_waf.crs_vendor import ARCHIVO_PUNTAJE, ARCHIVOS_PUNTAJE, DIR_CRS
 from hostium_waf.metadata import descripcion_modulo
 
 _SETVAR = re.compile(
@@ -34,19 +34,17 @@ def objetivos_de_puntaje(root: Path) -> list[dict[str, object]]:
 
 def render_puntaje(root: Path) -> str:
     lineas = [
-        f"# {descripcion_modulo(VERSION_TUNE)}",
+        f"# {descripcion_modulo('2.1.0')}",
         "# Baja a warning el anomaly score crítico de cinco archivos CRS.",
         "# SecRuleUpdateActionById agrega setvar. Cada línea resta el crítico y suma el warning.",
         "# Neto 3. Dos reglas de estos archivos suman 6 y 949110 sigue cortando.",
         "# El resto de los archivos REQUEST no entra. rce_score y lfi_score tampoco.",
         "# Fuente: coreruleset tag v3.3.10. Id y offset coinciden con el tag v3.3.9.",
         "# El RPM ea-modsec2-rules-owasp-crs no se diffé.",
-        "# Este archivo es el vendor hostium-tune y se lee después de OWASP3.",
-        "# Si entra antes, httpd -t falla. No recargar.",
-        "# La SecAction 5500910 es pass y nolog. No cambia el puntaje.",
+        "# Este archivo no entra al ZIP de hostium y no es un vendor.",
+        "# srv-admin lo lee después de modsec2.conf. Si entra antes, httpd -t falla. No recargar.",
         "# No se exceptúa un header multipart por URL.",
         "",
-        _ancla(),
     ]
     for item in objetivos_de_puntaje(root):
         lineas.append(_directiva(item))
@@ -58,13 +56,6 @@ def escribir_puntaje(root: Path) -> Path:
     destino = root / ARCHIVO_PUNTAJE
     destino.write_text(render_puntaje(root), encoding="utf-8", newline="\n")
     return destino
-
-
-def _ancla() -> str:
-    return (
-        "SecAction "
-        f"\"id:5500910,phase:1,pass,nolog,t:none,tag:'hostium-crs-score',ver:'hostium/{VERSION_TUNE}'\""
-    )
 
 
 def _directiva(item: dict[str, object]) -> str:

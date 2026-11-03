@@ -2,7 +2,7 @@
 
 Herramienta para mantener un ruleset ModSecurity propio, empaquetarlo como proveedor de cPanel/WHM y auditar una flota sin tocarla por defecto.
 
-La versión de ruleset que construye este árbol es la 2.1.0. Los ZIP ya publicados en `publish/stable/` no se regeneran. No instala nada en un cPanel y no trata una sintaxis válida como una prueba de bloqueo en producción.
+La versión de ruleset que construye este árbol es la 2.1.1. Los ZIP ya publicados en `publish/stable/` no se regeneran. No instala nada en un cPanel y no trata una sintaxis válida como una prueba de bloqueo en producción.
 
 ## Requisitos
 
@@ -19,29 +19,28 @@ python -m pip install -e ".[dev]"
 python -m hostium_waf version
 python -m hostium_waf doctor --local
 python -m hostium_waf rules validate
-python -m hostium_waf package build --version 2.1.0 --engine 2.9.15
-python -m hostium_waf package verify --zip dist/hostium-2.1.0.zip --metadata dist/meta_hostium.yaml
+python -m hostium_waf package build --version 2.1.1 --engine 2.9.15
+python -m hostium_waf package verify --zip dist/hostium-2.1.1.zip --metadata dist/meta_hostium.yaml
 ```
 
 `python -m pytest` corre la suite unitaria. `python -m pytest -m integration --override-ini="addopts="` levanta Apache. Si Docker no está en marcha, esa prueba se omite y el informe lo dice: una omisión no es un bloqueo comprobado.
 
 ## Qué entra al ZIP estable
 
-`hostium-2.1.0.zip` lleva dos `.conf`. `REQUEST-410-PHP-UPLOAD-PROGRESS.conf` conserva los ids de pedido `5500600`–`5500619` y `5500621`, `5500622`, `5500625`. `REQUEST-900-CRS-EXCLUSIONS.conf` trae `5500900`–`5500904`: tres por nombre de campo y dos por URI, porque el campo es genérico. `5500100` y `5500101` siguen en `REQUEST-100-SENSITIVE-FILES.conf` y no entran al ZIP: el path lo corta CRS `930130`. Las de fase 4 (`5500620`, `5500623`, `5500624`, `5500626`) quedan en un `.example` y no se empaquetan: en cPanel no se enciende `SecResponseBodyAccess` para todo el servidor. Esas reglas no reemplazan actualizar PHP. El selftest `5500000` vive en un `.example` y no se empaqueta. Los borradores de WordPress, PHP genérico, el id vacío `5500400` y los escáneres tampoco.
+`hostium-2.1.1.zip` lleva dos `.conf`. `REQUEST-410-PHP-UPLOAD-PROGRESS.conf` conserva los ids de pedido `5500600`–`5500619` y `5500621`, `5500622`, `5500625`. `REQUEST-900-CRS-EXCLUSIONS.conf` trae `5500900`–`5500904`: tres por nombre de campo y dos por URI, porque el campo es genérico. `5500100` y `5500101` siguen en `REQUEST-100-SENSITIVE-FILES.conf` y no entran al ZIP: el path lo corta CRS `930130`. Las de fase 4 (`5500620`, `5500623`, `5500624`, `5500626`) quedan en un `.example` y no se empaquetan: en cPanel no se enciende `SecResponseBodyAccess` para todo el servidor. Esas reglas no reemplazan actualizar PHP. El selftest `5500000` vive en un `.example` y no se empaqueta. Los borradores de WordPress, PHP genérico, el id vacío `5500400` y los escáneres tampoco.
 
-`hostium-tune-2.1.1.zip` es otro vendor. Trae `REQUEST-910-CRS-ANOMALY-SCORE.conf`: una `SecAction` `5500910` en `pass` y el bajado a warning del anomaly score crítico de 911, 922, 932, 934 y 944. Se agrega después de OWASP3. `hostium-tune-2.1.0.zip` queda publicado y no se reescribe.
+El puntaje de 911, 922, 932, 934 y 944 no entra al ZIP. srv-admin lo mantiene en un archivo propio, leído después de `modsec2.conf`. No es un vendor. `hostium-tune-2.1.0.zip` queda en el directorio para que un update ya dado de alta no reciba 404. No se ofrece para instalar.
 
-El ZIP extrae un único directorio `hostium/`. La metadata se llama `meta_hostium.yaml`. La clave `'2.9.15'` es la versión del motor, no la del ruleset. `distribution: hostium-2.1.0` identifica esta release. `hostium-1.0.0`, `hostium-1.1.1`, `hostium-1.1.2` y `hostium-2.0.0` siguen publicados y no se reescriben. `package build --version 2.0.0` falla a propósito.
+El ZIP extrae un único directorio `hostium/`. La metadata se llama `meta_hostium.yaml`. La clave `'2.9.15'` es la versión del motor, no la del ruleset. `distribution: hostium-2.1.1` identifica esta release. `hostium-1.0.0`, `hostium-1.1.1`, `hostium-1.1.2`, `hostium-2.0.0` y `hostium-2.1.0` siguen publicados y no se reescriben. `package build --version 2.1.0` falla a propósito.
 
 ## Sumarlo en cPanel
 
 La ruta que hay que dar de alta es la metadata. WHM lee ese YAML y baja el ZIP que figura adentro. Las dos URL son públicas y responden sin sesión:
 
 - Metadata: `https://raw.githubusercontent.com/devmanifesto/Hostium-WAF-Manager/main/publish/stable/meta_hostium.yaml`
-- ZIP: `https://raw.githubusercontent.com/devmanifesto/Hostium-WAF-Manager/main/publish/stable/hostium-2.1.0.zip`
-- Tune: `https://raw.githubusercontent.com/devmanifesto/Hostium-WAF-Manager/main/publish/stable/meta_hostium-tune.yaml`
+- ZIP: `https://raw.githubusercontent.com/devmanifesto/Hostium-WAF-Manager/main/publish/stable/hostium-2.1.1.zip`
 
-Esa metadata instala `hostium-2.1.0`: dos sets, `REQUEST-410` y `REQUEST-900`. El puntaje está en `hostium-tune` y se da de alta con su propia metadata, después de OWASP3. Los ZIP anteriores siguen en el mismo directorio y no se reescriben. Un cPanel que ya tiene el vendor hostium relee esta metadata cuando corre `upcp`, si las actualizaciones del vendor están activas. Un vendor deshabilitado no aplica las reglas aunque baje el ZIP. Antes de recargar `hostium-tune`, `httpd -t` tiene que pasar. Este repositorio no ejecutó `upcp`, `modsec_vendor` ni `httpd -t`.
+Esa metadata instala `hostium-2.1.1`: dos sets, `REQUEST-410` y `REQUEST-900`. Es el único meta de instalación. Los ZIP anteriores siguen en el mismo directorio y no se reescriben. Un cPanel que ya tiene el vendor hostium relee esta metadata cuando corre `upcp`, si las actualizaciones del vendor están activas. Un vendor deshabilitado no aplica las reglas aunque baje el ZIP. Este repositorio no ejecutó `upcp`, `modsec_vendor` ni `httpd -t`.
 
 En el servidor, como root:
 

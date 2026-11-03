@@ -90,8 +90,8 @@ Señales que no son un crash de PHP, según la taxonomía que acompañaba el bor
 
 No hay regla de WordPress ni de escáneres. Esos archivos siguen marcados INCOMPLETO. El id `5500400` sigue vacío. `apache2ctl configtest` aceptó los dos `.conf` empaquetados en la imagen local `hostium-waf-apache:local`, paquete `modsecurity 2.9.7-1+deb12u2`, Apache/2.4.68 (Debian). No es el RPM de cPanel. El 24 de octubre de 2026 `test_motor_ve_las_reglas_410` vio 403 con id en `5500613` (también `PHPSESSID[0]`), `5500602` (100 cabeceras `X-`) y `5500625` en mayúsculas, y `5500614` quedó en el log sin negar. 99 cabeceras `X-` y un filename vacío no negaron. `ultima_validacion` sigue vacía: esa imagen no es cPanel.
 
-## Módulo 2.1.0, exclusiones y puntaje
+## Módulo 2.1.1, exclusiones
 
 `REQUEST-900-CRS-EXCLUSIONS.conf` sale de `config/exclusions.yaml` con `rules render-exclusions`. Ids `5500900` a `5500904`. Tres son SecAction sin URI. Dos son una SecRule de REQUEST_URI, sin cadena. La aproximación está en `tests/unit/test_crs_210.py`. No es el motor.
 
-`REQUEST-910-CRS-ANOMALY-SCORE.conf` sale de cinco conf de CRS 3.3.10 con `rules render-score` y se empaqueta como vendor `hostium-tune`. La ancla es una `SecAction` `5500910`, fase 1, `pass`, `nolog`. No tiene `SecRule`. Cada `SecRuleUpdateActionById` resta el anomaly score crítico y suma el warning. Si el conf se incluye antes de OWASP3, `httpd -t` falla. Este árbol no corrió ese configtest.
+`REQUEST-910-CRS-ANOMALY-SCORE.conf` sale de cinco conf de CRS 3.3.10 con `rules render-score`. No entra al ZIP y no es un vendor. srv-admin lo lee después de `modsec2.conf`. Cada `SecRuleUpdateActionById` resta el anomaly score crítico y suma el warning. Si el conf se incluye antes de las reglas CRS, `httpd -t` falla. Este árbol no corrió ese configtest.

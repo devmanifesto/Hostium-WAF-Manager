@@ -33,7 +33,7 @@ Las reglas Hostium de `REQUEST-410` hacen `deny` por su cuenta. No suman al anom
 
 Id de la excepción, tipo `runtime`, URI, controles de objetivo, id de la regla CRS, alcance, motivo, owner, ticket si existe, fecha de revisión y una prueba negativa. El catálogo que genera el conf es `config/exclusions.yaml`. `config/exclusions.example.yaml` sigue vacío. La validación rechaza una fecha que no sea `AAAA-MM-DD`, `/login` y una IP.
 
-## Catálogo de hostium-2.1.0
+## Catálogo de hostium-2.1.1
 
 `rules render-exclusions` escribe `REQUEST-900-CRS-EXCLUSIONS.conf`. Cada regla es fase 1, `pass`, `nolog`. El campo propio de la aplicación es un `SecAction` sin URI. El campo genérico es una sola `SecRule` sobre `REQUEST_URI`, sin cadena. El cuerpo del POST no está en fase 1. El ctl nombra el campo y queda en la transacción.
 
@@ -45,7 +45,7 @@ Id de la excepción, tipo `runtime`, URI, controles de objetivo, id de la regla 
 | 5500903 | URI que contiene `/sell/catalog/` | `ARGS` en 941160. El resto de las 941 de ese POST sigue |
 | 5500904 | URI que empieza con `/aplicacion_customs/marketingdirecto/recibepostturnero.php` | `ARGS:datos` en 933170 |
 
-`rules render-score` escribe `REQUEST-910-CRS-ANOMALY-SCORE.conf`. Ese archivo no entra al ZIP de hostium. `package build-tune` lo publica como vendor `hostium-tune` en `hostium-tune-2.1.1.zip`, para agregarlo después de OWASP3. La `SecAction` `5500910` es `pass` y `nolog`. La fuente son los cinco conf de CRS 3.3.10 en `third_party/`. Esos id y offsets coinciden con el tag `v3.3.9`. El RPM `ea-modsec2-rules-owasp-crs` no se diffé. Cada directiva resta `tx.critical_anomaly_score` y suma `tx.warning_anomaly_score`. Neto 3. Una 922130 no llega al umbral 5. Dos reglas de 911, 922, 932, 934 o 944 suman 6. 920, 921, 930, 931, 933, 941, 942 y 943 quedan en 5. No se saca un header multipart por URL. `/login` no se exceptúa. No se midió CSF ni se observó el caso en cPanel. `ultima_validacion` sigue vacía.
+`rules render-score` escribe `REQUEST-910-CRS-ANOMALY-SCORE.conf`. Ese archivo no entra al ZIP de hostium y no es un vendor. srv-admin lo lee después de `modsec2.conf`. La fuente son los cinco conf de CRS 3.3.10 en `third_party/`. Esos id y offsets coinciden con el tag `v3.3.9`. El RPM `ea-modsec2-rules-owasp-crs` no se diffé. El orden de Include respecto de REQUEST-901 no se midió en este árbol. Cada directiva resta `tx.critical_anomaly_score` y suma `tx.warning_anomaly_score`. Neto 3. Una 922130 no llega al umbral 5. Dos reglas de 911, 922, 932, 934 o 944 suman 6. 920, 921, 930, 931, 933, 941, 942 y 943 quedan en 5. No se saca un header multipart por URL. `/login` no se exceptúa. No se midió CSF ni se observó el caso en cPanel. `ultima_validacion` sigue vacía.
 
 Siguen prohibidos en todo el ZIP: `SecRuleRemoveById`, `ctl:ruleRemoveById`, `allow`, `SecRuleEngine Off` y `ctl:ruleEngine=Off`. El `ctl` de objetivo solo se admite en REQUEST-900. `SecRuleUpdateActionById` solo en REQUEST-910, y cada línea tiene que restar el crítico y sumar el warning.
 

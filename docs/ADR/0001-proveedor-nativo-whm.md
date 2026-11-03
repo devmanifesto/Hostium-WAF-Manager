@@ -22,9 +22,9 @@ El orden respecto de CRS no queda garantizado por el alta del vendor. Las exclus
 
 ## Enmienda del 2 de noviembre de 2026
 
-El texto de octubre queda como estaba. `hostium-2.1.0` agrega `REQUEST-900-CRS-EXCLUSIONS.conf`. El ctl de objetivo es fase 1. Si el campo es propio de la aplicación, es un `SecAction` sin URI. Si el campo es genérico, es una sola `SecRule` sobre `REQUEST_URI`, sin cadena. El ctl queda en la transacción y alcanza una regla CRS de fase 2 aunque WHM incluya hostium después de OWASP3. `ctl:ruleRemoveById` y `SecRuleRemoveById` siguen fuera del ZIP.
+El texto de octubre queda como estaba. `hostium-2.1.1` conserva `REQUEST-900-CRS-EXCLUSIONS.conf`. `hostium-2.1.0` lo agregó. El ctl de objetivo es fase 1. Si el campo es propio de la aplicación, es un `SecAction` sin URI. Si el campo es genérico, es una sola `SecRule` sobre `REQUEST_URI`, sin cadena. El ctl queda en la transacción y alcanza una regla CRS de fase 2 aunque WHM incluya hostium después de OWASP3. `ctl:ruleRemoveById` y `SecRuleRemoveById` siguen fuera del ZIP.
 
-`SecRuleUpdateActionById` no entra en ese ZIP. El orden del vendor hostium respecto de OWASP3 no está garantizado y un id desconocido hace fallar `httpd -t`. El conf de puntaje es el vendor `hostium-tune`, metadata `meta_hostium-tune.yaml`, raíz `hostium-tune/`. La distribution vigente es `hostium-tune-2.1.1`. srv-admin lo agrega después de OWASP3. Este repositorio no comprobó ese orden en un cPanel. El 2 de noviembre de 2026 WHM mostró Hostium Tune sin sets y Hostium en 2/2. No se releyó el servidor desde este árbol.
+`SecRuleUpdateActionById` no entra en ese ZIP. El puntaje no es un vendor. srv-admin lo mantiene en un archivo propio, leído después de `modsec2.conf`. `meta_hostium-tune.yaml` queda nombrando `hostium-tune-2.1.0.zip` para no devolver 404 a quien ya lo tiene. No se ofrece para instalar. El único meta de alta es `meta_hostium.yaml`, distribution `hostium-2.1.1`. Este repositorio no comprobó el orden de Include en un cPanel. El 2 de noviembre de 2026 WHM mostró Hostium Tune sin sets y Hostium en 2/2. No se releyó el servidor desde este árbol.
 
 ## Cómo se revierte esta decisión
 

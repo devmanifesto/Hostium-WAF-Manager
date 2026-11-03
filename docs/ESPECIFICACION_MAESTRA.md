@@ -271,7 +271,7 @@ Documentá e implementá verificación del orden real de inclusión:
 - Documentar la forma segura de configurar excepciones por dominio/ruta/parámetro para WordPress/WooCommerce, sin apagar OWASP globalmente.
 - Exigir justificación y fecha de expiración/revisión para cada excepción.
 
-Enmienda del 2 de noviembre de 2026. `hostium-2.1.0` publica ctl de objetivo en fase 1 dentro de `REQUEST-900-CRS-EXCLUSIONS.conf`. El campo propio no lleva URI. El campo genérico lleva una sola regla de REQUEST_URI. `SecRuleUpdateActionById` va en el vendor `hostium-tune`, distribution `hostium-tune-2.1.1`, porque ese conf tiene que leerse después de OWASP3. La ancla `5500910` es una `SecAction` en `pass`. `ctl:ruleRemoveById`, `SecRuleRemoveById`, `allow` y el apagado del motor siguen fuera de los dos ZIP. El detalle operativo está en `docs/13-FALSOS-POSITIVOS-Y-EXCEPCIONES.md`.
+Enmienda del 2 de noviembre de 2026. `hostium-2.1.1` publica ctl de objetivo en fase 1 dentro de `REQUEST-900-CRS-EXCLUSIONS.conf`, con `ver:'hostium/2.1.1'`. El campo propio no lleva URI. El campo genérico lleva una sola regla de REQUEST_URI. `SecRuleUpdateActionById` no entra al ZIP. El puntaje lo mantiene srv-admin en un archivo propio, leído después de `modsec2.conf`. No es un vendor. `ctl:ruleRemoveById`, `SecRuleRemoveById`, `allow` y el apagado del motor siguen fuera del ZIP. El detalle operativo está en `docs/13-FALSOS-POSITIVOS-Y-EXCEPCIONES.md`.
 
 Referencia obligatoria: `https://coreruleset.org/docs/2-how-crs-works/2-3-false-positives-and-tuning/`.
 

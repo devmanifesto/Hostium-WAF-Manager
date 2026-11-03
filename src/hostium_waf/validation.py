@@ -86,10 +86,6 @@ _CTL_OBJETIVO = re.compile(r"\bctl:ruleRemoveTargetBy(?:Id|Tag)\b")
 _CTL_PERMITIDO = re.compile(
     r"^ctl:ruleRemoveTargetBy(?:Id|Tag)=(?:\d+|[A-Za-z0-9_-]+);ARGS(?::[A-Za-z_][A-Za-z0-9_]*)?$"
 )
-_ANCLA_PUNTAJE = re.compile(
-    r"^SecAction \"id:5500910,phase:1,pass,nolog,t:none,tag:'hostium-crs-score',"
-    r"ver:'hostium/(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)'\"$"
-)
 _LINEA_PUNTAJE = re.compile(
     r'^SecRuleUpdateActionById (\d+)(?::(\d+))? "'
     r'(?:chain,)?'
@@ -617,14 +613,7 @@ def _revisar_conf_puntaje(texto: str, relativo: str) -> list[Issue]:
     directivas = [linea.strip() for linea in activas.splitlines() if linea.strip()]
     if not directivas:
         issues.append(Issue("regla_prohibida", "el conf de puntaje está vacío", relativo))
-    anclas = [linea for linea in directivas if linea.startswith("SecAction ")]
-    if len(anclas) != 1 or not _ANCLA_PUNTAJE.fullmatch(anclas[0]):
-        issues.append(Issue("regla_prohibida", "falta la ancla pass 5500910", relativo))
-    if not any(_LINEA_PUNTAJE.fullmatch(linea) for linea in directivas):
-        issues.append(Issue("regla_prohibida", "el conf de puntaje no baja el crítico", relativo))
     for linea in directivas:
-        if linea.startswith("SecAction "):
-            continue
         if not _LINEA_PUNTAJE.fullmatch(linea):
             issues.append(Issue("regla_prohibida", "la directiva no resta el crítico y suma el warning", relativo))
     return issues

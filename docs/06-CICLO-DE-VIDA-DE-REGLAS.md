@@ -29,7 +29,7 @@ Solo `produccion` con `incluir_en_paquete: true` entra al ZIP, y solo si la pol�
 
 ## Qué número sube
 
-Se compara con el ZIP que `publish/stable/meta_hostium.yaml` nombra. Hoy es `hostium-2.1.0`. Cada release que se arme sube solo el sub-sub (`2.1.1` después de esta), salvo que quien opera pida sub o mayor. La 2.0.0 sacó del ZIP `REQUEST-100-SENSITIVE-FILES.conf`. La 2.1.0 sumó `REQUEST-900`. El puntaje de CRS está en el vendor `hostium-tune`, distribution `hostium-tune-2.1.1`. Ese número no es el de hostium. La tabla dice qué significa cada componente.
+Se compara con el ZIP que `publish/stable/meta_hostium.yaml` nombra. Hoy es `hostium-2.1.1`. Cada release que se arme sube solo el sub-sub (`2.1.2` después de esta), salvo que quien opera pida sub o mayor. La 2.0.0 sacó del ZIP `REQUEST-100-SENSITIVE-FILES.conf`. La 2.1.0 sumó `REQUEST-900`. La 2.1.1 cambia el `ver` de esas cinco reglas. El puntaje de CRS no es un vendor. La tabla dice qué significa cada componente.
 
 | Cambio respecto de esa distribution | Número | Ejemplo ya subido |
 | --- | --- | --- |
