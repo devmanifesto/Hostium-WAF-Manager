@@ -1,10 +1,10 @@
 ---
 '2.9.15':
-  MD5: '8a0b7c1ad1441e977dbb9622d8608950'
-  SHA512: '42006f56ccbca6fc9ee80ddec028b849ae20e3dab2a2f5a3006afceb60ec0c36d4ba89437385cf54a0f712e8c77168b210f4210d5d455a6e5204e01862e0e67d'
-  distribution: 'hostium-2.1.4'
-  url: 'https://raw.githubusercontent.com/devmanifesto/Hostium-WAF-Manager/main/publish/stable/hostium-2.1.4.zip'
+  MD5: 'e7e47f18451bc794d3575ae53cd28f89'
+  SHA512: 'c2ba2099ee81ef0ec89537f1a7a7f8c9c71a797056e91a80b9843e9be7addb368f40e551d2aa9ab6a271aa0279d47b8d8af0e3f8ec15afb2c898081522af0b5a'
+  distribution: 'hostium-2.1.5'
+  url: 'https://raw.githubusercontent.com/devmanifesto/Hostium-WAF-Manager/main/publish/stable/hostium-2.1.5.zip'
 attributes:
   name: 'Hostium WAF Ruleset'
-  description: 'Reglas complementarias de seguridad administradas por Hostium 2.1.4'
+  description: 'Reglas complementarias de seguridad administradas por Hostium 2.1.5'
   vendor_url: 'https://hostium.com'

@@ -93,4 +93,4 @@ Páginas de `modsec_vendor` y de ModSecurity por dominio, en `docs/REFERENCIAS.m
 
 ## Limitaciones
 
-Este documento no es una bitácora de un cambio hecho. No hay salida real de calcium adjunta. El inventario `config/fleet.example.yaml` usa `calcium.example.invalid` y no resuelve al piloto. La metadata publicada nombra `hostium-2.1.4`; el operador decidió actualizar calcium por su cuenta. Ver `docs/25-RELEASE-2.1.4.md`. El informe de vendor está en `docs/21-QA-CPANEL.md` y la corrida del 24 de octubre en `docs/22-QA-TRES-PASADAS.md`.
+Este documento no es una bitácora de un cambio hecho. No hay salida real de calcium adjunta. El inventario `config/fleet.example.yaml` usa `calcium.example.invalid` y no resuelve al piloto. La metadata publicada nombra `hostium-2.1.5`; el operador decidió actualizar calcium por su cuenta. Ver `docs/26-RELEASE-2.1.5.md`. El informe de vendor está en `docs/21-QA-CPANEL.md` y la corrida del 24 de octubre en `docs/22-QA-TRES-PASADAS.md`.

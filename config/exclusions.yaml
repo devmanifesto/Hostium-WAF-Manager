@@ -1,4 +1,4 @@
-# Estable 2.1.4. 5500905 es path sin dominio. WHMCS confirmado; cuatro casos heredados sin ampliar.
+# Estable 2.1.5. 5500906 es el editor de WordPress de un solo host. 5500905 sigue sin dominio.
 version_esquema: 1
 exclusiones:
 - id: '5500900'
@@ -127,3 +127,50 @@ exclusiones:
     operador: '@beginsWith'
     valor: /pluginfile.php/
   selector: path
+- id: '5500906'
+  tipo: runtime
+  regla_objetivo: 941100,941160,941200,941310,941350
+  motivo: HTML del editor de WordPress en excerpt y content. No se quita la regla de SQLi del mismo POST.
+  owner: equipo-seguridad-hostium
+  fecha_revision: '2027-05-02'
+  alcance: POST en capacitaciones.municipalidadsalta.gob.ar si el path empieza por /wp-admin/.
+  ticket: 2026-11-03-wordpress-excerpt-content
+  controles:
+  - tipo: ruleRemoveTargetById
+    objetivo: '941100'
+    variable: ARGS:excerpt
+  - tipo: ruleRemoveTargetById
+    objetivo: '941100'
+    variable: ARGS:content
+  - tipo: ruleRemoveTargetById
+    objetivo: '941160'
+    variable: ARGS:excerpt
+  - tipo: ruleRemoveTargetById
+    objetivo: '941160'
+    variable: ARGS:content
+  - tipo: ruleRemoveTargetById
+    objetivo: '941200'
+    variable: ARGS:excerpt
+  - tipo: ruleRemoveTargetById
+    objetivo: '941200'
+    variable: ARGS:content
+  - tipo: ruleRemoveTargetById
+    objetivo: '941310'
+    variable: ARGS:excerpt
+  - tipo: ruleRemoveTargetById
+    objetivo: '941310'
+    variable: ARGS:content
+  - tipo: ruleRemoveTargetById
+    objetivo: '941350'
+    variable: ARGS:excerpt
+  - tipo: ruleRemoveTargetById
+    objetivo: '941350'
+    variable: ARGS:content
+  habilitada: true
+  dominios:
+  - capacitaciones.municipalidadsalta.gob.ar
+  metodos:
+  - POST
+  uri:
+    operador: '@beginsWith'
+    valor: /wp-admin/

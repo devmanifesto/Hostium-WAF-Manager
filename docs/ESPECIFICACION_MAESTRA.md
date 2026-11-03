@@ -291,6 +291,12 @@ El operador pidió publicar hostium-2.1.4 subiendo solo el último número, con 
 
 5500905 es una regla de path, no heredada y sin lista de hosts. Fase 1, pass, nolog, t:none, tag hostium-crs-exclusion, ver hostium/2.1.4. La cadena es REQUEST_FILENAME @beginsWith /pluginfile.php/, REQUEST_METHOD GET, y ctl:ruleRemoveTargetById=933210;REQUEST_FILENAME en el último eslabón. No quita ARGS, ARGS_NAMES, cookies ni headers. No desactiva 933210, no le baja el puntaje y no usa allow, SecRuleRemoveById ni apagado del motor. ultima_validacion sigue null.
 
+### Autorización de publicación 2.1.5, 3 de noviembre de 2026
+
+El operador pidió publicar hostium-2.1.5 subiendo solo el último número, con ZIP nuevo y sin reescribir hostium-2.1.4.zip ni los anteriores. No se publica ni refresca hostium-tune. REQUEST-910 y SecRuleUpdateActionById siguen fuera del ZIP. El único meta de instalación sigue siendo meta_hostium.yaml. Los controles de 5500900–5500905 no cambian.
+
+5500906 es una cadena de un solo host. Fase 1, pass, nolog, t:none, tag hostium-crs-exclusion, ver hostium/2.1.5. Host exacto capacitaciones.municipalidadsalta.gob.ar, REQUEST_FILENAME @beginsWith /wp-admin/, REQUEST_METHOD POST, y en el último eslabón ctl:ruleRemoveTargetById de 941100, 941160, 941200, 941310 y 941350 sobre ARGS:excerpt y ARGS:content. No quita ARGS entero, no desactiva esas reglas y no excluye 942190. No se ata al id del post. ultima_validacion sigue null.
+
 ## 9. CLI completa y comportamiento esperado
 
 Proponé e implementá una CLI coherente, documentada y testeada. Como mínimo:

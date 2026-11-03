@@ -30,7 +30,7 @@ def test_rules_y_paquete(tmp_path: Path) -> None:
     assert runner.invoke(app, ["rules", "check-ids"]).exit_code == 0
     construido = runner.invoke(
         app,
-        ["package", "build", "--version", "2.1.4", "--engine", "2.9.15", "--output", str(tmp_path)],
+        ["package", "build", "--version", "2.1.5", "--engine", "2.9.15", "--output", str(tmp_path)],
     )
     assert construido.exit_code == 0, construido.stdout + construido.stderr
     verificado = runner.invoke(
@@ -39,7 +39,7 @@ def test_rules_y_paquete(tmp_path: Path) -> None:
             "package",
             "verify",
             "--zip",
-            str(tmp_path / "hostium-2.1.4.zip"),
+            str(tmp_path / "hostium-2.1.5.zip"),
             "--metadata",
             str(tmp_path / "meta_hostium.yaml"),
         ],

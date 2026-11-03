@@ -202,3 +202,52 @@ def test_pluginfile_no_toca_args_ni_el_nombre_fuera_del_prefijo(crs_acotado):
     assert status == 403, delta[-5000:]
     assert _id_en_esta_uri(delta, 933160, sistema), delta[-5000:]
     assert _id_en_esta_uri(delta, 949110, sistema), delta[-5000:]
+
+
+def pedir_form(servidor, path, campos, *, host):
+    base, nombre = servidor
+    anteriores = set(_logs(nombre).splitlines())
+    data = urllib.parse.urlencode(campos).encode()
+    req = urllib.request.Request(
+        base + path,
+        data=data,
+        method="POST",
+        headers={"Host": host, "Content-Type": "application/x-www-form-urlencoded"},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=15) as respuesta:
+            status = respuesta.status
+    except urllib.error.HTTPError as exc:
+        status = exc.code
+    nuevas = "\n".join(linea for linea in _logs(nombre).splitlines() if linea not in anteriores)
+    return status, nuevas
+
+
+@pytest.mark.integration
+def test_editor_wordpress_solo_excerpt_y_content(crs_acotado):
+    host = "capacitaciones.municipalidadsalta.gob.ar"
+    encabezados = {"excerpt": "<h2>Lavado de manos</h2>", "content": '<h3 class="x">texto</h3>'}
+    status, delta = pedir_form(crs_acotado["produccion"], "/wp-admin/post.php", encabezados, host=host)
+    assert status == 503, delta[-5000:]
+    for regla in (941100, 941160, 949110):
+        assert not _id_en_esta_uri(delta, regla, "/wp-admin/post.php"), delta[-5000:]
+    # 941160 no mira h2 ni h3. El img es la etiqueta de esa regla; los encabezados van en el mismo cuerpo.
+    cuerpo = {"excerpt": "<h2>Lavado de manos</h2>", "content": '<h3 class="x">texto</h3><img src=x>'}
+    status, delta = pedir_form(crs_acotado["produccion"], "/wp-admin/post.php", cuerpo, host=host)
+    assert status == 503, delta[-5000:]
+    for regla in (941100, 941160, 949110):
+        assert not _id_en_esta_uri(delta, regla, "/wp-admin/post.php"), delta[-5000:]
+    status, delta = pedir_form(crs_acotado["produccion"], "/", cuerpo, host=host)
+    assert status == 403, delta[-5000:]
+    assert _id_en_esta_uri(delta, 949110, "/"), delta[-5000:]
+    status, delta = pedir_form(crs_acotado["produccion"], "/wp-admin/post.php", cuerpo, host="otro.example.test")
+    assert status == 403, delta[-5000:]
+    assert _id_en_esta_uri(delta, 949110, "/wp-admin/post.php"), delta[-5000:]
+    status, delta = pedir_form(
+        crs_acotado["produccion"],
+        "/wp-admin/post.php",
+        {"q": "<script>alert(1)</script>"},
+        host=host,
+    )
+    assert status == 403, delta[-5000:]
+    assert _id_en_esta_uri(delta, 949110, "/wp-admin/post.php"), delta[-5000:]

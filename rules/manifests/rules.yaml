@@ -2326,6 +2326,65 @@ reglas:
       fecha: '2026-11-02'
       nota: Alta de path sin dominio. Para salir, sacá la entrada y publicá otra release. No reescribas hostium-2.1.3.zip.
 
+  - id: 5500906
+    nombre: Editor de WordPress en excerpt y content
+    descripcion: Exclusión de un solo host. En POST, si REQUEST_FILENAME empieza por /wp-admin/, quita 941100, 941160,
+      941200, 941310 y 941350 de ARGS:excerpt y ARGS:content. No quita ARGS entero ni 942190.
+    categoria: exclusion-crs
+    modulo: REQUEST-900-CRS-EXCLUSIONS
+    archivo: rules/hostium/REQUEST-900-CRS-EXCLUSIONS.conf
+    version_de_introduccion: 2.1.5
+    autor: Hostium
+    owner: equipo-seguridad-hostium
+    motivacion: CRS 3.3.10 en paranoia 1, 949110 con score 10 al guardar un post. La exclusión de WordPress ya estaba
+      prendida y estos campos no entran. 942190 apareció en algunos POST y el score no pasó de 10.
+    tipo_de_ataque: falso-positivo
+    referencias:
+    - https://coreruleset.org/docs/2-how-crs-works/2-3-false-positives-and-tuning/
+    - 2026-11-03-wordpress-excerpt-content
+    falsos_positivos_probables: Otro id puede bloquear un HTML distinto. excerpt y content fuera de /wp-admin/ siguen inspeccionados.
+    fase: 1
+    variables_inspeccionadas:
+    - REQUEST_HEADERS:Host
+    - REQUEST_FILENAME
+    - REQUEST_METHOD
+    operador: '@beginsWith'
+    transformaciones:
+    - t:none
+    accion: pass
+    severidad: NOTICE
+    etiquetas:
+    - hostium-crs-exclusion
+    estado: produccion
+    modo_por_defecto: log-only
+    incluir_en_paquete: true
+    casos_de_prueba_positivos:
+    - titulo: HTML de excerpt y content en /wp-admin/post.php sin 941100, 941160 ni 949110
+      path: /wp-admin/post.php
+      metodo: POST
+      dispara: true
+      ejecucion: automatizada
+      status: 200
+      notas: Status 200 representa acción no disruptiva según contrato del manifiesto, no una respuesta observada. 503 es el
+        backend de laboratorio inexistente. No se ata al id del post. No se observó en cPanel.
+    casos_de_prueba_negativos:
+    - titulo: El mismo cuerpo fuera de /wp-admin/, en otro host o en otro campo sigue bloqueado
+      path: /
+      metodo: POST
+      dispara: false
+      ejecucion: automatizada
+      notas: En CRS 3.3.10 y paranoia 1, h2 y h3 solos no suman. El mismo texto más img src dispara 949110 fuera de
+        /wp-admin/ y en otro host. q con script en el host confirmado también. 942190 no se excluye.
+    impacto_previsto: Solo deja de inspeccionar excerpt y content en esas cinco reglas XSS, dentro del POST /wp-admin/ de
+      un host. ultima_validacion queda vacía.
+    fecha_de_revision: '2027-05-02'
+    ultima_validacion: null
+    excepciones: []
+    registro_de_cambio:
+    - version: 2.1.5
+      fecha: '2026-11-03'
+      nota: Alta acotada al editor. Para salir, sacá la entrada y publicá otra release. No reescribas hostium-2.1.4.zip.
+
   - id: 5500910
     nombre: Anomaly score de cinco archivos CRS
     descripcion: No es una SecRule y no entra al ZIP de hostium. El conf REQUEST-910 no es un vendor.

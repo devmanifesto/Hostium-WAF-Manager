@@ -91,6 +91,40 @@ def test_pluginfile_sin_dominio_y_controles_previos() -> None:
         )
 
 
+def test_wordpress_editor_solo_en_ese_host() -> None:
+    data = yaml.safe_load((ROOT / "config/exclusions.yaml").read_text(encoding="utf-8"))
+    item = next(i for i in data["exclusiones"] if i["id"] == "5500906")
+    assert item["dominios"] == ["capacitaciones.municipalidadsalta.gob.ar"]
+    assert item["metodos"] == ["POST"]
+    assert item.get("selector") is None
+    assert item.get("heredada_estable") is not True
+    assert item["uri"] == {"operador": "@beginsWith", "valor": "/wp-admin/"}
+    esperados = [
+        {"tipo": "ruleRemoveTargetById", "objetivo": objetivo, "variable": variable}
+        for objetivo in ("941100", "941160", "941200", "941310", "941350")
+        for variable in ("ARGS:excerpt", "ARGS:content")
+    ]
+    assert item["controles"] == esperados
+    texto = render_exclusiones(data)
+    bloque = next(b for b in texto.split("\n\n") if "id:5500906" in b)
+    assert "capacitaciones\\.municipalidadsalta\\.gob\\.ar" in bloque
+    assert 'SecRule REQUEST_FILENAME "@beginsWith /wp-admin/"' in bloque
+    assert 'SecRule REQUEST_METHOD "@rx \\A(?:POST)\\z"' in bloque
+    assert bloque.count("chain") == 2
+    assert "ctl:" not in bloque.split("SecRule REQUEST_METHOD")[0]
+    assert "942190" not in bloque
+    assert ";ARGS\"" not in bloque and ";ARGS," not in bloque
+    for control in esperados:
+        assert f"ctl:{control['tipo']}={control['objetivo']};{control['variable']}" in bloque
+    with ZipFile(ROOT / "publish/stable/hostium-2.1.4.zip") as zf:
+        viejo = zf.read("hostium/REQUEST-900-CRS-EXCLUSIONS.conf").decode("utf-8")
+    assert "id:5500906" not in viejo
+    for identificador in range(5500900, 5500906):
+        assert re.findall(r"ctl:[^\s,\"\\]+", _bloque_id(viejo, identificador)) == re.findall(
+            r"ctl:[^\s,\"\\]+", _bloque_id(texto, identificador),
+        )
+
+
 def _bloque_id(texto: str, identificador: int) -> str:
     return next(b for b in re.split(r"\n\s*\n", texto) if re.search(rf"\bid:{identificador}\b", b))
 
