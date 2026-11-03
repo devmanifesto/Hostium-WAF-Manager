@@ -13,7 +13,9 @@ import yaml
 from hostium_waf.crs_vendor import ARCHIVO_EXCLUSIONES, VERSION_RULESET
 from hostium_waf.metadata import descripcion_modulo
 
-_VARIABLE = re.compile(r"^(?:ARGS:[A-Za-z_][A-Za-z0-9_]*|REQUEST_FILENAME)$")
+_VARIABLE = re.compile(
+    r"^(?:ARGS(?::[A-Za-z_][A-Za-z0-9_]*(?:\[[A-Za-z_][A-Za-z0-9_]*\])?)?|REQUEST_FILENAME|MULTIPART_PART_HEADERS)$"
+)
 _OBJETIVO_ID = re.compile(r"^\d+$")
 _OBJETIVO_TAG = re.compile(r"^[A-Za-z0-9_-]+$")
 IDS_HEREDADOS = (5500900, 5500901, 5500903, 5500904)
@@ -51,6 +53,8 @@ def render_exclusiones(data: dict[str, Any]) -> str:
         f"# {descripcion_modulo(VERSION_RULESET)}",
         "# Runtime fase 1. Dominio exacto, ruta sin query y método; ctl al final de la cadena.",
         "# Una regla de path no lleva dominio: REQUEST_FILENAME, GET y ctl solo en el método.",
+        "# Una regla de ruta no lleva dominio: filename, POST y ctl solo en el método.",
+        "# Un SecAction de campo no lleva URI: el nombre viaja con la cuenta.",
         "# Una entrada deshabilitada conserva su id con una condición que nunca coincide.",
         "# Compatibilidad transitoria de cuatro casos 2.1.1; WHMCS tiene alcance explícito.",
         "",
@@ -85,7 +89,10 @@ def _bloque(item: dict[str, Any]) -> str:
             f"{comentario}\n# INACTIVA: {item['pendiente']}\n"
             f'SecRule REQUEST_URI "@rx (?!)" "{acciones}"'
         )
-    if item.get("selector") == "path":
+    if item.get("selector") == "campo":
+        ctls = ",".join(_ctl(c) for c in item["controles"])
+        return f'{comentario}\nSecAction "{acciones},{ctls}"'
+    if item.get("selector") in {"path", "ruta"}:
         uri = item["uri"]
         ruta = f"{uri['operador']} {uri['valor']}"
         metodos = "|".join(sorted(item["metodos"]))

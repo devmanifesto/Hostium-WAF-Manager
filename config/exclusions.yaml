@@ -1,4 +1,4 @@
-# Estable 2.1.5. 5500906 es el editor de WordPress de un solo host. 5500905 sigue sin dominio.
+# Estable 2.1.6. Los casos nuevos no llevan dominio. 5500906 sigue con su host.
 version_esquema: 1
 exclusiones:
 - id: '5500900'
@@ -174,3 +174,211 @@ exclusiones:
   uri:
     operador: '@beginsWith'
     valor: /wp-admin/
+- id: '5500907'
+  tipo: runtime
+  regla_objetivo: '933210'
+  motivo: Telefono en comentario de la inmobiliaria, bajo /modules_/imno_/.
+  owner: equipo-seguridad-hostium
+  fecha_revision: '2027-05-02'
+  alcance: POST si REQUEST_FILENAME empieza por /modules_/imno_/. Sin dominio.
+  ticket: 2026-11-03-imno-comentario
+  controles:
+  - tipo: ruleRemoveTargetById
+    objetivo: '933210'
+    variable: ARGS:comentario
+  habilitada: true
+  dominios: []
+  metodos:
+  - POST
+  uri:
+    operador: '@beginsWith'
+    valor: /modules_/imno_/
+  selector: ruta
+- id: '5500908'
+  tipo: runtime
+  regla_objetivo: '942100'
+  motivo: HTML del navegador en transferencia, bajo /modules_/imno/. No cubre imno_.
+  owner: equipo-seguridad-hostium
+  fecha_revision: '2027-05-02'
+  alcance: POST si REQUEST_FILENAME empieza por /modules_/imno/. Sin dominio.
+  ticket: 2026-11-03-imno-transferencia
+  controles:
+  - tipo: ruleRemoveTargetById
+    objetivo: '942100'
+    variable: ARGS:transferencia
+  habilitada: true
+  dominios: []
+  metodos:
+  - POST
+  uri:
+    operador: '@beginsWith'
+    valor: /modules_/imno/
+  selector: ruta
+- id: '5500909'
+  tipo: runtime
+  regla_objetivo: '942100'
+  motivo: Lista de cuentas en ctas, el mismo formato que vseleccionados. ctas no se exceptua suelto.
+  owner: equipo-seguridad-hostium
+  fecha_revision: '2027-05-02'
+  alcance: POST si REQUEST_FILENAME empieza por /server20200601/mod/reportes/. Sin dominio.
+  ticket: 2026-11-03-agro-ctas
+  controles:
+  - tipo: ruleRemoveTargetById
+    objetivo: '942100'
+    variable: ARGS:ctas
+  habilitada: true
+  dominios: []
+  metodos:
+  - POST
+  uri:
+    operador: '@beginsWith'
+    valor: /server20200601/mod/reportes/
+  selector: ruta
+- id: '5500910'
+  tipo: runtime
+  regla_objetivo: 942100,930110
+  motivo: description y flete_observaciones en fcompra.php. 930110 no sale de ese campo.
+  owner: equipo-seguridad-hostium
+  fecha_revision: '2027-05-02'
+  alcance: POST al script exacto /server20200601/mod/compras/fcompra.php. Sin dominio.
+  ticket: 2026-11-03-agro-fcompra
+  controles:
+  - tipo: ruleRemoveTargetById
+    objetivo: '942100'
+    variable: ARGS:description
+  - tipo: ruleRemoveTargetById
+    objetivo: '930110'
+    variable: ARGS:flete_observaciones
+  habilitada: true
+  dominios: []
+  metodos:
+  - POST
+  uri:
+    operador: '@streq'
+    valor: /server20200601/mod/compras/fcompra.php
+  selector: ruta
+- id: '5500911'
+  tipo: runtime
+  regla_objetivo: '930110'
+  motivo: marcades vale dos puntos en itemfcompra.php.
+  owner: equipo-seguridad-hostium
+  fecha_revision: '2027-05-02'
+  alcance: POST al script exacto /server20200601/mod/compras/itemfcompra.php. Sin dominio.
+  ticket: 2026-11-03-agro-itemfcompra
+  controles:
+  - tipo: ruleRemoveTargetById
+    objetivo: '930110'
+    variable: ARGS:marcades
+  habilitada: true
+  dominios: []
+  metodos:
+  - POST
+  uri:
+    operador: '@streq'
+    valor: /server20200601/mod/compras/itemfcompra.php
+  selector: ruta
+- id: '5500912'
+  tipo: runtime
+  regla_objetivo: '930110'
+  motivo: El nombre marcaid_Ndes cambia de numero. En este script se quita ARGS entero de 930110.
+  owner: equipo-seguridad-hostium
+  fecha_revision: '2027-05-02'
+  alcance: POST al script exacto /server20200601/mod/agro/laboractividad.php. Sin dominio.
+  ticket: 2026-11-03-agro-laboractividad
+  controles:
+  - tipo: ruleRemoveTargetById
+    objetivo: '930110'
+    variable: ARGS
+  habilitada: true
+  dominios: []
+  metodos:
+  - POST
+  uri:
+    operador: '@streq'
+    valor: /server20200601/mod/agro/laboractividad.php
+  selector: ruta
+  coleccion: true
+- id: '5500913'
+  tipo: runtime
+  regla_objetivo: 932130,932140,942170
+  motivo: codscripttarjeta es un nombre unico y trae JavaScript del formulario.
+  owner: equipo-seguridad-hostium
+  fecha_revision: '2027-05-02'
+  alcance: SecAction sin URI ni dominio. El nombre viaja con la cuenta.
+  ticket: 2026-11-03-codscripttarjeta
+  controles:
+  - tipo: ruleRemoveTargetById
+    objetivo: '932130'
+    variable: ARGS:codscripttarjeta
+  - tipo: ruleRemoveTargetById
+    objetivo: '932140'
+    variable: ARGS:codscripttarjeta
+  - tipo: ruleRemoveTargetById
+    objetivo: '942170'
+    variable: ARGS:codscripttarjeta
+  habilitada: true
+  dominios: []
+  metodos: []
+  selector: campo
+- id: '5500914'
+  tipo: runtime
+  regla_objetivo: '922130'
+  motivo: El nombre de parte del quiz trae dos puntos y 922130 mira MULTIPART_PART_HEADERS.
+  owner: equipo-seguridad-hostium
+  fecha_revision: '2027-05-02'
+  alcance: POST si REQUEST_FILENAME empieza por /mod/quiz/. Sin dominio. No baja el puntaje global.
+  ticket: 2026-11-03-moodle-quiz-922130
+  controles:
+  - tipo: ruleRemoveTargetById
+    objetivo: '922130'
+    variable: MULTIPART_PART_HEADERS
+  habilitada: true
+  dominios: []
+  metodos:
+  - POST
+  uri:
+    operador: '@beginsWith'
+    valor: /mod/quiz/
+  selector: ruta
+- id: '5500915'
+  tipo: runtime
+  regla_objetivo: 941100,941160
+  motivo: HTML del editor en message[text] del foro. Otro campo de la misma URL sigue inspeccionado.
+  owner: equipo-seguridad-hostium
+  fecha_revision: '2027-05-02'
+  alcance: POST si REQUEST_FILENAME empieza por /mod/forum/. Sin dominio.
+  ticket: 2026-11-03-moodle-forum-message
+  controles:
+  - tipo: ruleRemoveTargetById
+    objetivo: '941100'
+    variable: 'ARGS:message[text]'
+  - tipo: ruleRemoveTargetById
+    objetivo: '941160'
+    variable: 'ARGS:message[text]'
+  habilitada: true
+  dominios: []
+  metodos:
+  - POST
+  uri:
+    operador: '@beginsWith'
+    valor: /mod/forum/
+  selector: ruta
+- id: '5500916'
+  tipo: runtime
+  regla_objetivo: 941100,941160
+  motivo: summary_editor[text] es un nombre unico. No se usa el path /login/.
+  owner: equipo-seguridad-hostium
+  fecha_revision: '2027-05-02'
+  alcance: SecAction sin URI ni dominio. El nombre viaja con la cuenta.
+  ticket: 2026-11-03-moodle-summary-editor
+  controles:
+  - tipo: ruleRemoveTargetById
+    objetivo: '941100'
+    variable: 'ARGS:summary_editor[text]'
+  - tipo: ruleRemoveTargetById
+    objetivo: '941160'
+    variable: 'ARGS:summary_editor[text]'
+  habilitada: true
+  dominios: []
+  metodos: []
+  selector: campo
