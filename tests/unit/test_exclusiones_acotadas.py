@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import re
 from copy import deepcopy
 from pathlib import Path
+from zipfile import ZipFile
 
 import pytest
 import yaml
@@ -50,6 +52,47 @@ def test_rechaza_alcance_inseguro(clave, valor) -> None:
     assert validar_exclusiones(data)
     with pytest.raises(ValueError):
         render_exclusiones(data)
+
+
+def test_pluginfile_sin_dominio_y_controles_previos() -> None:
+    data = yaml.safe_load((ROOT / "config/exclusions.yaml").read_text(encoding="utf-8"))
+    item = next(i for i in data["exclusiones"] if i["id"] == "5500905")
+    assert item["dominios"] == []
+    assert item["metodos"] == ["GET"]
+    assert item["selector"] == "path"
+    assert item.get("heredada_estable") is not True
+    assert item["uri"] == {"operador": "@beginsWith", "valor": "/pluginfile.php/"}
+    assert item["controles"] == [{"tipo": "ruleRemoveTargetById", "objetivo": "933210", "variable": "REQUEST_FILENAME"}]
+    assert "fundacionarcor" not in yaml.safe_dump(item)
+    texto = render_exclusiones(data)
+    assert validar_exclusiones(data) == []
+    bloque = next(b for b in texto.split("\n\n") if "id:5500905" in b)
+    assert 'SecRule REQUEST_FILENAME "@beginsWith /pluginfile.php/"' in bloque
+    assert 'SecRule REQUEST_METHOD "@rx \\A(?:GET)\\z"' in bloque
+    assert bloque.count("chain") == 1
+    assert "ctl:" not in bloque.split("SecRule REQUEST_METHOD")[0]
+    assert bloque.count("ctl:ruleRemoveTargetById=933210;REQUEST_FILENAME") == 1
+    assert "ARGS" not in bloque
+    assert "REQUEST_HEADERS" not in bloque
+    assert "allow" not in bloque
+    prefijo = "/pluginfile.php/"
+    dentro = "/pluginfile.php/1/course/overviewfiles/portada (1).png"
+    fuera = "/course/overviewfiles/portada (1).png"
+    consulta = "/pluginfile.php/1/course/overviewfiles/x.png"
+    assert dentro.startswith(prefijo)
+    assert not fuera.startswith(prefijo)
+    assert consulta.startswith(prefijo)
+    assert not "/files/system(.png".startswith(prefijo)
+    with ZipFile(ROOT / "publish/stable/hostium-2.1.3.zip") as zf:
+        viejo = zf.read("hostium/REQUEST-900-CRS-EXCLUSIONS.conf").decode("utf-8")
+    for identificador in range(5500900, 5500905):
+        assert re.findall(r"ctl:[^\s,\"\\]+", _bloque_id(viejo, identificador)) == re.findall(
+            r"ctl:[^\s,\"\\]+", _bloque_id(texto, identificador),
+        )
+
+
+def _bloque_id(texto: str, identificador: int) -> str:
+    return next(b for b in re.split(r"\n\s*\n", texto) if re.search(rf"\bid:{identificador}\b", b))
 
 
 def test_no_excluir_coleccion_entera_y_no_adivinar_dominio() -> None:

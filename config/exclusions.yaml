@@ -1,4 +1,4 @@
-# Estable 2.1.3. WHMCS confirmado; otros cuatro casos heredados sin ampliar alcance.
+# Estable 2.1.4. 5500905 es path sin dominio. WHMCS confirmado; cuatro casos heredados sin ampliar.
 version_esquema: 1
 exclusiones:
 - id: '5500900'
@@ -107,3 +107,23 @@ exclusiones:
   pendiente: Confirmar dominio, endpoint, parámetro y regresión HTTP antes de habilitar.
   ticket: pendiente-documentar-evidencia-5500904
   heredada_estable: true
+- id: '5500905'
+  tipo: runtime
+  regla_objetivo: '933210'
+  motivo: Portada de Moodle con parentesis repetidos en el nombre, bajo /pluginfile.php/.
+  owner: equipo-seguridad-hostium
+  fecha_revision: '2027-05-02'
+  alcance: GET de cualquier host si REQUEST_FILENAME empieza por /pluginfile.php/. Sin dominio.
+  ticket: 2026-11-02-moodle-pluginfile-933210
+  controles:
+  - tipo: ruleRemoveTargetById
+    objetivo: '933210'
+    variable: REQUEST_FILENAME
+  habilitada: true
+  dominios: []
+  metodos:
+  - GET
+  uri:
+    operador: '@beginsWith'
+    valor: /pluginfile.php/
+  selector: path

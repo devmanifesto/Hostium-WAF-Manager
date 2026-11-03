@@ -2268,6 +2268,64 @@ reglas:
       nota: Release de WHMCS autorizada por operador. No reutiliza candidata 2.1.2. Rollback versionado restaura metadata anterior
         y sus excepciones; ultima_validacion continúa null hasta cPanel.
 
+  - id: 5500905
+    nombre: Portada Moodle en pluginfile.php
+    descripcion: Exclusión de path, sin dominio. En GET, si REQUEST_FILENAME empieza por /pluginfile.php/, quita solo
+      REQUEST_FILENAME de 933210. ARGS, cookies y headers siguen inspeccionados. 933210 no se desactiva ni cambia de puntaje.
+    categoria: exclusion-crs
+    modulo: REQUEST-900-CRS-EXCLUSIONS
+    archivo: rules/hostium/REQUEST-900-CRS-EXCLUSIONS.conf
+    version_de_introduccion: 2.1.4
+    autor: Hostium
+    owner: equipo-seguridad-hostium
+    motivacion: CRS 3.3.10, 933210 crítica, coincide en el nombre de una portada servida por pluginfile.php. El sitio se mueve
+      de servidor, así que el prefijo no lleva dominio. Un nombre con system( fuera de ese prefijo sigue sumando 5.
+    tipo_de_ataque: falso-positivo
+    referencias:
+    - https://coreruleset.org/docs/2-how-crs-works/2-3-false-positives-and-tuning/
+    - 2026-11-02-moodle-pluginfile-933210
+    falsos_positivos_probables: Otro id de PHP puede bloquear un nombre distinto. La query sigue inspeccionada por 933210.
+    fase: 1
+    variables_inspeccionadas:
+    - REQUEST_FILENAME
+    - REQUEST_METHOD
+    operador: '@beginsWith'
+    transformaciones:
+    - t:none
+    accion: pass
+    severidad: NOTICE
+    etiquetas:
+    - hostium-crs-exclusion
+    estado: produccion
+    modo_por_defecto: log-only
+    incluir_en_paquete: true
+    casos_de_prueba_positivos:
+    - titulo: GET de portada bajo pluginfile.php sin 933210 ni 949110
+      path: /pluginfile.php/1/course/overviewfiles/portada%20(1).png
+      metodo: GET
+      dispara: true
+      ejecucion: automatizada
+      status: 200
+      notas: Status 200 representa acción no disruptiva según contrato del manifiesto, no una respuesta observada. 503 es el
+        backend de laboratorio inexistente. La evidencia de zinc usa cuatro grupos (1) en el nombre. No se observó en cPanel.
+    casos_de_prueba_negativos:
+    - titulo: El mismo nombre fuera del prefijo y la query siguen en 933210
+      path: /course/overviewfiles/portada%20(1).png
+      metodo: GET
+      dispara: false
+      ejecucion: automatizada
+      notas: Fuera de /pluginfile.php/ el nombre que coincide con 933210 sigue en 5. La query x=uca(1)(1) sobre un png limpio
+        sigue logueando 933210 en ARGS y dispara 949110. No se quita ARGS.
+    impacto_previsto: Solo deja de inspeccionar REQUEST_FILENAME en 933210 para GET bajo /pluginfile.php/. No baja el puntaje
+      ni apaga la regla. ultima_validacion queda vacía.
+    fecha_de_revision: '2027-05-02'
+    ultima_validacion: null
+    excepciones: []
+    registro_de_cambio:
+    - version: 2.1.4
+      fecha: '2026-11-02'
+      nota: Alta de path sin dominio. Para salir, sacá la entrada y publicá otra release. No reescribas hostium-2.1.3.zip.
+
   - id: 5500910
     nombre: Anomaly score de cinco archivos CRS
     descripcion: No es una SecRule y no entra al ZIP de hostium. El conf REQUEST-910 no es un vendor.

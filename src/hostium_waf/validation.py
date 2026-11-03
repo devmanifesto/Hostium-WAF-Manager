@@ -37,6 +37,7 @@ _CLAVES_EXCLUSION = {
     "metodos",
     "pendiente",
     "heredada_estable",
+    "selector",
 }
 _CLAVES_URI = {"operador", "valor"}
 _CLAVES_CONTROL = {"tipo", "objetivo", "variable"}
@@ -88,7 +89,7 @@ _SIEMPRE_PROHIBIDO = (
 )
 _CTL_OBJETIVO = re.compile(r"\bctl:ruleRemoveTargetBy(?:Id|Tag)\b")
 _CTL_PERMITIDO = re.compile(
-    r"^ctl:ruleRemoveTargetBy(?:Id|Tag)=(?:\d+|[A-Za-z0-9_-]+);ARGS(?::[A-Za-z_][A-Za-z0-9_]*)?$"
+    r"^ctl:ruleRemoveTargetBy(?:Id|Tag)=(?:\d+|[A-Za-z0-9_-]+);(?:ARGS(?::[A-Za-z_][A-Za-z0-9_]*)?|REQUEST_FILENAME)$"
 )
 _LINEA_PUNTAJE = re.compile(
     r'^SecRuleUpdateActionById (\d+)(?::(\d+))? "'
@@ -396,6 +397,11 @@ def _validar_item_exclusion(item: Any, ruta: str, ids_vistos: set[str] | None = 
         except (OSError, ValueError, KeyError, TypeError, StopIteration):
             issues.append(Issue("exclusion", "compatibilidad estable inválida o base no disponible", ruta))
         return issues
+    if item.get("selector") not in {None, "path"}:
+        issues.append(Issue("alcance", "selector no admitido", f"{ruta}.selector"))
+    if item.get("selector") == "path":
+        issues.extend(_validar_regla_path(item, ruta, activa=activa))
+        return issues
     dominios = item.get("dominios")
     if not isinstance(dominios, list) or (activa and not dominios):
         issues.append(Issue("alcance", "dominios debe ser una lista; una exclusión habilitada necesita dominio confirmado", f"{ruta}.dominios"))
@@ -413,6 +419,45 @@ def _validar_item_exclusion(item: Any, ruta: str, ids_vistos: set[str] | None = 
     issues.extend(_validar_controles(item.get("controles"), f"{ruta}.controles", activa=activa))
     if isinstance(item.get("controles"), list) and isinstance(item.get("regla_objetivo"), str):
         objetivos = {c.get("objetivo") for c in item["controles"] if isinstance(c, dict) and isinstance(c.get("objetivo"), str)}
+        declarados = {valor.strip() for valor in item["regla_objetivo"].split(",")}
+        if objetivos != declarados:
+            issues.append(Issue("exclusion", "regla_objetivo no coincide con los controles", f"{ruta}.regla_objetivo"))
+    return issues
+
+
+def _validar_regla_path(item: dict[str, Any], ruta: str, *, activa: bool) -> list[Issue]:
+    """Prefijo de path sin dominio. El único ctl quita REQUEST_FILENAME."""
+    issues: list[Issue] = []
+    if item.get("heredada_estable") is True:
+        issues.append(Issue("exclusion", "una regla de path no se marca heredada_estable", ruta))
+    if item.get("dominios") != []:
+        issues.append(Issue("alcance", "esta regla de path no lleva dominio", f"{ruta}.dominios"))
+    if item.get("metodos") != ["GET"]:
+        issues.append(Issue("alcance", "esta regla de path solo admite GET", f"{ruta}.metodos"))
+    issues.extend(_validar_uri_exclusion(item.get("uri"), f"{ruta}.uri"))
+    uri = item.get("uri")
+    if isinstance(uri, dict) and uri.get("operador") != "@beginsWith":
+        issues.append(Issue("alcance", "la regla de path usa @beginsWith de directorio", f"{ruta}.uri"))
+    if not activa:
+        pendiente = item.get("pendiente")
+        if not isinstance(pendiente, str) or not pendiente.strip() or any(c in pendiente for c in '\r\n"\\'):
+            issues.append(Issue("alcance", "una exclusión inactiva necesita pendiente en una línea", f"{ruta}.pendiente"))
+    controles = item.get("controles")
+    if not isinstance(controles, list) or len(controles) != 1:
+        issues.append(Issue("exclusion", "la regla de path lleva un solo ctl sobre REQUEST_FILENAME", f"{ruta}.controles"))
+    else:
+        control = controles[0]
+        if not isinstance(control, dict) or set(control) != _CLAVES_CONTROL:
+            issues.append(Issue("exclusion", "control requiere tipo, objetivo y variable", f"{ruta}.controles[0]"))
+        elif (
+            control.get("tipo") != "ruleRemoveTargetById"
+            or control.get("variable") != "REQUEST_FILENAME"
+            or not isinstance(control.get("objetivo"), str)
+            or not re.fullmatch(r"9[0-9]{5}", control["objetivo"])
+        ):
+            issues.append(Issue("exclusion", "el ctl solo quita REQUEST_FILENAME de un id CRS", f"{ruta}.controles[0]"))
+    if isinstance(controles, list) and isinstance(item.get("regla_objetivo"), str):
+        objetivos = {c.get("objetivo") for c in controles if isinstance(c, dict) and isinstance(c.get("objetivo"), str)}
         declarados = {valor.strip() for valor in item["regla_objetivo"].split(",")}
         if objetivos != declarados:
             issues.append(Issue("exclusion", "regla_objetivo no coincide con los controles", f"{ruta}.regla_objetivo"))
@@ -593,7 +638,10 @@ def _revisar_forma_exclusion(activas: str, relativo: str) -> list[Issue]:
         except (OSError, ValueError):
             issues.append(Issue("exclusion", "no se pudo verificar la base estable", relativo))
     plano = re.sub(r"\\\s*\n", " ", activas)
-    bloques = re.split(r"(?=SecRule\s+REQUEST_HEADERS:Host|SecRule\s+REQUEST_URI)", plano)
+    bloques = re.split(
+        r'(?=SecRule\s+REQUEST_HEADERS:Host|SecRule\s+REQUEST_URI|SecRule\s+REQUEST_FILENAME "@beginsWith)',
+        plano,
+    )
     for bloque in bloques:
         if not bloque.strip():
             continue
@@ -602,6 +650,19 @@ def _revisar_forma_exclusion(activas: str, relativo: str) -> list[Issue]:
             r"tag:'hostium-crs-exclusion',ver:'hostium/\d+\.\d+\.\d+'\"\s*", bloque,
         )
         if inactiva:
+            continue
+        if re.search(r'SecRule REQUEST_FILENAME "@beginsWith ', bloque) and "REQUEST_HEADERS:Host" not in bloque:
+            if not re.search(r'SecRule REQUEST_FILENAME "@beginsWith /[^"\s]*/"', bloque):
+                issues.append(Issue("regla_prohibida", "el prefijo de path debe terminar en /", relativo))
+            if len(re.findall(r"\bchain\b", bloque)) != 1 or 'SecRule REQUEST_METHOD "@rx \\A(?:GET)\\z"' not in bloque:
+                issues.append(Issue("regla_prohibida", "la regla de path es filename y GET, con un solo chain", relativo))
+            if 'phase:1,pass,nolog,t:none,' not in bloque:
+                issues.append(Issue("regla_prohibida", "la exclusión debe ser fase 1, pass y nolog", relativo))
+            if "ctl:" in bloque.split("SecRule REQUEST_METHOD")[0] or "ctl:" not in bloque.split("SecRule REQUEST_METHOD")[-1]:
+                issues.append(Issue("regla_prohibida", "el ctl de path solo corre al coincidir el GET", relativo))
+            ctls = re.findall(r'ctl:[^\s,"\\]+', bloque)
+            if len(ctls) != 1 or not ctls[0].endswith(";REQUEST_FILENAME") or not _CTL_PERMITIDO.fullmatch(ctls[0]):
+                issues.append(Issue("regla_prohibida", "la regla de path solo quita REQUEST_FILENAME", relativo))
             continue
         if not re.search(r'SecRule REQUEST_HEADERS:Host "@rx \(\?i\)\\A', bloque):
             issues.append(Issue("regla_prohibida", "falta dominio exacto al inicio de la cadena", relativo))
@@ -616,7 +677,7 @@ def _revisar_forma_exclusion(activas: str, relativo: str) -> list[Issue]:
         if "ctl:" in bloque.split("SecRule REQUEST_METHOD")[0]:
             issues.append(Issue("regla_prohibida", "el ctl no puede ejecutarse antes de completar la cadena", relativo))
         for ctl in re.findall(r'ctl:[^\s,"\\]+', bloque):
-            if not _CTL_PERMITIDO.fullmatch(ctl) or ctl.endswith(";ARGS"):
+            if not _CTL_PERMITIDO.fullmatch(ctl) or ctl.endswith(";ARGS") or ctl.endswith(";REQUEST_FILENAME"):
                 issues.append(Issue("regla_prohibida", "ctl de objetivo no admitido", relativo))
     if not bloques or not activas.strip():
         issues.append(Issue("regla_prohibida", "faltan reglas de exclusión", relativo))

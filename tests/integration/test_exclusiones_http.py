@@ -150,3 +150,49 @@ def test_whmcs_real_no_bloquea_html_y_conserva_protocolo(crs_acotado):
     assert status == 403 and _id_en_esta_uri(delta, 921130, ruta), delta[-5000:]
     status, delta = pedir(crs_acotado["produccion"], ruta, "emailglobalheader", "<html>", host="otro.example.test")
     assert status == 403 and _id_en_esta_uri(delta, 921130, ruta), delta[-5000:]
+
+
+def _get(servidor, path, *, host="moodle.example.test"):
+    base, nombre = servidor
+    anteriores = set(_logs(nombre).splitlines())
+    req = urllib.request.Request(base + path, method="GET", headers={"Host": host})
+    try:
+        with urllib.request.urlopen(req, timeout=15) as respuesta:
+            status = respuesta.status
+    except urllib.error.HTTPError as exc:
+        status = exc.code
+    nuevas = "\n".join(linea for linea in _logs(nombre).splitlines() if linea not in anteriores)
+    return status, nuevas
+
+
+@pytest.mark.integration
+def test_pluginfile_no_toca_args_ni_el_nombre_fuera_del_prefijo(crs_acotado):
+    # CRS 3.3.10, 933210, coincide con la forma (1) (1) vista en zinc. Un solo (1) no es ese patrón.
+    evidencia = "/pluginfile.php/1/course/overviewfiles/portada%20uca%20(1)%20(1)%20(1)%20(1).png"
+    status, delta = _get(crs_acotado["produccion"], evidencia)
+    assert status == 503, delta[-5000:]
+    ruta = urllib.parse.urlsplit(evidencia).path
+    assert not _id_en_esta_uri(delta, 933210, ruta), delta[-5000:]
+    assert not _id_en_esta_uri(delta, 949110, ruta), delta[-5000:]
+    corta = "/pluginfile.php/1/course/overviewfiles/portada%20(1).png"
+    status, delta = _get(crs_acotado["produccion"], corta)
+    assert status == 503, delta[-5000:]
+    assert not _id_en_esta_uri(delta, 933210, urllib.parse.urlsplit(corta).path), delta[-5000:]
+    assert not _id_en_esta_uri(delta, 949110, urllib.parse.urlsplit(corta).path), delta[-5000:]
+    fuera = "/course/overviewfiles/portada%20uca%20(1)%20(1)%20(1)%20(1).png"
+    status, delta = _get(crs_acotado["produccion"], fuera)
+    ruta = urllib.parse.urlsplit(fuera).path
+    assert status == 403, delta[-5000:]
+    assert _id_en_esta_uri(delta, 933210, ruta), delta[-5000:]
+    assert _id_en_esta_uri(delta, 949110, ruta), delta[-5000:]
+    consulta = "/pluginfile.php/1/course/overviewfiles/x.png?x=uca(1)(1)"
+    status, delta = _get(crs_acotado["produccion"], consulta)
+    ruta = urllib.parse.urlsplit(consulta).path
+    assert status == 403, delta[-5000:]
+    assert _id_en_esta_uri(delta, 933210, ruta), delta[-5000:]
+    assert _id_en_esta_uri(delta, 949110, ruta), delta[-5000:]
+    sistema = "/files/system(.png"
+    status, delta = _get(crs_acotado["produccion"], sistema)
+    assert status == 403, delta[-5000:]
+    assert _id_en_esta_uri(delta, 933160, sistema), delta[-5000:]
+    assert _id_en_esta_uri(delta, 949110, sistema), delta[-5000:]

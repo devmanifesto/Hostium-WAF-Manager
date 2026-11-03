@@ -26,13 +26,13 @@ Una tarea está terminada cuando el comando que dice implementar existe, falla d
 
 ## Cada serie de cambios
 
-Al cerrar una serie, hacé un commit. El número de ruleset se mira contra la distribution que nombra `publish/stable/meta_hostium.yaml`, hoy `hostium-2.1.3`. No reutilices ese número ni reescribas su ZIP. El siguiente salto por defecto es `2.1.4`. Si hay ZIP nuevo, el build escribe la versión en la primera línea de cada `.conf` empaquetado y en `attributes.description`.
+Al cerrar una serie, hacé un commit. El número de ruleset se mira contra la distribution que nombra `publish/stable/meta_hostium.yaml`, hoy `hostium-2.1.4`. No reutilices ese número ni reescribas su ZIP. El siguiente salto por defecto es `2.1.5`. Si hay ZIP nuevo, el build escribe la versión en la primera línea de cada `.conf` empaquetado y en `attributes.description`.
 
 El número es `mayor.sub.subsub` (`2.0.0`, `1.2.0`, `2.0.1`). Cada release que armes sube solo el sub-sub, salvo que el usuario pida sub o mayor.
 
 - **Mayor.** Un id que esa distribution ya instala cambia de `deny` a `pass`, de `pass` a `deny`, o de fase. Se saca del ZIP un `.conf` que esa distribution instala. Se reutiliza un id. Cambia `vendor_id`, la raíz `hostium/` o el contrato de la metadata.
 - **Sub.** Entra un `.conf` nuevo o ids nuevos, y los ids ya instalados conservan id, fase y acción. En WHM, Sets Included sube. Así pasó de `1.0.0` (un set, `5500100` y `5500101`) a la línea `1.1` (el módulo `REQUEST-410`). La `2.1.0` sumó `REQUEST-900`. La `2.1.1` solo cambia `ver:'hostium/2.1.1'` en esas cinco reglas. El puntaje de CRS no es un vendor: queda en un archivo de srv-admin, leído después de `modsec2.conf`. `hostium-2.1.0.zip` y `hostium-tune-2.1.0.zip` no se reescriben. El único meta de instalación es `meta_hostium.yaml`.
-- **Sub-sub.** Es el salto por defecto de cada release. También cubre un ajuste de expresión, docs, tests o CLI con los mismos ids. La `1.1.1` sacó del ZIP reglas de fase 4. La `1.1.2` suma los contadores `5500606`, `5500607` y `5500608`.
+- **Sub-sub.** Es el salto por defecto de cada release. También cubre un ajuste de expresión, docs, tests o CLI con los mismos ids. La `1.1.1` sacó del ZIP reglas de fase 4. La `1.1.2` suma los contadores `5500606`, `5500607` y `5500608`. La `2.1.4` suma el id `5500905` porque el operador pidió subir solo el último número.
 
 Si la serie no cambia reglas empaquetadas, el commit no crea otra distribution. Un ZIP igual haría que WHM lo baje sin reglas nuevas.
 
@@ -43,6 +43,6 @@ Si la serie no cambia reglas empaquetadas, el commit no crea otra distribution. 
 - Archivos bajo el vendor OWASP3 instalado por RPM.
 - `deploy apply` y `rollback apply`: siguen bloqueados hasta que haya captura de estado, idempotencia ensayada y rollback ensayado.
 
-## Estado de tuning tras 2.1.3
+## Estado de tuning tras 2.1.4
 
-WHMCS 5500902 está acotado a clientes.hostium.com, /admin1911/configgeneral.php y POST; solo agrega 921130 para los dos campos de plantilla, no toda attack-protocol. Los otros cuatro casos mantienen compatibilidad transitoria fijada al ZIP 2.1.1 (heredada_estable); no ampliar ese modo ni inventar nuevos casos. Migrar cada uno con dominio/ruta/método/parámetro confirmados y regresión. La candidata local 2.1.2 no se publicó ni se reescribe. El operador realizará la actualización de calcium; la publicación no acredita un guardado real de WHMCS ni autoriza rellenar ultima_validacion.
+WHMCS 5500902 está acotado a clientes.hostium.com, /admin1911/configgeneral.php y POST; solo agrega 921130 para los dos campos de plantilla, no toda attack-protocol. Los otros cuatro casos mantienen compatibilidad transitoria fijada al ZIP 2.1.1 (heredada_estable); no ampliar ese modo ni inventar nuevos casos. 5500905 es la excepción de path: GET y `/pluginfile.php/`, sin dominio, y solo quita REQUEST_FILENAME de 933210. No uses heredada_estable para casos nuevos. La candidata local 2.1.2 no se publicó ni se reescribe. El operador realizará la actualización de calcium; la publicación no acredita un ensayo en cPanel ni autoriza rellenar ultima_validacion.
