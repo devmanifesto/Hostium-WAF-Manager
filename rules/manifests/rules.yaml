@@ -2385,7 +2385,538 @@ reglas:
       fecha: '2026-11-03'
       nota: Alta acotada al editor. Para salir, sacá la entrada y publicá otra release. No reescribas hostium-2.1.4.zip.
 
+  - id: 5500907
+    nombre: Comentario de la inmobiliaria imno_
+    descripcion: POST bajo /modules_/imno_/. Quita solo ARGS:comentario de 933210. Sin dominio.
+    categoria: exclusion-crs
+    modulo: REQUEST-900-CRS-EXCLUSIONS
+    archivo: rules/hostium/REQUEST-900-CRS-EXCLUSIONS.conf
+    version_de_introduccion: 2.1.6
+    autor: Hostium
+    owner: equipo-seguridad-hostium
+    motivacion: Un telefono en comentario dispara 933210. comentario es generico, asi que el prefijo limita el alcance.
+    tipo_de_ataque: falso-positivo
+    referencias:
+    - https://coreruleset.org/docs/2-how-crs-works/2-3-false-positives-and-tuning/
+    - 2026-11-03-imno-comentario
+    falsos_positivos_probables: El mismo texto fuera de /modules_/imno_/ sigue sumando.
+    fase: 1
+    variables_inspeccionadas:
+    - REQUEST_FILENAME
+    - REQUEST_METHOD
+    operador: '@beginsWith'
+    transformaciones:
+    - t:none
+    accion: pass
+    severidad: NOTICE
+    etiquetas:
+    - hostium-crs-exclusion
+    estado: produccion
+    modo_por_defecto: log-only
+    incluir_en_paquete: true
+    casos_de_prueba_positivos:
+    - titulo: comentario con telefono en saveData.php
+      path: /modules_/imno_/saveData.php
+      metodo: POST
+      dispara: true
+      ejecucion: automatizada
+      status: 200
+      notas: Status 200 es el contrato del manifiesto. 503 es el backend de laboratorio. No se observo en cPanel.
+    casos_de_prueba_negativos:
+    - titulo: el mismo comentario en /index.php
+      path: /index.php
+      metodo: POST
+      dispara: false
+      ejecucion: automatizada
+      notas: Fuera del prefijo 933210 sigue y 949110 dispara.
+    impacto_previsto: Solo deja de inspeccionar comentario en 933210 bajo /modules_/imno_/. ultima_validacion queda vacia.
+    fecha_de_revision: '2027-05-02'
+    ultima_validacion: null
+    excepciones: []
+    registro_de_cambio:
+    - version: 2.1.6
+      fecha: '2026-11-03'
+      nota: Alta sin dominio. Para salir, saca la entrada y publica otra release. No reescribas hostium-2.1.5.zip.
+
+  - id: 5500908
+    nombre: Transferencia de la inmobiliaria imno
+    descripcion: POST bajo /modules_/imno/. Quita solo ARGS:transferencia de 942100. El prefijo no cubre /modules_/imno_/.
+    categoria: exclusion-crs
+    modulo: REQUEST-900-CRS-EXCLUSIONS
+    archivo: rules/hostium/REQUEST-900-CRS-EXCLUSIONS.conf
+    version_de_introduccion: 2.1.6
+    autor: Hostium
+    owner: equipo-seguridad-hostium
+    motivacion: El navegador mete un div en transferencia y 942100 lo marca. Es otra barra, no el caso de imno_.
+    tipo_de_ataque: falso-positivo
+    referencias:
+    - https://coreruleset.org/docs/2-how-crs-works/2-3-false-positives-and-tuning/
+    - 2026-11-03-imno-transferencia
+    falsos_positivos_probables: transferencia fuera de /modules_/imno/ sigue inspeccionada.
+    fase: 1
+    variables_inspeccionadas:
+    - REQUEST_FILENAME
+    - REQUEST_METHOD
+    operador: '@beginsWith'
+    transformaciones:
+    - t:none
+    accion: pass
+    severidad: NOTICE
+    etiquetas:
+    - hostium-crs-exclusion
+    estado: produccion
+    modo_por_defecto: log-only
+    incluir_en_paquete: true
+    casos_de_prueba_positivos:
+    - titulo: transferencia bajo /modules_/imno/
+      path: /modules_/imno/informes/saveData.php
+      metodo: POST
+      dispara: true
+      ejecucion: automatizada
+      status: 200
+      notas: Status 200 es el contrato del manifiesto. No se observo en cPanel.
+    casos_de_prueba_negativos:
+    - titulo: el prefijo no cubre imno_
+      path: /modules_/imno_/saveData.php
+      metodo: POST
+      dispara: false
+      ejecucion: automatizada
+      notas: /modules_/imno/ no empieza el path de imno_.
+    impacto_previsto: Solo deja de inspeccionar transferencia en 942100 bajo /modules_/imno/. ultima_validacion queda vacia.
+    fecha_de_revision: '2027-05-02'
+    ultima_validacion: null
+    excepciones: []
+    registro_de_cambio:
+    - version: 2.1.6
+      fecha: '2026-11-03'
+      nota: Alta sin dominio. No reescribas hostium-2.1.5.zip.
+
+  - id: 5500909
+    nombre: Cuentas del libro mayor
+    descripcion: POST bajo /server20200601/mod/reportes/. Quita solo ARGS:ctas de 942100.
+    categoria: exclusion-crs
+    modulo: REQUEST-900-CRS-EXCLUSIONS
+    archivo: rules/hostium/REQUEST-900-CRS-EXCLUSIONS.conf
+    version_de_introduccion: 2.1.6
+    autor: Hostium
+    owner: equipo-seguridad-hostium
+    motivacion: ctas trae el mismo formato de lista que vseleccionados. No se exceptua el nombre suelto.
+    tipo_de_ataque: falso-positivo
+    referencias:
+    - https://coreruleset.org/docs/2-how-crs-works/2-3-false-positives-and-tuning/
+    - 2026-11-03-agro-ctas
+    falsos_positivos_probables: ctas fuera de reportes sigue inspeccionado.
+    fase: 1
+    variables_inspeccionadas:
+    - REQUEST_FILENAME
+    - REQUEST_METHOD
+    operador: '@beginsWith'
+    transformaciones:
+    - t:none
+    accion: pass
+    severidad: NOTICE
+    etiquetas:
+    - hostium-crs-exclusion
+    estado: produccion
+    modo_por_defecto: log-only
+    incluir_en_paquete: true
+    casos_de_prueba_positivos:
+    - titulo: ctas en el reporte
+      path: /server20200601/mod/reportes/reporte_libromayor_cfg.php
+      metodo: POST
+      dispara: true
+      ejecucion: automatizada
+      status: 200
+      notas: Status 200 es el contrato del manifiesto. No se observo en cPanel.
+    casos_de_prueba_negativos:
+    - titulo: ctas fuera de reportes
+      path: /index.php
+      metodo: POST
+      dispara: false
+      ejecucion: automatizada
+      notas: El nombre no se exceptua suelto.
+    impacto_previsto: Solo deja de inspeccionar ctas en 942100 bajo reportes. ultima_validacion queda vacia.
+    fecha_de_revision: '2027-05-02'
+    ultima_validacion: null
+    excepciones: []
+    registro_de_cambio:
+    - version: 2.1.6
+      fecha: '2026-11-03'
+      nota: Alta sin dominio. No reescribas hostium-2.1.5.zip.
+
   - id: 5500910
+    nombre: Compra en fcompra.php
+    descripcion: POST al script exacto. Quita 942100 de ARGS:description y 930110 de ARGS:flete_observaciones.
+    categoria: exclusion-crs
+    modulo: REQUEST-900-CRS-EXCLUSIONS
+    archivo: rules/hostium/REQUEST-900-CRS-EXCLUSIONS.conf
+    version_de_introduccion: 2.1.6
+    autor: Hostium
+    owner: equipo-seguridad-hostium
+    motivacion: description trae un texto con so(1) y flete_observaciones vale dos puntos. 930110 no sale de ese campo.
+    tipo_de_ataque: falso-positivo
+    referencias:
+    - https://coreruleset.org/docs/2-how-crs-works/2-3-false-positives-and-tuning/
+    - 2026-11-03-agro-fcompra
+    falsos_positivos_probables: Otro campo de la misma pantalla sigue inspeccionado.
+    fase: 1
+    variables_inspeccionadas:
+    - REQUEST_FILENAME
+    - REQUEST_METHOD
+    operador: '@streq'
+    transformaciones:
+    - t:none
+    accion: pass
+    severidad: NOTICE
+    etiquetas:
+    - hostium-crs-exclusion
+    estado: produccion
+    modo_por_defecto: log-only
+    incluir_en_paquete: true
+    casos_de_prueba_positivos:
+    - titulo: description y flete en fcompra.php
+      path: /server20200601/mod/compras/fcompra.php
+      metodo: POST
+      dispara: true
+      ejecucion: automatizada
+      status: 200
+      notas: Status 200 es el contrato del manifiesto. No se observo en cPanel.
+    casos_de_prueba_negativos:
+    - titulo: los mismos campos en otro script
+      path: /index.php
+      metodo: POST
+      dispara: false
+      ejecucion: automatizada
+      notas: El @streq no cubre otros scripts.
+    impacto_previsto: Dos campos de un script. ultima_validacion queda vacia.
+    fecha_de_revision: '2027-05-02'
+    ultima_validacion: null
+    excepciones: []
+    registro_de_cambio:
+    - version: 2.1.6
+      fecha: '2026-11-03'
+      nota: El id de catalogo del puntaje pasa a 5500990. Este 5500910 es la SecRule. No reescribas hostium-2.1.5.zip.
+
+  - id: 5500911
+    nombre: Marca en itemfcompra.php
+    descripcion: POST al script exacto. Quita 930110 de ARGS:marcades.
+    categoria: exclusion-crs
+    modulo: REQUEST-900-CRS-EXCLUSIONS
+    archivo: rules/hostium/REQUEST-900-CRS-EXCLUSIONS.conf
+    version_de_introduccion: 2.1.6
+    autor: Hostium
+    owner: equipo-seguridad-hostium
+    motivacion: marcades vale dos puntos. No se quita 930110 del resto del sitio.
+    tipo_de_ataque: falso-positivo
+    referencias:
+    - https://coreruleset.org/docs/2-how-crs-works/2-3-false-positives-and-tuning/
+    - 2026-11-03-agro-itemfcompra
+    falsos_positivos_probables: marcades en otro script sigue inspeccionado.
+    fase: 1
+    variables_inspeccionadas:
+    - REQUEST_FILENAME
+    - REQUEST_METHOD
+    operador: '@streq'
+    transformaciones:
+    - t:none
+    accion: pass
+    severidad: NOTICE
+    etiquetas:
+    - hostium-crs-exclusion
+    estado: produccion
+    modo_por_defecto: log-only
+    incluir_en_paquete: true
+    casos_de_prueba_positivos:
+    - titulo: marcades en itemfcompra.php
+      path: /server20200601/mod/compras/itemfcompra.php
+      metodo: POST
+      dispara: true
+      ejecucion: automatizada
+      status: 200
+      notas: Status 200 es el contrato del manifiesto. No se observo en cPanel.
+    casos_de_prueba_negativos:
+    - titulo: dos puntos en otro script
+      path: /index.php
+      metodo: POST
+      dispara: false
+      ejecucion: automatizada
+      notas: 930110 sigue fuera de este script.
+    impacto_previsto: Un campo de un script. ultima_validacion queda vacia.
+    fecha_de_revision: '2027-05-02'
+    ultima_validacion: null
+    excepciones: []
+    registro_de_cambio:
+    - version: 2.1.6
+      fecha: '2026-11-03'
+      nota: Alta sin dominio. No reescribas hostium-2.1.5.zip.
+
+  - id: 5500912
+    nombre: Descripcion variable en laboractividad.php
+    descripcion: POST al script exacto. Quita 930110 de ARGS entero porque el nombre marcaid_Ndes cambia.
+    categoria: exclusion-crs
+    modulo: REQUEST-900-CRS-EXCLUSIONS
+    archivo: rules/hostium/REQUEST-900-CRS-EXCLUSIONS.conf
+    version_de_introduccion: 2.1.6
+    autor: Hostium
+    owner: equipo-seguridad-hostium
+    motivacion: No hay regex de nombres. Un ../ real en otro campo de esta pantalla deja de verlo 930110. Las demas reglas siguen.
+    tipo_de_ataque: falso-positivo
+    referencias:
+    - https://coreruleset.org/docs/2-how-crs-works/2-3-false-positives-and-tuning/
+    - 2026-11-03-agro-laboractividad
+    falsos_positivos_probables: 930110 no ve ARGS en este script. Fuera de el, sigue.
+    fase: 1
+    variables_inspeccionadas:
+    - REQUEST_FILENAME
+    - REQUEST_METHOD
+    - ARGS
+    operador: '@streq'
+    transformaciones:
+    - t:none
+    accion: pass
+    severidad: NOTICE
+    etiquetas:
+    - hostium-crs-exclusion
+    estado: produccion
+    modo_por_defecto: log-only
+    incluir_en_paquete: true
+    casos_de_prueba_positivos:
+    - titulo: dos puntos en laboractividad.php
+      path: /server20200601/mod/agro/laboractividad.php
+      metodo: POST
+      dispara: true
+      ejecucion: automatizada
+      status: 200
+      notas: Status 200 es el contrato del manifiesto. No se observo en cPanel.
+    casos_de_prueba_negativos:
+    - titulo: dos puntos en otro script
+      path: /index.php
+      metodo: POST
+      dispara: false
+      ejecucion: automatizada
+      notas: ARGS entero no se quita fuera de este script.
+    impacto_previsto: 930110 no inspecciona ARGS en esta pantalla. ultima_validacion queda vacia.
+    fecha_de_revision: '2027-05-02'
+    ultima_validacion: null
+    excepciones: []
+    registro_de_cambio:
+    - version: 2.1.6
+      fecha: '2026-11-03'
+      nota: Unica regla nueva que quita ARGS entero. No reescribas hostium-2.1.5.zip.
+
+  - id: 5500913
+    nombre: Script de cuotas codscripttarjeta
+    descripcion: SecAction sin URI. Quita 932130, 932140 y 942170 de ARGS:codscripttarjeta.
+    categoria: exclusion-crs
+    modulo: REQUEST-900-CRS-EXCLUSIONS
+    archivo: rules/hostium/REQUEST-900-CRS-EXCLUSIONS.conf
+    version_de_introduccion: 2.1.6
+    autor: Hostium
+    owner: equipo-seguridad-hostium
+    motivacion: El nombre es unico y el valor es JavaScript del formulario. No se ata a un host.
+    tipo_de_ataque: falso-positivo
+    referencias:
+    - https://coreruleset.org/docs/2-how-crs-works/2-3-false-positives-and-tuning/
+    - 2026-11-03-codscripttarjeta
+    falsos_positivos_probables: Otro campo de la misma pantalla sigue inspeccionado.
+    fase: 1
+    variables_inspeccionadas:
+    - ARGS:codscripttarjeta
+    operador: '@unconditionalMatch'
+    transformaciones:
+    - t:none
+    accion: pass
+    severidad: NOTICE
+    etiquetas:
+    - hostium-crs-exclusion
+    estado: produccion
+    modo_por_defecto: log-only
+    incluir_en_paquete: true
+    casos_de_prueba_positivos:
+    - titulo: JavaScript en codscripttarjeta
+      path: /aplicacion_customs/xq/empresa-comprar.php
+      metodo: POST
+      dispara: true
+      ejecucion: automatizada
+      status: 200
+      notas: Status 200 es el contrato del manifiesto. No se observo en cPanel.
+    casos_de_prueba_negativos:
+    - titulo: el mismo JavaScript en otro campo
+      path: /aplicacion_customs/xq/empresa-comprar.php
+      metodo: POST
+      dispara: false
+      ejecucion: automatizada
+      notas: Solo se quita ese nombre.
+    impacto_previsto: Tres reglas dejan de ver un solo campo, en cualquier path. ultima_validacion queda vacia.
+    fecha_de_revision: '2027-05-02'
+    ultima_validacion: null
+    excepciones: []
+    registro_de_cambio:
+    - version: 2.1.6
+      fecha: '2026-11-03'
+      nota: SecAction sin URI. No reescribas hostium-2.1.5.zip.
+
+  - id: 5500914
+    nombre: Partes del quiz de Moodle
+    descripcion: POST bajo /mod/quiz/. Quita MULTIPART_PART_HEADERS de 922130. No baja el puntaje global.
+    categoria: exclusion-crs
+    modulo: REQUEST-900-CRS-EXCLUSIONS
+    archivo: rules/hostium/REQUEST-900-CRS-EXCLUSIONS.conf
+    version_de_introduccion: 2.1.6
+    autor: Hostium
+    owner: equipo-seguridad-hostium
+    motivacion: El nombre de parte termina en dos puntos. Cada parte ya suma 3 y un quiz junta decenas.
+    tipo_de_ataque: falso-positivo
+    referencias:
+    - https://coreruleset.org/docs/2-how-crs-works/2-3-false-positives-and-tuning/
+    - 2026-11-03-moodle-quiz-922130
+    falsos_positivos_probables: El mismo nombre de parte fuera de /mod/quiz/ sigue sumando.
+    fase: 1
+    variables_inspeccionadas:
+    - REQUEST_FILENAME
+    - REQUEST_METHOD
+    - MULTIPART_PART_HEADERS
+    operador: '@beginsWith'
+    transformaciones:
+    - t:none
+    accion: pass
+    severidad: NOTICE
+    etiquetas:
+    - hostium-crs-exclusion
+    estado: produccion
+    modo_por_defecto: log-only
+    incluir_en_paquete: true
+    casos_de_prueba_positivos:
+    - titulo: partes con dos puntos en processattempt.php
+      path: /mod/quiz/processattempt.php
+      metodo: POST
+      dispara: true
+      ejecucion: automatizada
+      status: 200
+      notas: Status 200 es el contrato del manifiesto. 503 es el backend de laboratorio. No se observo en cPanel.
+    casos_de_prueba_negativos:
+    - titulo: el mismo nombre de parte en /index.php
+      path: /index.php
+      metodo: POST
+      dispara: false
+      ejecucion: automatizada
+      notas: 922130 sigue fuera de /mod/quiz/.
+    impacto_previsto: 922130 no mira las cabeceras de parte en el quiz. ultima_validacion queda vacia.
+    fecha_de_revision: '2027-05-02'
+    ultima_validacion: null
+    excepciones: []
+    registro_de_cambio:
+    - version: 2.1.6
+      fecha: '2026-11-03'
+      nota: Primer control de Moodle. El foro es 5500915 y summary_editor es 5500916. No reescribas hostium-2.1.5.zip.
+
+  - id: 5500915
+    nombre: Mensaje del foro de Moodle
+    descripcion: POST bajo /mod/forum/. Quita 941100 y 941160 de ARGS:message[text].
+    categoria: exclusion-crs
+    modulo: REQUEST-900-CRS-EXCLUSIONS
+    archivo: rules/hostium/REQUEST-900-CRS-EXCLUSIONS.conf
+    version_de_introduccion: 2.1.6
+    autor: Hostium
+    owner: equipo-seguridad-hostium
+    motivacion: El editor del foro manda HTML en message[text]. Otro campo de la misma URL sigue inspeccionado.
+    tipo_de_ataque: falso-positivo
+    referencias:
+    - https://coreruleset.org/docs/2-how-crs-works/2-3-false-positives-and-tuning/
+    - 2026-11-03-moodle-forum-message
+    falsos_positivos_probables: Un script en otro campo de /mod/forum/ sigue disparando 949110.
+    fase: 1
+    variables_inspeccionadas:
+    - REQUEST_FILENAME
+    - REQUEST_METHOD
+    - 'ARGS:message[text]'
+    operador: '@beginsWith'
+    transformaciones:
+    - t:none
+    accion: pass
+    severidad: NOTICE
+    etiquetas:
+    - hostium-crs-exclusion
+    estado: produccion
+    modo_por_defecto: log-only
+    incluir_en_paquete: true
+    casos_de_prueba_positivos:
+    - titulo: HTML en message[text]
+      path: /mod/forum/post.php
+      metodo: POST
+      dispara: true
+      ejecucion: automatizada
+      status: 200
+      notas: Status 200 es el contrato del manifiesto. No se observo en cPanel.
+    casos_de_prueba_negativos:
+    - titulo: script en otro campo de la misma URL
+      path: /mod/forum/post.php
+      metodo: POST
+      dispara: false
+      ejecucion: automatizada
+      notas: 941100 y 941160 siguen en los demas argumentos.
+    impacto_previsto: Dos reglas XSS dejan de ver un campo del foro. ultima_validacion queda vacia.
+    fecha_de_revision: '2027-05-02'
+    ultima_validacion: null
+    excepciones: []
+    registro_de_cambio:
+    - version: 2.1.6
+      fecha: '2026-11-03'
+      nota: Segundo control de Moodle. No reescribas hostium-2.1.5.zip.
+
+  - id: 5500916
+    nombre: Resumen summary_editor de Moodle
+    descripcion: SecAction sin URI. Quita 941100 y 941160 de ARGS:summary_editor[text]. No usa /login/.
+    categoria: exclusion-crs
+    modulo: REQUEST-900-CRS-EXCLUSIONS
+    archivo: rules/hostium/REQUEST-900-CRS-EXCLUSIONS.conf
+    version_de_introduccion: 2.1.6
+    autor: Hostium
+    owner: equipo-seguridad-hostium
+    motivacion: El nombre es unico. El path /login/ es generico y no se usa como selector.
+    tipo_de_ataque: falso-positivo
+    referencias:
+    - https://coreruleset.org/docs/2-how-crs-works/2-3-false-positivos-and-tuning/
+    - 2026-11-03-moodle-summary-editor
+    falsos_positivos_probables: Otro campo sigue inspeccionado.
+    fase: 1
+    variables_inspeccionadas:
+    - 'ARGS:summary_editor[text]'
+    operador: '@unconditionalMatch'
+    transformaciones:
+    - t:none
+    accion: pass
+    severidad: NOTICE
+    etiquetas:
+    - hostium-crs-exclusion
+    estado: produccion
+    modo_por_defecto: log-only
+    incluir_en_paquete: true
+    casos_de_prueba_positivos:
+    - titulo: HTML en summary_editor[text]
+      path: /course/edit.php
+      metodo: POST
+      dispara: true
+      ejecucion: automatizada
+      status: 200
+      notas: Status 200 es el contrato del manifiesto. No se observo en cPanel. No se ata a /login/.
+    casos_de_prueba_negativos:
+    - titulo: el mismo HTML en otro campo
+      path: /course/edit.php
+      metodo: POST
+      dispara: false
+      ejecucion: automatizada
+      notas: Solo se quita ese nombre.
+    impacto_previsto: Dos reglas XSS dejan de ver un nombre unico. ultima_validacion queda vacia.
+    fecha_de_revision: '2027-05-02'
+    ultima_validacion: null
+    excepciones: []
+    registro_de_cambio:
+    - version: 2.1.6
+      fecha: '2026-11-03'
+      nota: Tercer control de Moodle. No reescribas hostium-2.1.5.zip.
+
+  - id: 5500990
     nombre: Anomaly score de cinco archivos CRS
     descripcion: No es una SecRule y no entra al ZIP de hostium. El conf REQUEST-910 no es un vendor.
       srv-admin lo lee después de modsec2.conf. Repite SecRuleUpdateActionById para el anomaly score
@@ -2444,3 +2975,7 @@ reglas:
       fecha: '2026-11-02'
       nota: Va en el vendor hostium-tune, no en el ZIP de hostium. Para salir, no agregues ese vendor.
         No reescribas hostium-2.0.0.zip.
+    - version: 2.1.6
+      fecha: '2026-11-03'
+      nota: El id de catalogo pasa de 5500910 a 5500990 para dejar 5500910 a la SecRule de fcompra.php.
+        El conf de puntaje y el vendor hostium-tune no cambian.

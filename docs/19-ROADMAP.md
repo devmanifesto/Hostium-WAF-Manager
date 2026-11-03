@@ -1,8 +1,8 @@
 # Roadmap
 
-## Estado al 2 de noviembre de 2026
+## Estado al 3 de noviembre de 2026
 
-Estable 2.1.5 publicada en el origen. 5500906 cubre el POST de un host bajo `/wp-admin/` para excerpt y content. 5500905 sigue cubriendo el GET de `/pluginfile.php/` sin dominio. WHMCS sigue con dominio, ruta y POST confirmados. La actualización de calcium la hará el operador. Los otros cuatro casos mantienen compatibilidad transitoria con la estable 2.1.1; siguen pendientes de delimitar. La candidata 2.1.2 no se publicó ni se reescribe. `hostium-2.1.4.zip` queda inmutable.
+Estable 2.1.6 publicada en el origen. 5500907–5500916 cubren rutas y nombres de campo sin dominio. 5500906 sigue cubriendo el POST de un host bajo `/wp-admin/` para excerpt y content. 5500905 sigue cubriendo el GET de `/pluginfile.php/` sin dominio. WHMCS sigue con dominio, ruta y POST confirmados. La actualización de calcium la hará el operador. Los otros cuatro casos mantienen compatibilidad transitoria con la estable 2.1.1; siguen pendientes de delimitar. La candidata 2.1.2 no se publicó ni se reescribe. `hostium-2.1.5.zip` queda inmutable.
 
 ## Prioridad inmediata
 

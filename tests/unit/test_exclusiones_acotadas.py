@@ -125,6 +125,52 @@ def test_wordpress_editor_solo_en_ese_host() -> None:
         )
 
 
+def test_rutas_sin_dominio_conservan_los_controles_anteriores() -> None:
+    data = yaml.safe_load((ROOT / "config/exclusions.yaml").read_text(encoding="utf-8"))
+    texto = render_exclusiones(data)
+    with ZipFile(ROOT / "publish/stable/hostium-2.1.5.zip") as zf:
+        viejo = zf.read("hostium/REQUEST-900-CRS-EXCLUSIONS.conf").decode("utf-8")
+    assert "id:5500907" not in viejo
+    for identificador in range(5500900, 5500907):
+        assert re.findall(r"ctl:[^\s,\"\\]+", _bloque_id(viejo, identificador)) == re.findall(
+            r"ctl:[^\s,\"\\]+", _bloque_id(texto, identificador),
+        )
+    assert "/modules_/imno_/".startswith("/modules_/imno/") is False
+    assert 'SecRule REQUEST_FILENAME "@beginsWith /modules_/imno_/"' in texto
+    assert 'SecRule REQUEST_FILENAME "@beginsWith /modules_/imno/"' in texto
+    assert "ctl:ruleRemoveTargetById=933210;ARGS:comentario" in texto
+    assert "ctl:ruleRemoveTargetById=942100;ARGS:transferencia" in texto
+    assert "ctl:ruleRemoveTargetById=942100;ARGS:ctas" in texto
+    assert "ctl:ruleRemoveTargetById=942100;ARGS:description" in texto
+    assert "ctl:ruleRemoveTargetById=930110;ARGS:flete_observaciones" in texto
+    assert "ctl:ruleRemoveTargetById=930110;ARGS:marcades" in texto
+    assert "ctl:ruleRemoveTargetById=932130;ARGS:codscripttarjeta" in texto
+    assert "ctl:ruleRemoveTargetById=932140;ARGS:codscripttarjeta" in texto
+    assert "ctl:ruleRemoveTargetById=942170;ARGS:codscripttarjeta" in texto
+    assert "ctl:ruleRemoveTargetById=922130;MULTIPART_PART_HEADERS" in texto
+    assert "ctl:ruleRemoveTargetById=941100;ARGS:message[text]" in texto
+    assert "ctl:ruleRemoveTargetById=941160;ARGS:message[text]" in texto
+    assert "ctl:ruleRemoveTargetById=941100;ARGS:summary_editor[text]" in texto
+    assert "ctl:ruleRemoveTargetById=941160;ARGS:summary_editor[text]" in texto
+    assert "942190" not in texto
+    labor = _bloque_id(texto, 5500912)
+    assert "@streq /server20200601/mod/agro/laboractividad.php" in labor
+    assert "ctl:ruleRemoveTargetById=930110;ARGS\"" in labor or "ctl:ruleRemoveTargetById=930110;ARGS\n" in labor
+    for identificador in range(5500907, 5500917):
+        if identificador == 5500912:
+            continue
+        bloque = _bloque_id(texto, identificador)
+        assert not re.search(r"ctl:[^\s,\"\\]+;ARGS(?:[,\"]|$)", bloque)
+    assert 'SecAction "id:5500913,' in texto
+    assert 'SecAction "id:5500916,' in texto
+    assert "SecRuleUpdateActionById" not in texto
+    copia = yaml.safe_load((ROOT / "config/exclusions.yaml").read_text(encoding="utf-8"))
+    ajena = next(i for i in copia["exclusiones"] if i["id"] == "5500909")
+    ajena["coleccion"] = True
+    ajena["controles"][0]["variable"] = "ARGS"
+    assert any(i.codigo == "exclusion" for i in validar_exclusiones(copia))
+
+
 def _bloque_id(texto: str, identificador: int) -> str:
     return next(b for b in re.split(r"\n\s*\n", texto) if re.search(rf"\bid:{identificador}\b", b))
 

@@ -297,6 +297,12 @@ El operador pidió publicar hostium-2.1.5 subiendo solo el último número, con 
 
 5500906 es una cadena de un solo host. Fase 1, pass, nolog, t:none, tag hostium-crs-exclusion, ver hostium/2.1.5. Host exacto capacitaciones.municipalidadsalta.gob.ar, REQUEST_FILENAME @beginsWith /wp-admin/, REQUEST_METHOD POST, y en el último eslabón ctl:ruleRemoveTargetById de 941100, 941160, 941200, 941310 y 941350 sobre ARGS:excerpt y ARGS:content. No quita ARGS entero, no desactiva esas reglas y no excluye 942190. No se ata al id del post. ultima_validacion sigue null.
 
+### Autorización de publicación 2.1.6, 3 de noviembre de 2026
+
+El operador pidió publicar hostium-2.1.6 subiendo solo el último número, con ZIP nuevo y sin reescribir hostium-2.1.5.zip ni los anteriores. 5500906 ya estaba publicado. No se publica ni refresca hostium-tune. REQUEST-910 y SecRuleUpdateActionById siguen fuera del ZIP. El único meta de instalación sigue siendo meta_hostium.yaml. Los controles de 5500900–5500906 no cambian.
+
+5500907–5500916 se generan desde exclusions.yaml. Fase 1, pass, nolog, t:none, tag hostium-crs-exclusion, ver hostium/2.1.6. Sin dominio. 5500907 y 5500908 usan prefijos distintos: `/modules_/imno_/` y `/modules_/imno/`. 5500909 acota ctas a `/server20200601/mod/reportes/`. 5500910 y 5500911 son scripts exactos de compras. 5500912 quita ARGS entero de 930110 solo en laboractividad.php. 5500913 y 5500916 son SecAction por nombre de campo. Moodle no cabe en un id: 5500914 es el quiz y MULTIPART_PART_HEADERS de 922130, 5500915 es el foro y message[text], 5500916 es summary_editor[text]. No se baja el puntaje global. El id de catálogo del puntaje pasa a 5500990. ultima_validacion sigue null.
+
 ## 9. CLI completa y comportamiento esperado
 
 Proponé e implementá una CLI coherente, documentada y testeada. Como mínimo:

@@ -251,3 +251,85 @@ def test_editor_wordpress_solo_excerpt_y_content(crs_acotado):
     )
     assert status == 403, delta[-5000:]
     assert _id_en_esta_uri(delta, 949110, "/wp-admin/post.php"), delta[-5000:]
+
+
+def pedir_multipart(servidor, path, partes, *, host):
+    base, nombre = servidor
+    anteriores = set(_logs(nombre).splitlines())
+    limite = "----hostiumlab"
+    trozos = []
+    for campo, valor in partes:
+        trozos.append(
+            f"--{limite}\r\nContent-Disposition: form-data; name=\"{campo}\"\r\n\r\n{valor}\r\n"
+        )
+    trozos.append(f"--{limite}--\r\n")
+    req = urllib.request.Request(
+        base + path,
+        data="".join(trozos).encode(),
+        method="POST",
+        headers={"Host": host, "Content-Type": f"multipart/form-data; boundary={limite}"},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=15) as respuesta:
+            status = respuesta.status
+    except urllib.error.HTTPError as exc:
+        status = exc.code
+    nuevas = "\n".join(linea for linea in _logs(nombre).splitlines() if linea not in anteriores)
+    return status, nuevas
+
+
+@pytest.mark.integration
+def test_comentario_de_imno_no_sale_del_prefijo(crs_acotado):
+    # CRS 3.3.10, 933210. (3364)668153 solo no es el patrón; la frase de evidencia sí, porque hay otro paréntesis.
+    evidencia = "GARANTIAS: AVENALI ADOLFO (3364)668153 (padre inq)"
+    ruta = "/modules_/imno_/saveData.php"
+    status, delta = pedir_form(crs_acotado["produccion"], ruta, {"comentario": evidencia}, host="inmobiliaria.example.test")
+    assert status == 503, delta[-5000:]
+    assert not _id_en_esta_uri(delta, 933210, ruta), delta[-5000:]
+    assert not _id_en_esta_uri(delta, 949110, ruta), delta[-5000:]
+    status, delta = pedir_form(crs_acotado["produccion"], "/index.php", {"comentario": evidencia}, host="inmobiliaria.example.test")
+    assert status == 403, delta[-5000:]
+    assert _id_en_esta_uri(delta, 933210, "/index.php"), delta[-5000:]
+    assert _id_en_esta_uri(delta, 949110, "/index.php"), delta[-5000:]
+
+
+@pytest.mark.integration
+def test_partes_del_quiz_no_suman_922130(crs_acotado):
+    partes = [(f"q{indice}:", "respuesta") for indice in range(1, 4)]
+    ruta = "/mod/quiz/processattempt.php"
+    status, delta = pedir_multipart(crs_acotado["produccion"], ruta, partes, host="moodle.example.test")
+    assert status == 503, delta[-5000:]
+    assert not _id_en_esta_uri(delta, 922130, ruta), delta[-5000:]
+    assert not _id_en_esta_uri(delta, 949110, ruta), delta[-5000:]
+    status, delta = pedir_multipart(crs_acotado["produccion"], "/index.php", partes, host="moodle.example.test")
+    assert status == 403, delta[-5000:]
+    assert _id_en_esta_uri(delta, 922130, "/index.php"), delta[-5000:]
+    assert _id_en_esta_uri(delta, 949110, "/index.php"), delta[-5000:]
+
+
+@pytest.mark.integration
+def test_foro_solo_quita_message_text(crs_acotado):
+    ruta = "/mod/forum/post.php"
+    status, delta = pedir_form(
+        crs_acotado["produccion"], ruta, {"message[text]": "<h2>hola</h2>"}, host="moodle.example.test",
+    )
+    assert status == 503, delta[-5000:]
+    assert not _id_en_esta_uri(delta, 941100, ruta), delta[-5000:]
+    assert not _id_en_esta_uri(delta, 941160, ruta), delta[-5000:]
+    # 941160 no mira h2. El img es la etiqueta de esa regla, en el mismo campo exceptuado.
+    status, delta = pedir_form(
+        crs_acotado["produccion"], ruta, {"message[text]": "<h2>hola</h2><img src=x>"}, host="moodle.example.test",
+    )
+    assert status == 503, delta[-5000:]
+    assert not _id_en_esta_uri(delta, 941100, ruta), delta[-5000:]
+    assert not _id_en_esta_uri(delta, 941160, ruta), delta[-5000:]
+    status, delta = pedir_form(
+        crs_acotado["produccion"], "/index.php", {"message[text]": "<img src=x>"}, host="moodle.example.test",
+    )
+    assert status == 403, delta[-5000:]
+    assert _id_en_esta_uri(delta, 941160, "/index.php"), delta[-5000:]
+    status, delta = pedir_form(
+        crs_acotado["produccion"], ruta, {"otro": "<script>alert(1)</script>"}, host="moodle.example.test",
+    )
+    assert status == 403, delta[-5000:]
+    assert _id_en_esta_uri(delta, 949110, ruta), delta[-5000:]

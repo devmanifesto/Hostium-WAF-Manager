@@ -6,7 +6,7 @@ Decir qué se corrió, qué se omitió y qué no prueba protección en un cPanel
 
 ## Audiencia
 
-La estable publicada es 2.1.5, con la exclusión del editor WordPress 5500906 y [QA de release](26-RELEASE-2.1.5.md). La 2.1.4 queda en [QA de release](25-RELEASE-2.1.4.md). La candidata local 2.1.2 no se promovió; su bitácora histórica está en [QA de tuning](23-QA-TUNING.md). Las bitácoras del 23 y 24 de octubre más abajo describen versiones históricas; no son evidencia de la candidata ni de cPanel.
+La estable publicada es 2.1.6, con las exclusiones sin dominio 5500907–5500916 y [QA de release](27-RELEASE-2.1.6.md). La 2.1.5 queda en [QA de release](26-RELEASE-2.1.5.md). La candidata local 2.1.2 no se promovió; su bitácora histórica está en [QA de tuning](23-QA-TUNING.md). Las bitácoras del 23 y 24 de octubre más abajo describen versiones históricas; no son evidencia de la candidata ni de cPanel.
 
 ## Prerrequisitos
 
@@ -18,8 +18,8 @@ El entorno de `docs/04-INSTALACION-DESARROLLO.md`.
 python -m ruff check src tests
 python -m pytest
 python -m pytest -m integration --override-ini="addopts=" -rs
-python -m hostium_waf package build --version 2.1.5 --engine 2.9.15 --output dist/release-2.1.5
-python -m hostium_waf package verify --zip dist/release-2.1.5/hostium-2.1.5.zip --metadata dist/release-2.1.5/meta_hostium.yaml
+python -m hostium_waf package build --version 2.1.6 --engine 2.9.15 --output dist/release-2.1.6
+python -m hostium_waf package verify --zip dist/release-2.1.6/hostium-2.1.6.zip --metadata dist/release-2.1.6/meta_hostium.yaml
 ```
 
 `package build --version 1.0.0` en este árbol termina en error. La 1.0.0 publicada no se reconstruye.

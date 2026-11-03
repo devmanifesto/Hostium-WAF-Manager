@@ -54,7 +54,7 @@ def render_exclusiones(data: dict[str, Any]) -> str:
         "# Runtime fase 1. Dominio exacto, ruta sin query y método; ctl al final de la cadena.",
         "# Una regla de path no lleva dominio: REQUEST_FILENAME, GET y ctl solo en el método.",
         "# Una regla de ruta no lleva dominio: filename, POST y ctl solo en el método.",
-        "# Un SecAction de campo no lleva URI: el nombre viaja con la cuenta.",
+        "# Un control de campo no lleva URI: el nombre viaja con la cuenta.",
         "# Una entrada deshabilitada conserva su id con una condición que nunca coincide.",
         "# Compatibilidad transitoria de cuatro casos 2.1.1; WHMCS tiene alcance explícito.",
         "",
