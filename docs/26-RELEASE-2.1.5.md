@@ -43,6 +43,10 @@ No quita ARGS entero. No desactiva esas reglas. No usa allow, SecRuleRemoveById 
 
 El ZIP contiene `hostium/`, REQUEST-410 y REQUEST-900. No contiene REQUEST-910 ni SecRuleUpdateActionById. hostium-2.1.4.zip conserva MD5 `8a0b7c1ad1441e977dbb9622d8608950` y 4764 bytes. meta_hostium-tune.yaml no se reescribió.
 
+## Verificación pública
+
+Commit 3a97203 en origin/main. Un GET sin sesión de la metadata y del ZIP 2.1.5 devolvió ambos archivos. El ZIP público tiene 4929 bytes y MD5 `e7e47f18451bc794d3575ae53cd28f89`. La metadata pública tiene 506 bytes, MD5 `4915b160fc52f27c572f096f82914d9c`, y nombra `hostium-2.1.5` con ese mismo MD5 de ZIP. No se ejecutó SSH ni `modsec_vendor`.
+
 ## Actualización en calcium a cargo del operador
 
 Guardar la salida previa de vendor list, httpd -t e includes. Luego, como root:
