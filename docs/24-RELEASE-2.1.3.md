@@ -61,3 +61,7 @@ Consulta del 2 de noviembre de 2026: https://raw.githubusercontent.com/corerules
 ## Publicación del ZIP verificada
 
 Commit e15cbfa enviado a origin/main. Se descargó la URL pública exacta del ZIP por HTTPS: HTTP 200, 4628 bytes, MD5/SHA512/SHA256 idénticos al artefacto local. Solo después de esta verificación se preparó la promoción de meta_hostium.yaml a 2.1.3. Calcium no se actualizó desde esta sesión; el operador indicó que lo hará después.
+
+## Metadata estable publicada y verificada
+
+La promoción se envió en el commit 30178a2. Se descargaron por HTTPS las URLs públicas exactas de meta_hostium.yaml y del ZIP: ambas HTTP 200. La metadata declara distribution hostium-2.1.3; sus bytes coinciden con el archivo local. El ZIP público tiene 4628 bytes y MD5 5006f1a7c49accbd1bcf37ea27ef6fc2, con SHA512 coincidente. Se compararon los archivos históricos de publish contra 04fa643: todos los ZIP previos, sidecars y metadata tune permanecen idénticos; solo se agregó la nueva release y se promovió meta_hostium.yaml. El repositorio está publicado en origin/main, sin actualización remota de calcium ni guardado real de WHMCS desde esta sesión.
