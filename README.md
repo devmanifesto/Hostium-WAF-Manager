@@ -2,7 +2,9 @@
 
 Herramienta para mantener un ruleset ModSecurity propio, empaquetarlo como proveedor de cPanel/WHM y auditar una flota sin tocarla por defecto.
 
-La candidata local que construye este árbol es la 2.1.2. La metadata publicada sigue en 2.1.1; no se promovió la candidata. Los ZIP ya publicados en `publish/stable/` no se regeneran. No instala nada en un cPanel y no trata una sintaxis válida como una prueba de bloqueo en producción.
+La estable de este árbol es **2.1.3**. Corrige el guardado de plantillas WHMCS en `clientes.hostium.com/admin1911/configgeneral.php`: excluye 921130 únicamente de `emailglobalheader` y `emailglobalfooter`, solo en ese dominio, endpoint y método POST. No excluye toda la familia attack-protocol.
+
+La publicación fue autorizada por el operador; la actualización de calcium queda a su cargo. No se ejecutó SSH ni se marcó ultima_validacion. El estado de publicación y sus hashes se registran en [QA de la release](docs/24-RELEASE-2.1.3.md).
 
 ## Requisitos
 
@@ -19,8 +21,8 @@ python -m pip install -e ".[dev]"
 python -m hostium_waf version
 python -m hostium_waf doctor --local
 python -m hostium_waf rules validate
-python -m hostium_waf package build --version 2.1.2 --output dist/candidata-2.1.2 --engine 2.9.15
-python -m hostium_waf package verify --zip dist/candidata-2.1.2/hostium-2.1.2.zip --metadata dist/candidata-2.1.2/meta_hostium.yaml
+python -m hostium_waf package build --version 2.1.3 --output dist/release-2.1.3 --engine 2.9.15
+python -m hostium_waf package verify --zip dist/release-2.1.3/hostium-2.1.3.zip --metadata dist/release-2.1.3/meta_hostium.yaml
 ```
 
 `python -m pytest` corre la suite unitaria. `python -m pytest -m integration --override-ini="addopts="` levanta Apache. Si Docker no está en marcha, esa prueba se omite y el informe lo dice: una omisión no es un bloqueo comprobado.
@@ -34,28 +36,24 @@ python -m hostium_waf logs analyze --input C:/evidencias/error.log --server nodo
 
 El analizador agrupa por transacción, ID, variable, dominio y ruta; oculta ubicaciones por defecto y elimina query, valores y cuerpos. `--include-locations` permite investigar las rutas explícitamente. Ver [observabilidad](docs/12-OBSERVABILIDAD-Y-LOGS.md).
 
-La candidata 2.1.2 exige dominio exacto, ruta sin query, método y parámetro. **Los cinco casos históricos quedan inactivos porque faltan dominios y alcance confirmado.** Instalarla sin completar esos datos puede restaurar los falsos positivos anteriores. No se debe promover todavía sobre la estable. [Guía de tuning y activación](docs/13-FALSOS-POSITIVOS-Y-EXCEPCIONES.md).
+Las nuevas exclusiones requieren dominio exacto, ruta sin query, método y parámetro. WHMCS ya tiene alcance confirmado y regresiones HTTP. Las otras cuatro excepciones se conservan temporalmente desde la 2.1.1 para no restaurar falsos positivos existentes: son una deuda explícita de alcance, no exclusiones nuevas. El modo heredado solo acepta los controles e IDs del ZIP base fijado por SHA256; no permite ampliarlos. PrestaShop selecciona path sin query.
 
-El ZIP candidato mantiene los dos módulos y los IDs, fase y acción. `REQUEST-410` no cambia sus expresiones; el build actualiza todas las acciones `ver` y la primera línea a la versión del paquete. `REQUEST-900` conserva IDs inactivos mediante condiciones imposibles hasta configurar cada caso. Las pruebas de laboratorio activan dominios sintéticos para verificar efecto y conservación de protección.
+La candidata local 2.1.2 no se publicó ni reescribió; 2.1.3 tiene bytes nuevos. [Guía de tuning](docs/13-FALSOS-POSITIVOS-Y-EXCEPCIONES.md).
 
-CI obtiene la versión desde `crs_vendor.VERSION_RULESET`. La release depende de lint, pruebas unitarias, empaquetado e integración obligatoria; no publica ni instala automáticamente. `package build-tune` está retirado y devuelve código 3. `rules render-score` requiere copia local de CRS coincidente y aceptación explícita de la reducción de sensibilidad.
+## Contenido de la estable 2.1.3
 
-## Qué entra al ZIP estable (2.1.1 histórica)
+Dos conf: REQUEST-410-PHP-UPLOAD-PROGRESS y REQUEST-900-CRS-EXCLUSIONS. Conserva IDs, fases y acciones de 2.1.1; REQUEST-410 solo actualiza trazabilidad ver y encabezado. No entra REQUEST-910, no se instala hostium-tune ni se cambia el puntaje global. No se empaquetan ejemplos o reglas de fase 4.
 
-`hostium-2.1.1.zip` lleva dos `.conf`. `REQUEST-410-PHP-UPLOAD-PROGRESS.conf` conserva los ids de pedido `5500600`–`5500619` y `5500621`, `5500622`, `5500625`. `REQUEST-900-CRS-EXCLUSIONS.conf` trae `5500900`–`5500904`: tres por nombre de campo y dos por URI, porque el campo es genérico. `5500100` y `5500101` siguen en `REQUEST-100-SENSITIVE-FILES.conf` y no entran al ZIP: el path lo corta CRS `930130`. Las de fase 4 (`5500620`, `5500623`, `5500624`, `5500626`) quedan en un `.example` y no se empaquetan: en cPanel no se enciende `SecResponseBodyAccess` para todo el servidor. Esas reglas no reemplazan actualizar PHP. El selftest `5500000` vive en un `.example` y no se empaqueta. Los borradores de WordPress, PHP genérico, el id vacío `5500400` y los escáneres tampoco.
-
-El puntaje de 911, 922, 932, 934 y 944 no entra al ZIP. srv-admin lo mantiene en un archivo propio, leído después de `modsec2.conf`. No es un vendor. `hostium-tune-2.1.0.zip` queda en el directorio para que un update ya dado de alta no reciba 404. No se ofrece para instalar.
-
-El ZIP extrae un único directorio `hostium/`. La metadata se llama `meta_hostium.yaml`. La clave `'2.9.15'` es la versión del motor, no la del ruleset. `distribution: hostium-2.1.1` identifica esta release. `hostium-1.0.0`, `hostium-1.1.1`, `hostium-1.1.2`, `hostium-2.0.0` y `hostium-2.1.0` siguen publicados y no se reescriben. `package build --version 2.1.0` falla a propósito.
+El ZIP extrae bajo hostium/. La metadata es meta_hostium.yaml y la clave 2.9.15 identifica el motor, no el ruleset. CI toma la versión del código y exige lint, unitarias e integración estricta antes de generar releases. Las distribuciones anteriores permanecen inmutables.
 
 ## Sumarlo en cPanel
 
 La ruta que hay que dar de alta es la metadata. WHM lee ese YAML y baja el ZIP que figura adentro. Las dos URL son públicas y responden sin sesión:
 
 - Metadata: `https://raw.githubusercontent.com/devmanifesto/Hostium-WAF-Manager/main/publish/stable/meta_hostium.yaml`
-- ZIP: `https://raw.githubusercontent.com/devmanifesto/Hostium-WAF-Manager/main/publish/stable/hostium-2.1.1.zip`
+- ZIP: `https://raw.githubusercontent.com/devmanifesto/Hostium-WAF-Manager/main/publish/stable/hostium-2.1.3.zip`
 
-Esa metadata instala `hostium-2.1.1`: dos sets, `REQUEST-410` y `REQUEST-900`. Es el único meta de instalación. Los ZIP anteriores siguen en el mismo directorio y no se reescriben. Un cPanel que ya tiene el vendor hostium relee esta metadata cuando corre `upcp`, si las actualizaciones del vendor están activas. Un vendor deshabilitado no aplica las reglas aunque baje el ZIP. Este repositorio no ejecutó `upcp`, `modsec_vendor` ni `httpd -t`.
+Esa metadata instala `hostium-2.1.3`: dos sets, `REQUEST-410` y `REQUEST-900`. Es el único meta de instalación. Los ZIP anteriores siguen en el mismo directorio y no se reescriben. Un cPanel que ya tiene el vendor hostium relee esta metadata cuando corre `upcp`, si las actualizaciones del vendor están activas. Un vendor deshabilitado no aplica las reglas aunque baje el ZIP. Este repositorio no ejecutó `upcp`, `modsec_vendor` ni `httpd -t`.
 
 En el servidor, como root:
 
@@ -96,3 +94,18 @@ El alcance está en [docs/ESPECIFICACION_MAESTRA.md](docs/ESPECIFICACION_MAESTRA
 ## Licencia
 
 Apache 2.0. No incluye reglas de Imunify360 ni de Comodo. OWASP CRS sigue siendo el ruleset del RPM de cPanel y no se modifica.
+
+## Actualizar el vendor ya instalado
+
+El operador pidió ejecutar este paso por su cuenta en calcium:
+
+```sh
+# PRODUCCIÓN: ejecutar solo después de guardar estado previo y verificar la publicación.
+/usr/local/cpanel/scripts/modsec_vendor update hostium
+# SOLO LECTURA: comprobar versión 2.1.3, 2/2 sets e includes.
+/usr/local/cpanel/scripts/modsec_vendor list
+httpd -t
+httpd -t -D DUMP_INCLUDES
+```
+
+Repetir el guardado legítimo en WHMCS y correlacionar su request ID: no deben aparecer 921130 ni 949110 para ese POST de plantilla. Un 404 aislado no demuestra el origen. No enviar payloads maliciosos ni sobrescribir opciones reales como prueba. Si hace falta una recarga, verificar primero la sintaxis y coordinarla; este repositorio no ejecutó servicios remotos.

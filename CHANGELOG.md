@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.1.3 — 2026-11-02
+
+Publicación estable autorizada por el operador; actualización de calcium a cargo suyo. WHMCS 5500902 ahora aplica solo en POST clientes.hostium.com/admin1911/configgeneral.php, excluyendo 921130 en emailglobalheader/emailglobalfooter además de las exclusiones XSS/RCE previas. No se excluye attack-protocol completo; 921120 y los demás argumentos siguen inspeccionados. Regresión HTTP de ambos campos y del selector real, sin 921130 ni 949110 en la plantilla de laboratorio.
+
+Los otros cuatro casos conservan compatibilidad transitoria con el ZIP 2.1.1 fijado por SHA256, sin ampliaciones. 5500903 usa REQUEST_FILENAME para no activarse desde la query. No se toca puntaje global ni hostium-tune. Mismos IDs, fases y acciones; ver y encabezados 2.1.3. La candidata 2.1.2 permanece local e inmutable. ultima_validacion continúa null hasta un ensayo en cPanel real. Ver docs/24-RELEASE-2.1.3.md.
+
+
 ## 2.1.2 candidata local — 2026-11-02 (sin promover)
 
 Exclusiones con dominio exacto, ruta sin query, método y parámetro; ctl al final de la cadena. Los cinco casos sin dominio confirmado quedan inactivos, conservando IDs, fase y pass. No se altera la estable 2.1.1: instalar la candidata sin completar el alcance puede restaurar los falsos positivos previos.

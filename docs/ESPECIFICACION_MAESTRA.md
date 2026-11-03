@@ -281,6 +281,10 @@ Sustituye el modelo de alcance de la enmienda anterior para nuevas construccione
 
 Los cinco casos existentes quedan pendientes e inactivos hasta confirmar sus dominios y parámetros. Se conservan IDs, fase y pass con condiciones imposibles. La metadata estable sigue en 2.1.1, sin promoción ni escritura remota. El analizador local logs analyze normaliza mensajes v2 y compara conteos sin clasificar automáticamente falsos positivos. La revisión vencida bloquea nuevas construcciones, sin prometer caducidad en instalaciones existentes. El puntaje general continúa fuera del ZIP y su generación exige comparar CRS y aceptar el impacto. Todas las acciones ver de un nuevo ZIP identifican esa distribución.
 
+### Autorización de publicación 2.1.3, 2 de noviembre de 2026
+
+El operador pidió puesta en marcha y publicación estable, confirmó clientes.hostium.com/admin1911/configgeneral.php?action=save y luego indicó que actualizará calcium por su cuenta. Se agrega 921130 solo en los dos campos de plantilla, bajo el dominio/endpoint/POST confirmado, conservando otros controles de protocolo. No se usa toda la etiqueta attack-protocol. Los otros cuatro IDs conservan compatibilidad transitoria fijada al ZIP 2.1.1, sin ampliar controles; 5500903 selecciona path sin query. Esta excepción de migración evita restaurar falsos positivos de la estable al publicar y no habilita nuevos casos globales. La candidata 2.1.2 ya construida no se reescribe. No se ejecuta SSH ni se rellena ultima_validacion con pruebas de laboratorio.
+
 ## 9. CLI completa y comportamiento esperado
 
 Proponé e implementá una CLI coherente, documentada y testeada. Como mínimo:

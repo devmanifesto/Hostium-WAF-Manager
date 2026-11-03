@@ -2,11 +2,11 @@
 
 ## Estado al 2 de noviembre de 2026
 
-Estable publicada 2.1.1. Candidata local 2.1.2: alcance de exclusiones corregido, diagnóstico de logs local, comparación de conteos, CI estricto e integración con CRS. No se promovió ni instaló. La CLI y el motor no validan por sí mismos la legitimidad de una operación.
+Estable 2.1.3 preparada y autorizada para publicar. WHMCS tiene dominio/ruta confirmados y corrección 921130 verificada en laboratorio. La actualización de calcium la hará el operador. Los otros cuatro casos mantienen compatibilidad transitoria con la estable 2.1.1; siguen pendientes de delimitar. La candidata 2.1.2 no se publicó ni se reescribe.
 
 ## Prioridad inmediata
 
-- Confirmar dominio, endpoint, método, parámetro e IDs de los cinco casos históricos. Están inactivos en la candidata y no deben promocionarse como corrección efectiva sin esos datos.
+- Confirmar dominio, endpoint, método, parámetro e IDs de los cuatro casos heredados. Permanecen activos por compatibilidad y no deben ampliarse sin esos datos.
 - Obtener eventos reales por un mecanismo autorizado, mantenerlos fuera de Git y analizarlos con logs analyze. Confirmar paranoia, puntajes y umbrales efectivos por servidor.
 - Ensayar el ZIP candidato en cPanel de laboratorio: includes, sintaxis, estado por dominio, rutas del proxy y efectos de cada excepción. ultima_validacion sigue null hasta ese ensayo real.
 - Confirmar que las operaciones legítimas pasan y que los ataques fuera del alcance siguen detectándose; comparar períodos de tráfico equivalentes.

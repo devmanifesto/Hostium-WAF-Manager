@@ -2,9 +2,11 @@
 
 ## Estado y objetivo
 
-La estable publicada sigue siendo **2.1.1**. La candidata local **2.1.2** corrige el modelo de excepciones; no se promovió ni instaló. Reducir bloqueos legítimos requiere evidencia de la operación, no solo un 403.
+La estable preparada para publicación es **2.1.3**, autorizada por el operador. Corrige el bloqueo WHMCS que sobrevivía a las exclusiones XSS/RCE: 921130 aportaba los 5 puntos que disparaban 949110. En CRS 3.3.10 el patrón incluye `<html` y `<meta`; el texto DOCTYPE por sí solo no es ese patrón. Se reproduce con una plantilla que contiene `<html`.
 
-Las cinco excepciones históricas están en `config/exclusions.yaml`, ahora con `habilitada: false`. No se conocen los dominios confirmados ni el parámetro de edición de PrestaShop. Por eso se conservan sus IDs mediante condiciones imposibles `@rx (?!)`, fase 1, `pass`, sin ctl. **Instalar la candidata sin completar el alcance puede hacer reaparecer los falsos positivos que la 2.1.1 exceptuaba.** No promoverla para resolver esos incidentes hasta validar cada caso.
+El control agregado es `ruleRemoveTargetById=921130`, para emailglobalheader y emailglobalfooter. No se elimina attack-protocol completo: 921120 continúa bloqueando un payload de cabecera en el mismo campo. El selector es Host clientes.hostium.com, REQUEST_FILENAME exacto /admin1911/configgeneral.php y método POST. La query action=save no cambia el selector; otros campos siguen inspeccionados.
+
+La candidata 2.1.2 permanece como artefacto local anterior y no se reutiliza. Los otros cuatro casos no se desactivan al publicar: conservan temporalmente el comportamiento de 2.1.1, con compatibilidad explícita y revisión pendiente. PrestaShop ahora selecciona REQUEST_FILENAME para que una query no active su excepción.
 
 ## Diagnóstico local, solo lectura
 
@@ -66,17 +68,13 @@ Cada entrada activa genera una cadena fase 1: dominio → ruta → método. El c
 
 Las exclusiones runtime deben ejecutarse antes de las reglas afectadas. En laboratorio se probó incluir el conf después de CRS y alcanzar reglas de fase 2 desde fase 1. Esto no autoriza a aplicar el mismo mecanismo sobre reglas CRS de fase 1. El esquema no descubre la fase del RPM; hay que comprobar cada objetivo, includes y efecto en el cPanel real. Las exclusiones configure-time van después de las definiciones CRS.
 
-## Casos históricos pendientes
+## Compatibilidad transitoria
 
-| ID | Caso | Información que falta confirmar |
-| --- | --- | --- |
-| 5500900 | `firmadatos`: 941130 y 941170 | Dominio y endpoint de la firma |
-| 5500901 | `vseleccionados`: 942100 | Dominio y endpoint de selección |
-| 5500902 | Plantilla WHMCS: tags XSS y RCE | Dominio, endpoint administrativo, autorización y IDs mínimos necesarios |
-| 5500903 | Edición PrestaShop: 941160 | Dominio, ruta administrativa real y parámetro; no se permite `ARGS` completo |
-| 5500904 | Serialización en `datos`: 933170 | Dominio y endpoint exacto del turnero |
+Los IDs 5500900, 5500901, 5500903 y 5500904 conservan los controles del ZIP 2.1.1, fijado al SHA256 `231a9d1746faa26f6f98580602f01bcd82174587c6d5cdeaef9ee8475e685d31`. `heredada_estable: true` solo se permite para esos cuatro IDs, con controles idénticos, dominios/metodos vacíos y motivo pendiente. No admite casos nuevos, agregar controles ni cambiar selectores. El único ajuste del selector heredado es REQUEST_FILENAME en 5500903, que elimina coincidencias por query sin ampliar el alcance.
 
-`tests/fixtures/exclusiones-laboratorio.yaml` contiene el alcance sintético usado en pruebas. Sus dominios, rutas y fecha lejana no son datos de producción.
+Es una excepción temporal a la exigencia de dominio para no romper operaciones actualmente exceptuadas. Su alcance amplio sigue siendo una limitación: faltan dominios/endpoints confirmados para firma, selección de cuentas, PrestaShop y turnero. Para migrar cada caso, quitar heredada_estable, completar dominio/ruta/método/parámetro, probar y publicar otra versión. No presentar estos cuatro casos como alcance ya corregido.
+
+WHMCS 5500902 no admite modo heredado: su alcance fue confirmado por el usuario y las regresiones incluyen ambos campos, dominio ajeno, otro argumento y la regla 921120 todavía activa. La fixture de laboratorio tiene dominios sintéticos; no reemplaza el ensayo de cPanel.
 
 ## Revisión y regresión
 
@@ -92,7 +90,7 @@ Antes de activar: petición legítima con el ID observado; mismo contenido en ot
 
 ## Rollback
 
-Deshabilitar la entrada, regenerar y construir una versión nueva. No editar ZIP publicados. Retirar una exclusión restaura inspección y puede restaurar el falso positivo; requiere coordinar la operación legítima. Los procedimientos de servidor permanecen en el documento 14 y requieren autorización explícita. Volver a 2.1.1 también restaura sus excepciones globales: no es una solución al alcance inseguro.
+Deshabilitar la entrada, regenerar y construir una versión nueva. No editar ZIP publicados. Retirar una exclusión restaura inspección y puede restaurar el falso positivo; requiere coordinar la operación legítima. Los procedimientos de servidor permanecen en el documento 14 y requieren autorización explícita. Volver a 2.1.1 restaura el alcance global anterior de WHMCS y el bloqueo por 921130; no es una solución al incidente.
 
 ## Referencias
 
