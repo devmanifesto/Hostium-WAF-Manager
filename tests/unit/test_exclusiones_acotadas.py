@@ -57,8 +57,8 @@ def test_no_excluir_coleccion_entera_y_no_adivinar_dominio() -> None:
     data["exclusiones"][0]["controles"][0]["variable"] = "ARGS"
     assert any(i.codigo == "exclusion" for i in validar_exclusiones(data))
     data = yaml.safe_load((ROOT / "config/exclusions.yaml").read_text(encoding="utf-8"))
-    assert all(not i["habilitada"] and not i["dominios"] for i in data["exclusiones"])
-    assert "ctl:" not in render_exclusiones(data)
+    assert sum(i.get("heredada_estable", False) for i in data["exclusiones"]) == 4
+    assert next(i for i in data["exclusiones"] if i["id"] == "5500902")["dominios"] == ["clientes.hostium.com"]
 
 
 def test_fecha_vencida_no_se_puede_regenerar_si_activa() -> None:
@@ -75,3 +75,20 @@ def test_puntaje_rechaza_crs_distinto(tmp_path) -> None:
     (tmp_path / "REQUEST-911-METHOD-ENFORCEMENT.conf").write_text("# fuente diferente\n", encoding="utf-8")
     with pytest.raises(HostiumError, match="CRS difiere"):
         comprobar_fuente_instalada(ROOT, tmp_path)
+
+
+@pytest.mark.parametrize("cambio", ["control", "id", "dominio", "metodo"])
+def test_compatibilidad_no_permite_ampliar_estable(cambio) -> None:
+    data = yaml.safe_load((ROOT / "config/exclusions.yaml").read_text(encoding="utf-8"))
+    entrada = data["exclusiones"][0]
+    if cambio == "control":
+        entrada["controles"][0]["objetivo"] = "941100"
+    elif cambio == "id":
+        entrada["id"] = "5500999"
+    elif cambio == "dominio":
+        entrada["dominios"] = ["otro.example.test"]
+    else:
+        entrada["metodos"] = ["POST"]
+    assert validar_exclusiones(data)
+    with pytest.raises(ValueError):
+        render_exclusiones(data)

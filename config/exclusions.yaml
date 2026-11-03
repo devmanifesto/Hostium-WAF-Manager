@@ -1,13 +1,13 @@
-# Candidata 2.1.2. Casos históricos pendientes; no se inventan dominios.
+# Estable 2.1.3. WHMCS confirmado; otros cuatro casos heredados sin ampliar alcance.
 version_esquema: 1
 exclusiones:
 - id: '5500900'
   tipo: runtime
   regla_objetivo: 941130,941170
-  motivo: Caso histórico 5500900 pendiente de alcance confirmado; no aplica exclusiones globales.
+  motivo: Compatibilidad transitoria con 2.1.1 para evitar restaurar falsos positivos existentes.
   owner: equipo-seguridad-hostium
   fecha_revision: '2027-05-02'
-  alcance: Inactiva hasta confirmar dominio, ruta, método y parámetro.
+  alcance: Controles históricos sin ampliación; 5500903 selecciona path sin query. Falta delimitar dominio y endpoint.
   ticket: 2026-11-02-siga-xqempresas-aceptar
   controles:
   - tipo: ruleRemoveTargetById
@@ -16,35 +16,35 @@ exclusiones:
   - tipo: ruleRemoveTargetById
     objetivo: '941170'
     variable: ARGS:firmadatos
-  habilitada: false
+  habilitada: true
   dominios: []
-  metodos:
-  - POST
+  metodos: []
   pendiente: Confirmar dominio, endpoint, parámetro y regresión HTTP antes de habilitar.
+  heredada_estable: true
 - id: '5500901'
   tipo: runtime
   regla_objetivo: '942100'
-  motivo: Caso histórico 5500901 pendiente de alcance confirmado; no aplica exclusiones globales.
+  motivo: Compatibilidad transitoria con 2.1.1 para evitar restaurar falsos positivos existentes.
   owner: equipo-seguridad-hostium
   fecha_revision: '2027-05-02'
-  alcance: Inactiva hasta confirmar dominio, ruta, método y parámetro.
+  alcance: Controles históricos sin ampliación; 5500903 selecciona path sin query. Falta delimitar dominio y endpoint.
   controles:
   - tipo: ruleRemoveTargetById
     objetivo: '942100'
     variable: ARGS:vseleccionados
-  habilitada: false
+  habilitada: true
   dominios: []
-  metodos:
-  - POST
+  metodos: []
   pendiente: Confirmar dominio, endpoint, parámetro y regresión HTTP antes de habilitar.
   ticket: pendiente-documentar-evidencia-5500901
+  heredada_estable: true
 - id: '5500902'
   tipo: runtime
-  regla_objetivo: attack-xss,attack-rce
-  motivo: Caso histórico 5500902 pendiente de alcance confirmado; no aplica exclusiones globales.
+  regla_objetivo: attack-xss,attack-rce,921130
+  motivo: Plantilla HTML de WHMCS; caso confirmado por el operador con score 5 aportado por 921130.
   owner: equipo-seguridad-hostium
   fecha_revision: '2027-05-02'
-  alcance: Inactiva hasta confirmar dominio, ruta, método y parámetro.
+  alcance: POST en clientes.hostium.com/admin1911/configgeneral.php, solo los campos de plantilla.
   ticket: 2026-11-02-whmcs-configgeneral-save
   controles:
   - tipo: ruleRemoveTargetByTag
@@ -59,42 +59,51 @@ exclusiones:
   - tipo: ruleRemoveTargetByTag
     objetivo: attack-rce
     variable: ARGS:emailglobalfooter
-  habilitada: false
-  dominios: []
+  - tipo: ruleRemoveTargetById
+    objetivo: '921130'
+    variable: ARGS:emailglobalheader
+  - tipo: ruleRemoveTargetById
+    objetivo: '921130'
+    variable: ARGS:emailglobalfooter
+  habilitada: true
+  dominios:
+  - clientes.hostium.com
   metodos:
   - POST
-  pendiente: Confirmar dominio, endpoint, parámetro y regresión HTTP antes de habilitar.
+  uri:
+    operador: '@streq'
+    valor: /admin1911/configgeneral.php
 - id: '5500903'
   tipo: runtime
   regla_objetivo: '941160'
-  motivo: Caso histórico 5500903 pendiente de alcance confirmado; no aplica exclusiones globales.
+  motivo: Compatibilidad transitoria con 2.1.1 para evitar restaurar falsos positivos existentes.
   owner: equipo-seguridad-hostium
   fecha_revision: '2027-05-02'
-  alcance: Inactiva hasta confirmar dominio, ruta, método y parámetro.
+  alcance: Controles históricos sin ampliación; 5500903 selecciona path sin query. Falta delimitar dominio y endpoint.
   controles:
   - tipo: ruleRemoveTargetById
     objetivo: '941160'
     variable: ARGS
-  habilitada: false
+  habilitada: true
   dominios: []
-  metodos:
-  - POST
+  metodos: []
   pendiente: Confirmar dominio, endpoint, parámetro y regresión HTTP antes de habilitar.
   ticket: pendiente-documentar-evidencia-5500903
+  heredada_estable: true
 - id: '5500904'
   tipo: runtime
   regla_objetivo: '933170'
-  motivo: Caso histórico 5500904 pendiente de alcance confirmado; no aplica exclusiones globales.
+  motivo: Compatibilidad transitoria con 2.1.1 para evitar restaurar falsos positivos existentes.
   owner: equipo-seguridad-hostium
   fecha_revision: '2027-05-02'
-  alcance: Inactiva hasta confirmar dominio, ruta, método y parámetro.
+  alcance: Controles históricos sin ampliación; 5500903 selecciona path sin query. Falta delimitar dominio y endpoint.
   controles:
   - tipo: ruleRemoveTargetById
     objetivo: '933170'
     variable: ARGS:datos
-  habilitada: false
+  habilitada: true
   dominios: []
-  metodos:
-  - POST
+  metodos: []
   pendiente: Confirmar dominio, endpoint, parámetro y regresión HTTP antes de habilitar.
   ticket: pendiente-documentar-evidencia-5500904
+  heredada_estable: true

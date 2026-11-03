@@ -65,3 +65,7 @@ Se agrega diagnóstico local de eventos, comparación de conteos, revisión de v
 trazabilidad de versión, CI estricto e integración de exclusiones con CRS.
 Cierre: pytest, Ruff, build reproducible, hashes históricos intactos y commit local.
 No se ejecutan operaciones remotas. ultima_validacion permanece null.
+
+## Puesta en marcha autorizada: 2.1.3
+
+El operador confirmó clientes.hostium.com/admin1911/configgeneral.php?action=save y pidió publicación estable. El parche excluye solo 921130, no toda attack-protocol, en ambos campos de plantilla. La actualización de calcium la realizará el operador. Para no restaurar falsos positivos de otros sitios se conservan cuatro excepciones históricas con compatibilidad fijada al ZIP 2.1.1, sin permitir ampliaciones; 5500903 deja de seleccionar la query. La 2.1.2 local no se reescribe ni publica. Cierre: pytest/Ruff, integración de la configuración real, ZIP reproducible, publicación con hashes verificados y commit.

@@ -6,6 +6,7 @@ import json
 import urllib.error
 import urllib.parse
 import urllib.request
+from copy import deepcopy
 
 import pytest
 import yaml
@@ -20,6 +21,8 @@ CASOS = [
     (5500902, "/configgeneral.php", "emailglobalheader", "<script>alert(1)</script>", 941100),
     (5500902, "/configgeneral.php", "emailglobalfooter", "<script>alert(1)</script>", 941100),
     (5500902, "/configgeneral.php", "emailglobalheader", "; /bin/bash -c id", 932100),
+    (5500902, "/configgeneral.php", "emailglobalheader", "<!DOCTYPE html><html><body>Correo</body></html>", 921130),
+    (5500902, "/configgeneral.php", "emailglobalfooter", "<!DOCTYPE html><html><body>Pie</body></html>", 921130),
     (5500903, "/admin1911/sell/catalog/products/49", "description", "<iframe src=x>", 941160),
     (5500904, "/turnero.php", "datos", 'O:8:"stdClass":0:{}', 933170),
 ]
@@ -36,10 +39,16 @@ def crs_acotado(tmp_path_factory):
     servidores = {}
     nombres = []
     try:
-        for modo in ("base", "acotado"):
+        for modo in ("base", "acotado", "produccion"):
             reglas = carpeta / modo
             reglas.mkdir()
-            texto = render_exclusiones(catalogo) if modo == "acotado" else (ROOT / "rules/hostium/REQUEST-900-CRS-EXCLUSIONS.conf").read_text(encoding="utf-8")
+            datos = deepcopy(catalogo)
+            if modo == "base":
+                for entrada in datos["exclusiones"]:
+                    entrada.update(habilitada=False, pendiente="Base de laboratorio sin exclusiones")
+            texto = render_exclusiones(datos)
+            if modo == "produccion":
+                texto = (ROOT / "rules/hostium/REQUEST-900-CRS-EXCLUSIONS.conf").read_text(encoding="utf-8")
             # Se incluye deliberadamente DESPUÉS de CRS: fase 1 debe anticipar los controles de fase 2.
             conf = reglas / "RESPONSE-999-HOSTIUM-LAB.conf"
             conf.write_text(texto, encoding="utf-8", newline="\n")
@@ -122,3 +131,22 @@ def test_otras_reglas_siguen_protegiendo_el_campo(crs_acotado):
     status, delta = pedir(crs_acotado["acotado"], "/firma.php", "firmadatos", "<script>alert(1)</script>")
     assert status == 403
     assert _id_en_esta_uri(delta, 941100, "/firma.php"), delta[-5000:]
+
+
+@pytest.mark.integration
+def test_whmcs_real_no_bloquea_html_y_conserva_protocolo(crs_acotado):
+    ruta = "/admin1911/configgeneral.php"
+    for campo in ("emailglobalheader", "emailglobalfooter"):
+        status, delta = pedir(crs_acotado["produccion"], ruta + "?action=save", campo,
+                              "<!DOCTYPE html><html><head><title>Correo</title></head><body>Plantilla</body></html>",
+                              host="clientes.hostium.com")
+        assert status == 503, (status, delta[-5000:])  # backend de laboratorio deliberadamente ausente
+        for objetivo in (921130, 949110):
+            assert not _id_en_esta_uri(delta, objetivo, ruta), delta[-5000:]
+    status, delta = pedir(crs_acotado["produccion"], ruta, "emailglobalheader", "\r\nSet-Cookie: hostium_lab=1", host="clientes.hostium.com")
+    assert status == 403
+    assert _id_en_esta_uri(delta, 921120, ruta), delta[-5000:]
+    status, delta = pedir(crs_acotado["produccion"], ruta, "otro_campo", "<html>", host="clientes.hostium.com")
+    assert status == 403 and _id_en_esta_uri(delta, 921130, ruta), delta[-5000:]
+    status, delta = pedir(crs_acotado["produccion"], ruta, "emailglobalheader", "<html>", host="otro.example.test")
+    assert status == 403 and _id_en_esta_uri(delta, 921130, ruta), delta[-5000:]

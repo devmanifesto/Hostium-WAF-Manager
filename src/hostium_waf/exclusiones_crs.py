@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import hashlib
 import re
 from pathlib import Path
 from typing import Any
+from zipfile import ZipFile
 
 import yaml
 
@@ -14,6 +16,28 @@ from hostium_waf.metadata import descripcion_modulo
 _VARIABLE = re.compile(r"^ARGS:[A-Za-z_][A-Za-z0-9_]*$")
 _OBJETIVO_ID = re.compile(r"^\d+$")
 _OBJETIVO_TAG = re.compile(r"^[A-Za-z0-9_-]+$")
+IDS_HEREDADOS = (5500900, 5500901, 5500903, 5500904)
+_SHA_ESTABLE_211 = "231a9d1746faa26f6f98580602f01bcd82174587c6d5cdeaef9ee8475e685d31"
+
+
+def bloque_heredado(identificador: int) -> str:
+    """Compatibilidad transitoria cerrada sobre la 2.1.1 inmutable, sin nuevos casos."""
+    if identificador not in IDS_HEREDADOS:
+        raise ValueError("ID no admitido en compatibilidad estable")
+    path = Path(__file__).resolve().parents[2] / "publish/stable/hostium-2.1.1.zip"
+    if hashlib.sha256(path.read_bytes()).hexdigest() != _SHA_ESTABLE_211:
+        raise ValueError("El ZIP base de compatibilidad cambió de bytes")
+    with ZipFile(path) as zf:
+        texto = zf.read("hostium/REQUEST-900-CRS-EXCLUSIONS.conf").decode()
+    bloques = re.split(r"\n\s*\n", texto)
+    bloque = next(b for b in bloques if re.search(rf"\bid:{identificador}\b", b))
+    inicio = re.search(r"^Sec(?:Action|Rule)\b", bloque, re.M)
+    if inicio is None:
+        raise ValueError("Falta la directiva heredada")
+    bloque = re.sub(r"ver:'hostium/[0-9.]+'", f"ver:'hostium/{VERSION_RULESET}'", bloque[inicio.start():])
+    if identificador == 5500903:
+        bloque = bloque.replace("SecRule REQUEST_URI", "SecRule REQUEST_FILENAME")
+    return bloque.strip()
 
 
 def render_exclusiones(data: dict[str, Any]) -> str:
@@ -27,7 +51,7 @@ def render_exclusiones(data: dict[str, Any]) -> str:
         f"# {descripcion_modulo(VERSION_RULESET)}",
         "# Runtime fase 1. Dominio exacto, ruta sin query y método; ctl al final de la cadena.",
         "# Una entrada deshabilitada conserva su id con una condición que nunca coincide.",
-        "# No instalar esta candidata para corregir casos pendientes de alcance confirmado.",
+        "# Compatibilidad transitoria de cuatro casos 2.1.1; WHMCS tiene alcance explícito.",
         "",
     ]
     bloques = [_bloque(i) for i in sorted(data["exclusiones"], key=lambda i: int(i["id"]))]
@@ -49,6 +73,8 @@ def _bloque(item: dict[str, Any]) -> str:
         f"# {identificador}: {item['motivo']} Owner {item['owner']}. "
         f"Revisión {item['fecha_revision']}. Ticket {item['ticket']}."
     )
+    if item.get("heredada_estable") is True:
+        return f"{comentario}\n# HEREDADA 2.1.1: pendiente de delimitar; no se amplía su alcance.\n" + bloque_heredado(identificador)
     acciones = (
         f"id:{identificador},phase:1,pass,nolog,t:none,"
         f"tag:'hostium-crs-exclusion',ver:'hostium/{VERSION_RULESET}'"

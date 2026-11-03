@@ -1,4 +1,4 @@
-# SOLO LABORATORIO. No usar estos dominios ni fechas para producción.
+# SOLO LABORATORIO. Alcances sintéticos, no producción.
 version_esquema: 1
 exclusiones:
 - id: '5500900'
@@ -46,7 +46,7 @@ exclusiones:
     valor: /cuentas.php
 - id: '5500902'
   tipo: runtime
-  regla_objetivo: attack-xss,attack-rce
+  regla_objetivo: attack-xss,attack-rce,921130
   motivo: Caso sintético de laboratorio; no corresponde a un dominio productivo.
   owner: equipo-seguridad-hostium
   fecha_revision: '2099-01-01'
@@ -64,6 +64,12 @@ exclusiones:
     variable: ARGS:emailglobalfooter
   - tipo: ruleRemoveTargetByTag
     objetivo: attack-rce
+    variable: ARGS:emailglobalfooter
+  - tipo: ruleRemoveTargetById
+    objetivo: '921130'
+    variable: ARGS:emailglobalheader
+  - tipo: ruleRemoveTargetById
+    objetivo: '921130'
     variable: ARGS:emailglobalfooter
   habilitada: true
   dominios:

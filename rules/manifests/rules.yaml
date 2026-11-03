@@ -1954,24 +1954,25 @@ reglas:
       nota: Fuera del ZIP. En cPanel no se enciende SecResponseBodyAccess desde el vendor.
   - id: 5500900
     nombre: JPEG en firmadatos
-    descripcion: Reserva del caso histórico. Inactiva mediante condición imposible hasta confirmar alcance en config/exclusions.yaml.
+    descripcion: Compatibilidad transitoria con el caso instalado por 2.1.1. No amplía controles ni selectors; 5500903 compara
+      path sin query.
     categoria: exclusion-crs
     modulo: REQUEST-900-CRS-EXCLUSIONS
     archivo: rules/hostium/REQUEST-900-CRS-EXCLUSIONS.conf
     version_de_introduccion: 2.1.1
     autor: Hostium
     owner: equipo-seguridad-hostium
-    motivacion: Evitar excepciones globales en hosting compartido. No se conocen los dominios; no se inventan.
+    motivacion: No restaurar falsos positivos ya resueltos mientras se confirma alcance de dominio y endpoint. Compatibilidad
+      fijada al SHA256 del ZIP 2.1.1.
     tipo_de_ataque: falso-positivo
     referencias:
     - https://coreruleset.org/docs/2-how-crs-works/2-3-false-positives-and-tuning/
     - 2026-11-02-siga-xqempresas-aceptar
-    falsos_positivos_probables: La entrada inactiva no modifica CRS. Los falsos positivos anteriores pueden reaparecer si se
-      instala la candidata sin configurar.
+    falsos_positivos_probables: 'Se mantiene alcance histórico: excepción pendiente de delimitar por dominio y endpoint.'
     fase: 1
     variables_inspeccionadas:
-    - REQUEST_URI
-    operador: '@rx (?!)'
+    - ARGS
+    operador: '@unconditionalMatch'
     transformaciones:
     - t:none
     accion: pass
@@ -1982,22 +1983,22 @@ reglas:
     modo_por_defecto: log-only
     incluir_en_paquete: true
     casos_de_prueba_positivos:
-    - titulo: Generación acotada en laboratorio con dominio explícito
+    - titulo: Controles heredados coinciden con ZIP base inmutable
       path: /edicion.php
       metodo: POST
       dispara: true
       ejecucion: automatizada
+      notas: Status 200 representa acción no disruptiva según contrato del manifiesto, no una respuesta observada. Prueba de
+        compatibilidad y regresiones de laboratorio; no valida la aplicación productiva.
       status: 200
-      notas: Test de generación y test HTTP de laboratorio; 200 describe acción no disruptiva, no respuesta observada en cPanel.
     casos_de_prueba_negativos:
-    - titulo: Entrada pendiente no aplica ctl en ningún endpoint
-      path: /login
+    - titulo: Rechazo de controles o selectors heredados modificados
+      path: /otro.php
       metodo: POST
       dispara: false
       ejecucion: automatizada
-      notas: Condición imposible en la candidata por defecto. No equivale a validar la aplicación real.
-    impacto_previsto: Ninguna exclusión activa por defecto. Conservar IDs, fase 1 y pass. No promover sobre stable sin configurar
-      y validar los casos.
+      notas: Test exige coincidencia con controles e IDs fijados; no admite ampliar legado.
+    impacto_previsto: Conserva efecto de 2.1.1 sin ampliar controles; deuda explícita de alcance. No se crean nuevos casos heredados.
     fecha_de_revision: '2027-05-02'
     ultima_validacion: null
     excepciones: []
@@ -2009,26 +2010,31 @@ reglas:
       fecha: '2026-11-02'
       nota: 'Caso inactivo hasta confirmar alcance. Rollback de alcance: deshabilitar la entrada y generar una release nueva,
         sin editar ZIP históricos.'
+    - version: 2.1.3
+      fecha: '2026-11-02'
+      nota: Release de WHMCS autorizada por operador. No reutiliza candidata 2.1.2. Rollback versionado restaura metadata anterior
+        y sus excepciones; ultima_validacion continúa null hasta cPanel.
 
   - id: 5500901
     nombre: Lista de cuentas en vseleccionados
-    descripcion: Reserva del caso histórico. Inactiva mediante condición imposible hasta confirmar alcance en config/exclusions.yaml.
+    descripcion: Compatibilidad transitoria con el caso instalado por 2.1.1. No amplía controles ni selectors; 5500903 compara
+      path sin query.
     categoria: exclusion-crs
     modulo: REQUEST-900-CRS-EXCLUSIONS
     archivo: rules/hostium/REQUEST-900-CRS-EXCLUSIONS.conf
     version_de_introduccion: 2.1.1
     autor: Hostium
     owner: equipo-seguridad-hostium
-    motivacion: Evitar excepciones globales en hosting compartido. No se conocen los dominios; no se inventan.
+    motivacion: No restaurar falsos positivos ya resueltos mientras se confirma alcance de dominio y endpoint. Compatibilidad
+      fijada al SHA256 del ZIP 2.1.1.
     tipo_de_ataque: falso-positivo
     referencias:
     - https://coreruleset.org/docs/2-how-crs-works/2-3-false-positives-and-tuning/
-    falsos_positivos_probables: La entrada inactiva no modifica CRS. Los falsos positivos anteriores pueden reaparecer si se
-      instala la candidata sin configurar.
+    falsos_positivos_probables: 'Se mantiene alcance histórico: excepción pendiente de delimitar por dominio y endpoint.'
     fase: 1
     variables_inspeccionadas:
-    - REQUEST_URI
-    operador: '@rx (?!)'
+    - ARGS
+    operador: '@unconditionalMatch'
     transformaciones:
     - t:none
     accion: pass
@@ -2039,22 +2045,22 @@ reglas:
     modo_por_defecto: log-only
     incluir_en_paquete: true
     casos_de_prueba_positivos:
-    - titulo: Generación acotada en laboratorio con dominio explícito
+    - titulo: Controles heredados coinciden con ZIP base inmutable
       path: /edicion.php
       metodo: POST
       dispara: true
       ejecucion: automatizada
+      notas: Status 200 representa acción no disruptiva según contrato del manifiesto, no una respuesta observada. Prueba de
+        compatibilidad y regresiones de laboratorio; no valida la aplicación productiva.
       status: 200
-      notas: Test de generación y test HTTP de laboratorio; 200 describe acción no disruptiva, no respuesta observada en cPanel.
     casos_de_prueba_negativos:
-    - titulo: Entrada pendiente no aplica ctl en ningún endpoint
-      path: /login
+    - titulo: Rechazo de controles o selectors heredados modificados
+      path: /otro.php
       metodo: POST
       dispara: false
       ejecucion: automatizada
-      notas: Condición imposible en la candidata por defecto. No equivale a validar la aplicación real.
-    impacto_previsto: Ninguna exclusión activa por defecto. Conservar IDs, fase 1 y pass. No promover sobre stable sin configurar
-      y validar los casos.
+      notas: Test exige coincidencia con controles e IDs fijados; no admite ampliar legado.
+    impacto_previsto: Conserva efecto de 2.1.1 sin ampliar controles; deuda explícita de alcance. No se crean nuevos casos heredados.
     fecha_de_revision: '2027-05-02'
     ultima_validacion: null
     excepciones: []
@@ -2066,27 +2072,35 @@ reglas:
       fecha: '2026-11-02'
       nota: 'Caso inactivo hasta confirmar alcance. Rollback de alcance: deshabilitar la entrada y generar una release nueva,
         sin editar ZIP históricos.'
+    - version: 2.1.3
+      fecha: '2026-11-02'
+      nota: Release de WHMCS autorizada por operador. No reutiliza candidata 2.1.2. Rollback versionado restaura metadata anterior
+        y sus excepciones; ultima_validacion continúa null hasta cPanel.
 
   - id: 5500902
     nombre: Plantilla de mail de WHMCS
-    descripcion: Reserva del caso histórico. Inactiva mediante condición imposible hasta confirmar alcance en config/exclusions.yaml.
+    descripcion: Exclusión runtime de plantillas WHMCS, solo POST en clientes.hostium.com/admin1911/configgeneral.php. Conserva
+      XSS/RCE y agrega 921130 para header y footer.
     categoria: exclusion-crs
     modulo: REQUEST-900-CRS-EXCLUSIONS
     archivo: rules/hostium/REQUEST-900-CRS-EXCLUSIONS.conf
     version_de_introduccion: 2.1.1
     autor: Hostium
     owner: equipo-seguridad-hostium
-    motivacion: Evitar excepciones globales en hosting compartido. No se conocen los dominios; no se inventan.
+    motivacion: El operador confirma que 921130 aporta los 5 puntos restantes por HTML de plantilla. Se reproduce en CRS de
+      laboratorio sin excluir toda attack-protocol.
     tipo_de_ataque: falso-positivo
     referencias:
     - https://coreruleset.org/docs/2-how-crs-works/2-3-false-positives-and-tuning/
     - 2026-11-02-whmcs-configgeneral-save
-    falsos_positivos_probables: La entrada inactiva no modifica CRS. Los falsos positivos anteriores pueden reaparecer si se
-      instala la candidata sin configurar.
+    falsos_positivos_probables: Otro ID podría bloquear una plantilla diferente; revisar evidencia. La autorización del administrador
+      pertenece a WHMCS.
     fase: 1
     variables_inspeccionadas:
-    - REQUEST_URI
-    operador: '@rx (?!)'
+    - REQUEST_HEADERS:Host
+    - REQUEST_FILENAME
+    - REQUEST_METHOD
+    operador: '@rx'
     transformaciones:
     - t:none
     accion: pass
@@ -2097,22 +2111,23 @@ reglas:
     modo_por_defecto: log-only
     incluir_en_paquete: true
     casos_de_prueba_positivos:
-    - titulo: Generación acotada en laboratorio con dominio explícito
-      path: /edicion.php
+    - titulo: HTML de plantilla en ambos campos sin 921130 ni 949110
+      path: /admin1911/configgeneral.php?action=save
       metodo: POST
       dispara: true
       ejecucion: automatizada
       status: 200
-      notas: Test de generación y test HTTP de laboratorio; 200 describe acción no disruptiva, no respuesta observada en cPanel.
+      notas: Status 200 representa acción no disruptiva según contrato del manifiesto, no una respuesta observada. 503 es el
+        backend de laboratorio inexistente. Test comprueba ausencia de 921130 y 949110; no es un guardado en WHMCS real.
     casos_de_prueba_negativos:
-    - titulo: Entrada pendiente no aplica ctl en ningún endpoint
-      path: /login
+    - titulo: Protocolo 921120 y otros argumentos conservan bloqueo
+      path: /admin1911/configgeneral.php
       metodo: POST
       dispara: false
       ejecucion: automatizada
-      notas: Condición imposible en la candidata por defecto. No equivale a validar la aplicación real.
-    impacto_previsto: Ninguna exclusión activa por defecto. Conservar IDs, fase 1 y pass. No promover sobre stable sin configurar
-      y validar los casos.
+      notas: Se verifica 921120 sobre el mismo campo y 921130 sobre otro argumento o dominio.
+    impacto_previsto: Excluye 921130 solo de emailglobalheader/emailglobalfooter dentro del POST confirmado. 921120 y otros
+      argumentos siguen inspeccionados.
     fecha_de_revision: '2027-05-02'
     ultima_validacion: null
     excepciones: []
@@ -2124,26 +2139,31 @@ reglas:
       fecha: '2026-11-02'
       nota: 'Caso inactivo hasta confirmar alcance. Rollback de alcance: deshabilitar la entrada y generar una release nueva,
         sin editar ZIP históricos.'
+    - version: 2.1.3
+      fecha: '2026-11-02'
+      nota: Release de WHMCS autorizada por operador. No reutiliza candidata 2.1.2. Rollback versionado restaura metadata anterior
+        y sus excepciones; ultima_validacion continúa null hasta cPanel.
 
   - id: 5500903
     nombre: HTML de ficha en sell catalog
-    descripcion: Reserva del caso histórico. Inactiva mediante condición imposible hasta confirmar alcance en config/exclusions.yaml.
+    descripcion: Compatibilidad transitoria con el caso instalado por 2.1.1. No amplía controles ni selectors; 5500903 compara
+      path sin query.
     categoria: exclusion-crs
     modulo: REQUEST-900-CRS-EXCLUSIONS
     archivo: rules/hostium/REQUEST-900-CRS-EXCLUSIONS.conf
     version_de_introduccion: 2.1.1
     autor: Hostium
     owner: equipo-seguridad-hostium
-    motivacion: Evitar excepciones globales en hosting compartido. No se conocen los dominios; no se inventan.
+    motivacion: No restaurar falsos positivos ya resueltos mientras se confirma alcance de dominio y endpoint. Compatibilidad
+      fijada al SHA256 del ZIP 2.1.1.
     tipo_de_ataque: falso-positivo
     referencias:
     - https://coreruleset.org/docs/2-how-crs-works/2-3-false-positives-and-tuning/
-    falsos_positivos_probables: La entrada inactiva no modifica CRS. Los falsos positivos anteriores pueden reaparecer si se
-      instala la candidata sin configurar.
+    falsos_positivos_probables: 'Se mantiene alcance histórico: excepción pendiente de delimitar por dominio y endpoint.'
     fase: 1
     variables_inspeccionadas:
-    - REQUEST_URI
-    operador: '@rx (?!)'
+    - REQUEST_FILENAME
+    operador: '@contains'
     transformaciones:
     - t:none
     accion: pass
@@ -2154,22 +2174,22 @@ reglas:
     modo_por_defecto: log-only
     incluir_en_paquete: true
     casos_de_prueba_positivos:
-    - titulo: Generación acotada en laboratorio con dominio explícito
+    - titulo: Controles heredados coinciden con ZIP base inmutable
       path: /edicion.php
       metodo: POST
       dispara: true
       ejecucion: automatizada
+      notas: Status 200 representa acción no disruptiva según contrato del manifiesto, no una respuesta observada. Prueba de
+        compatibilidad y regresiones de laboratorio; no valida la aplicación productiva.
       status: 200
-      notas: Test de generación y test HTTP de laboratorio; 200 describe acción no disruptiva, no respuesta observada en cPanel.
     casos_de_prueba_negativos:
-    - titulo: Entrada pendiente no aplica ctl en ningún endpoint
-      path: /login
+    - titulo: Rechazo de controles o selectors heredados modificados
+      path: /otro.php
       metodo: POST
       dispara: false
       ejecucion: automatizada
-      notas: Condición imposible en la candidata por defecto. No equivale a validar la aplicación real.
-    impacto_previsto: Ninguna exclusión activa por defecto. Conservar IDs, fase 1 y pass. No promover sobre stable sin configurar
-      y validar los casos.
+      notas: Test exige coincidencia con controles e IDs fijados; no admite ampliar legado.
+    impacto_previsto: Conserva efecto de 2.1.1 sin ampliar controles; deuda explícita de alcance. No se crean nuevos casos heredados.
     fecha_de_revision: '2027-05-02'
     ultima_validacion: null
     excepciones: []
@@ -2181,26 +2201,31 @@ reglas:
       fecha: '2026-11-02'
       nota: 'Caso inactivo hasta confirmar alcance. Rollback de alcance: deshabilitar la entrada y generar una release nueva,
         sin editar ZIP históricos.'
+    - version: 2.1.3
+      fecha: '2026-11-02'
+      nota: Release de WHMCS autorizada por operador. No reutiliza candidata 2.1.2. Rollback versionado restaura metadata anterior
+        y sus excepciones; ultima_validacion continúa null hasta cPanel.
 
   - id: 5500904
     nombre: stdClass en el turnero
-    descripcion: Reserva del caso histórico. Inactiva mediante condición imposible hasta confirmar alcance en config/exclusions.yaml.
+    descripcion: Compatibilidad transitoria con el caso instalado por 2.1.1. No amplía controles ni selectors; 5500903 compara
+      path sin query.
     categoria: exclusion-crs
     modulo: REQUEST-900-CRS-EXCLUSIONS
     archivo: rules/hostium/REQUEST-900-CRS-EXCLUSIONS.conf
     version_de_introduccion: 2.1.1
     autor: Hostium
     owner: equipo-seguridad-hostium
-    motivacion: Evitar excepciones globales en hosting compartido. No se conocen los dominios; no se inventan.
+    motivacion: No restaurar falsos positivos ya resueltos mientras se confirma alcance de dominio y endpoint. Compatibilidad
+      fijada al SHA256 del ZIP 2.1.1.
     tipo_de_ataque: falso-positivo
     referencias:
     - https://coreruleset.org/docs/2-how-crs-works/2-3-false-positives-and-tuning/
-    falsos_positivos_probables: La entrada inactiva no modifica CRS. Los falsos positivos anteriores pueden reaparecer si se
-      instala la candidata sin configurar.
+    falsos_positivos_probables: 'Se mantiene alcance histórico: excepción pendiente de delimitar por dominio y endpoint.'
     fase: 1
     variables_inspeccionadas:
     - REQUEST_URI
-    operador: '@rx (?!)'
+    operador: '@beginsWith'
     transformaciones:
     - t:none
     accion: pass
@@ -2211,22 +2236,22 @@ reglas:
     modo_por_defecto: log-only
     incluir_en_paquete: true
     casos_de_prueba_positivos:
-    - titulo: Generación acotada en laboratorio con dominio explícito
+    - titulo: Controles heredados coinciden con ZIP base inmutable
       path: /edicion.php
       metodo: POST
       dispara: true
       ejecucion: automatizada
+      notas: Status 200 representa acción no disruptiva según contrato del manifiesto, no una respuesta observada. Prueba de
+        compatibilidad y regresiones de laboratorio; no valida la aplicación productiva.
       status: 200
-      notas: Test de generación y test HTTP de laboratorio; 200 describe acción no disruptiva, no respuesta observada en cPanel.
     casos_de_prueba_negativos:
-    - titulo: Entrada pendiente no aplica ctl en ningún endpoint
-      path: /login
+    - titulo: Rechazo de controles o selectors heredados modificados
+      path: /otro.php
       metodo: POST
       dispara: false
       ejecucion: automatizada
-      notas: Condición imposible en la candidata por defecto. No equivale a validar la aplicación real.
-    impacto_previsto: Ninguna exclusión activa por defecto. Conservar IDs, fase 1 y pass. No promover sobre stable sin configurar
-      y validar los casos.
+      notas: Test exige coincidencia con controles e IDs fijados; no admite ampliar legado.
+    impacto_previsto: Conserva efecto de 2.1.1 sin ampliar controles; deuda explícita de alcance. No se crean nuevos casos heredados.
     fecha_de_revision: '2027-05-02'
     ultima_validacion: null
     excepciones: []
@@ -2238,6 +2263,10 @@ reglas:
       fecha: '2026-11-02'
       nota: 'Caso inactivo hasta confirmar alcance. Rollback de alcance: deshabilitar la entrada y generar una release nueva,
         sin editar ZIP históricos.'
+    - version: 2.1.3
+      fecha: '2026-11-02'
+      nota: Release de WHMCS autorizada por operador. No reutiliza candidata 2.1.2. Rollback versionado restaura metadata anterior
+        y sus excepciones; ultima_validacion continúa null hasta cPanel.
 
   - id: 5500910
     nombre: Anomaly score de cinco archivos CRS

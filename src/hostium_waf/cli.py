@@ -337,6 +337,7 @@ def package_build(
         artefacto = build_package(root, cfg, version=version, engine=engine, canal=channel, output=output)
         catalogo = load_yaml(root / "config/exclusions.yaml")
         pendientes = [e["id"] for e in catalogo["exclusiones"] if not e["habilitada"]]
+        heredadas = [e["id"] for e in catalogo["exclusiones"] if e.get("heredada_estable")]
         datos = {
             "ok": True,
             "version": artefacto.version,
@@ -352,6 +353,7 @@ def package_build(
             "url": artefacto.url,
             "url_provisionada": False,
             "exclusiones_pendientes": pendientes,
+            "exclusiones_heredadas": heredadas,
         }
         texto = (
             f"ZIP {artefacto.zip_path}\n"
@@ -362,6 +364,8 @@ def package_build(
         )
         if pendientes:
             texto += "\nCandidata con exclusiones inactivas pendientes: " + ", ".join(pendientes) + ". No corrige esos casos hasta confirmar su alcance."
+        if heredadas:
+            texto += "\nCompatibilidad transitoria con alcance histórico pendiente de delimitar: " + ", ".join(heredadas) + "."
         _emitir(ctx, datos, texto)
 
     _ejecutar(ctx, accion)

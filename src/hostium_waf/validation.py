@@ -36,6 +36,7 @@ _CLAVES_EXCLUSION = {
     "dominios",
     "metodos",
     "pendiente",
+    "heredada_estable",
 }
 _CLAVES_URI = {"operador", "valor"}
 _CLAVES_CONTROL = {"tipo", "objetivo", "variable"}
@@ -379,6 +380,22 @@ def _validar_item_exclusion(item: Any, ruta: str, ids_vistos: set[str] | None = 
         issues.append(Issue("fecha", "fecha de revisión inválida", f"{ruta}.fecha_revision"))
     elif activa and date.fromisoformat(fecha) <= date.today():
         issues.append(Issue("exclusion_vencida", "revisar antes de volver a generar o empaquetar", f"{ruta}.fecha_revision"))
+    if item.get("heredada_estable") is not None and not isinstance(item["heredada_estable"], bool):
+        issues.append(Issue("tipo_invalido", "heredada_estable debe ser booleano", ruta))
+    if item.get("heredada_estable") is True:
+        from hostium_waf.exclusiones_crs import bloque_heredado
+
+        try:
+            bloque = bloque_heredado(int(exc_id))
+            esperados = set(re.findall(r'ctl:[^\s,"\\]+', bloque))
+            controles = item.get("controles")
+            actuales = {f"ctl:{c['tipo']}={c['objetivo']};{c['variable']}" for c in controles} if isinstance(controles, list) else set()
+            if (actuales != esperados or not activa or item.get("dominios") != [] or item.get("uri") is not None
+                    or item.get("metodos") != [] or not isinstance(item.get("pendiente"), str) or not item["pendiente"].strip()):
+                issues.append(Issue("exclusion", "la compatibilidad solo conserva controles de la estable, sin cambios de selector", ruta))
+        except (OSError, ValueError, KeyError, TypeError, StopIteration):
+            issues.append(Issue("exclusion", "compatibilidad estable inválida o base no disponible", ruta))
+        return issues
     dominios = item.get("dominios")
     if not isinstance(dominios, list) or (activa and not dominios):
         issues.append(Issue("alcance", "dominios debe ser una lista; una exclusión habilitada necesita dominio confirmado", f"{ruta}.dominios"))
@@ -568,6 +585,13 @@ def _revisar_forma_exclusion(activas: str, relativo: str) -> list[Issue]:
     # La forma autorizada es la del generador, incluyendo ubicación de cada ctl.
     # El cotejo byte a byte con el catálogo se hace en _deriva_generados.
     issues: list[Issue] = []
+    from hostium_waf.exclusiones_crs import IDS_HEREDADOS, bloque_heredado
+
+    for identificador in IDS_HEREDADOS:
+        try:
+            activas = activas.replace(bloque_heredado(identificador), "")
+        except (OSError, ValueError):
+            issues.append(Issue("exclusion", "no se pudo verificar la base estable", relativo))
     plano = re.sub(r"\\\s*\n", " ", activas)
     bloques = re.split(r"(?=SecRule\s+REQUEST_HEADERS:Host|SecRule\s+REQUEST_URI)", plano)
     for bloque in bloques:

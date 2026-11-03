@@ -18,12 +18,12 @@ SHA_200 = "d9644a8f5f8d83506a16d4beab39a27ef62b5a30f7cbccc07d3e29408e140c01"
 _FAMILIAS = ("920", "921", "930", "931", "933", "941", "942", "943")
 
 
-def test_casos_pendientes_no_aplican_ctl() -> None:
+def test_estable_conserva_casos_y_acota_whmcs() -> None:
     texto = EXCLUSIONES.read_text(encoding="utf-8")
     assert set(re.findall(r"id:(550090[0-4])", texto)) == {str(i) for i in range(5500900, 5500905)}
-    assert texto.count('"@rx (?!)"') == 5
-    assert "ctl:" not in texto
-    assert "SecAction" not in texto
+    assert "ctl:ruleRemoveTargetById=921130;ARGS:emailglobalheader" in texto
+    assert "attack-protocol" not in texto
+    assert "@streq /admin1911/configgeneral.php" in texto
     assert _revisar_conf_empaquetable(texto, EXCLUSIONES.relative_to(ROOT).as_posix(), []) == []
 
 
@@ -62,14 +62,14 @@ def test_el_zip_200_no_cambia_de_bytes(tmp_path: Path) -> None:
     antes = hashlib.sha256(publicado.read_bytes()).hexdigest()
     assert antes == SHA_200
     settings = load_settings(ROOT)
-    build_package(ROOT, settings, version="2.1.2", engine="2.9.15", output=tmp_path)
+    build_package(ROOT, settings, version="2.1.3", engine="2.9.15", output=tmp_path)
     despues = hashlib.sha256(publicado.read_bytes()).hexdigest()
     assert despues == antes
 
 
 def test_copiar_a_stable_pisa_solo_la_metadata(tmp_path: Path) -> None:
     settings = load_settings(ROOT)
-    artefacto = build_package(ROOT, settings, version="2.1.2", engine="2.9.15", output=tmp_path / "dist")
+    artefacto = build_package(ROOT, settings, version="2.1.3", engine="2.9.15", output=tmp_path / "dist")
     estable = tmp_path / "publish" / "stable"
     estable.mkdir(parents=True)
     viejo = b"zip-2.0.0"
@@ -90,8 +90,8 @@ def test_copiar_a_stable_pisa_solo_la_metadata(tmp_path: Path) -> None:
     )
     copiar_a_stable(tmp_path, copiado)
     assert (estable / "hostium-2.0.0.zip").read_bytes() == viejo
-    assert (estable / "hostium-2.1.2.zip").read_bytes() == artefacto.zip_path.read_bytes()
-    assert "hostium-2.1.2" in (estable / "meta_hostium.yaml").read_text(encoding="utf-8")
+    assert (estable / "hostium-2.1.3.zip").read_bytes() == artefacto.zip_path.read_bytes()
+    assert "hostium-2.1.3" in (estable / "meta_hostium.yaml").read_text(encoding="utf-8")
 
 
 def test_tune_no_pisa_el_zip_de_hostium(tmp_path: Path) -> None:
