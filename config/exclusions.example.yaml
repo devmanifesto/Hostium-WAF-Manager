@@ -1,5 +1,5 @@
 version_esquema: 1
-# Plantilla vacía. Una exclusión real necesita motivo, owner y fecha de revisión.
-# runtime se configura antes de CRS. configure-time se configura después de incluir CRS.
-# Este archivo no entra al ZIP del vendor: WHM no garantiza el orden del proveedor.
+# Plantilla vacía. El catálogo que genera REQUEST-900 es config/exclusions.yaml.
+# Cada ítem es runtime, fase 1, y un ctl de objetivo atado a una URI.
+# Este example no entra al ZIP.
 exclusiones: []

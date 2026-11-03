@@ -12,5 +12,4 @@ reports/
 config/settings.yaml
 config/fleet.yaml
 config/policy.yaml
-config/exclusions.yaml
 !config/*.example.yaml

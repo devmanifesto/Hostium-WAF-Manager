@@ -7,7 +7,11 @@ from datetime import date, datetime
 from pathlib import Path, PurePosixPath
 from typing import Any
 
+import yaml
+
+from hostium_waf.crs_vendor import ARCHIVO_EXCLUSIONES, ARCHIVO_PUNTAJE
 from hostium_waf.errors import Issue
+from hostium_waf.exclusiones_crs import uri_prohibida
 from hostium_waf.metadata import comentario_modulo_valido
 from hostium_waf.models import Cambio, CasoPrueba, Manifiesto, Politica, Regla, Settings
 from hostium_waf.security import es_semver, regex_peligrosa
@@ -18,7 +22,24 @@ SEVERIDADES = {"EMERGENCY", "ALERT", "CRITICAL", "ERROR", "WARNING", "NOTICE", "
 EJECUCIONES = {"automatizada", "pendiente", "laboratorio"}
 ANILLOS = {"lab", "pilot", "canary", "production"}
 _METODOS_HTTP = {"GET", "HEAD", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"}
-_CLAVES_EXCLUSION = {"id", "tipo", "regla_objetivo", "motivo", "owner", "fecha_revision", "alcance", "ticket"}
+_CLAVES_EXCLUSION = {
+    "id",
+    "tipo",
+    "regla_objetivo",
+    "motivo",
+    "owner",
+    "fecha_revision",
+    "alcance",
+    "ticket",
+    "uri",
+    "controles",
+}
+_CLAVES_URI = {"operador", "valor"}
+_CLAVES_CONTROL = {"tipo", "objetivo", "variable"}
+_OPERADORES_URI = {"@beginsWith", "@rx"}
+_TIPOS_CONTROL = {"ruleRemoveTargetById", "ruleRemoveTargetByTag"}
+_VARIABLE_CONTROL = re.compile(r"^ARGS(?::[A-Za-z_][A-Za-z0-9_]*)?$")
+_OBJETIVO_TAG = re.compile(r"^[A-Za-z0-9_-]+$")
 _CLAVES_REGLA = {
     "id",
     "nombre",
@@ -53,12 +74,25 @@ _CLAVES_REGLA = {
 }
 _CLAVES_CASO = {"titulo", "path", "metodo", "dispara", "status", "ejecucion", "headers", "notas"}
 _ID_ACTIVO = re.compile(r"\bid:(\d+)\b")
-_PROHIBIDO_PAQUETE = (
+_SIEMPRE_PROHIBIDO = (
     (re.compile(r"\bSecRuleEngine\s+Off\b", re.I), "apaga el motor"),
     (re.compile(r"\bctl:ruleEngine\s*=\s*Off\b", re.I), "apaga el motor en la transacción"),
     (re.compile(r"\bSecRuleRemoveById\b"), "exclusión configure-time: no va en el ZIP del vendor"),
-    (re.compile(r"\bctl:ruleRemove(?:Target)?ById\b"), "exclusión runtime: no va en el ZIP del vendor"),
+    (re.compile(r"\bctl:ruleRemoveById\b"), "quita la regla CRS entera"),
+    (re.compile(r"\bSecRuleUpdateActionById\b"), "cambia acciones de CRS: solo en REQUEST-910"),
     (re.compile(r"(?:^|[,\s])allow(?:\s|,|$)", re.I), "una acción allow puede evadir CRS"),
+)
+_CTL_OBJETIVO = re.compile(r"\bctl:ruleRemoveTargetBy(?:Id|Tag)\b")
+_CTL_PERMITIDO = re.compile(
+    r"^ctl:ruleRemoveTargetBy(?:Id|Tag)=(?:\d+|[A-Za-z0-9_-]+);ARGS(?::[A-Za-z_][A-Za-z0-9_]*)?$"
+)
+_LINEA_PUNTAJE = re.compile(
+    r'^SecRuleUpdateActionById (\d+)(?::(\d+))? "'
+    r'(?:chain,)?'
+    r"(?:setvar:tx\.anomaly_score_pl[1-4]=-%\{tx\.critical_anomaly_score\},"
+    r"setvar:tx\.anomaly_score_pl[1-4]=\+%\{tx\.warning_anomaly_score\})"
+    r'(?:,setvar:tx\.anomaly_score_pl[1-4]=-%\{tx\.critical_anomaly_score\},'
+    r"setvar:tx\.anomaly_score_pl[1-4]=\+%\{tx\.warning_anomaly_score\})*\"$"
 )
 
 
@@ -318,10 +352,13 @@ def _validar_item_exclusion(item: Any, ruta: str, ids_vistos: set[str] | None = 
     issues: list[Issue] = []
     for extra in sorted(set(item) - _CLAVES_EXCLUSION):
         issues.append(Issue("campo_desconocido", "campo no admitido", f"{ruta}.{extra}"))
-    requeridos = ("id", "tipo", "regla_objetivo", "motivo", "owner", "fecha_revision", "alcance")
+    requeridos = ("id", "tipo", "regla_objetivo", "motivo", "owner", "fecha_revision", "alcance", "uri", "controles")
     for clave in requeridos:
+        if clave not in item:
+            issues.append(Issue("campo_faltante", "falta el campo", f"{ruta}.{clave}"))
+    for clave in ("id", "tipo", "regla_objetivo", "motivo", "owner", "fecha_revision", "alcance"):
         valor = item.get(clave)
-        if not isinstance(valor, str) or not valor.strip():
+        if clave in item and (not isinstance(valor, str) or not valor.strip()):
             issues.append(Issue("campo_faltante", "falta el campo", f"{ruta}.{clave}"))
     exc_id = item.get("id")
     if ids_vistos is not None and isinstance(exc_id, str) and exc_id.strip():
@@ -332,6 +369,60 @@ def _validar_item_exclusion(item: Any, ruta: str, ids_vistos: set[str] | None = 
         issues.append(Issue("exclusion", "tipo debe ser runtime o configure-time", f"{ruta}.tipo"))
     if _fecha(item.get("fecha_revision")) is None:
         issues.append(Issue("fecha", "cada exclusión necesita fecha de revisión", f"{ruta}.fecha_revision"))
+    if "uri" in item:
+        issues.extend(_validar_uri_exclusion(item.get("uri"), f"{ruta}.uri"))
+    if "controles" in item:
+        issues.extend(_validar_controles(item.get("controles"), f"{ruta}.controles"))
+    if item.get("tipo") == "configure-time":
+        issues.append(Issue("exclusion", "el ZIP solo admite exclusiones runtime de objetivo", f"{ruta}.tipo"))
+    return issues
+
+
+def _validar_uri_exclusion(uri: Any, ruta: str) -> list[Issue]:
+    if not isinstance(uri, dict):
+        return [Issue("tipo_invalido", "uri debe ser un mapa", ruta)]
+    issues: list[Issue] = []
+    for extra in sorted(set(uri) - _CLAVES_URI):
+        issues.append(Issue("campo_desconocido", "campo no admitido", f"{ruta}.{extra}"))
+    operador = uri.get("operador")
+    valor = uri.get("valor")
+    if operador not in _OPERADORES_URI:
+        issues.append(Issue("exclusion", "operador debe ser @beginsWith o @rx", f"{ruta}.operador"))
+    if not isinstance(valor, str):
+        issues.append(Issue("exclusion", "el valor de la URI debe ser texto", f"{ruta}.valor"))
+    else:
+        cuerpo = valor[1:] if operador == "@rx" and valor.startswith("^") else valor
+        if not cuerpo.startswith("/"):
+            issues.append(Issue("exclusion", "el valor de la URI debe empezar con /", f"{ruta}.valor"))
+        elif uri_prohibida(valor):
+            issues.append(Issue("exclusion", "no se exceptúa /login ni una IP", f"{ruta}.valor"))
+    return issues
+
+
+def _validar_controles(controles: Any, ruta: str) -> list[Issue]:
+    if not isinstance(controles, list) or not controles:
+        return [Issue("campo_faltante", "hace falta al menos un control", ruta)]
+    issues: list[Issue] = []
+    for indice, control in enumerate(controles):
+        actual = f"{ruta}[{indice}]"
+        if not isinstance(control, dict):
+            issues.append(Issue("tipo_invalido", "el control debe ser un mapa", actual))
+            continue
+        for extra in sorted(set(control) - _CLAVES_CONTROL):
+            issues.append(Issue("campo_desconocido", "campo no admitido", f"{actual}.{extra}"))
+        tipo = control.get("tipo")
+        objetivo = control.get("objetivo")
+        variable = control.get("variable")
+        if tipo not in _TIPOS_CONTROL:
+            issues.append(Issue("exclusion", "tipo debe ser ruleRemoveTargetById o ruleRemoveTargetByTag", f"{actual}.tipo"))
+        if not isinstance(objetivo, str) or not objetivo.strip():
+            issues.append(Issue("campo_faltante", "falta el objetivo", f"{actual}.objetivo"))
+        elif tipo == "ruleRemoveTargetById" and not objetivo.isdigit():
+            issues.append(Issue("exclusion", "el objetivo de ById es numérico", f"{actual}.objetivo"))
+        elif tipo == "ruleRemoveTargetByTag" and not _OBJETIVO_TAG.fullmatch(objetivo):
+            issues.append(Issue("exclusion", "el tag no es un token", f"{actual}.objetivo"))
+        if not isinstance(variable, str) or not _VARIABLE_CONTROL.fullmatch(variable):
+            issues.append(Issue("exclusion", "la variable debe ser ARGS o ARGS:nombre", f"{actual}.variable"))
     return issues
 
 
@@ -389,7 +480,9 @@ def validar_conf_de_reglas(root: Path, reglas: list[Regla]) -> list[Issue]:
         if desconocidos:
             issues.append(Issue("id_desconocido", "hay IDs activos que no están en el manifiesto: " + ", ".join(desconocidos), relativo))
         empaquetables = [regla for regla in grupo if regla.incluir_en_paquete]
-        if empaquetables:
+        if empaquetables and _ruta_conf(relativo) == ARCHIVO_PUNTAJE:
+            issues.extend(_revisar_conf_puntaje(texto, relativo))
+        elif empaquetables:
             faltan = declarados - set(activos)
             esperados = {regla.id for regla in empaquetables}
             if not esperados.issubset(set(activos)):
@@ -409,12 +502,28 @@ def validar_conf_de_reglas(root: Path, reglas: list[Regla]) -> list[Issue]:
     return issues
 
 
+def _ruta_conf(relativo: str) -> str:
+    return PurePosixPath(relativo.replace("\\", "/")).as_posix()
+
+
+def _activas(texto: str) -> str:
+    return "\n".join(linea for linea in texto.splitlines() if linea.strip() and not linea.strip().startswith("#"))
+
+
 def _revisar_conf_empaquetable(texto: str, relativo: str, reglas: list[Regla]) -> list[Issue]:
     issues: list[Issue] = []
-    activas = "\n".join(linea for linea in texto.splitlines() if linea.strip() and not linea.strip().startswith("#"))
-    for patron, motivo in _PROHIBIDO_PAQUETE:
+    activas = _activas(texto)
+    ruta = _ruta_conf(relativo)
+    prohibidos = _SIEMPRE_PROHIBIDO
+    if ruta == ARCHIVO_PUNTAJE:
+        prohibidos = tuple(item for item in prohibidos if "SecRuleUpdateActionById" not in item[0].pattern)
+    for patron, motivo in prohibidos:
         if patron.search(activas):
             issues.append(Issue("regla_prohibida", motivo, relativo))
+    if ruta != ARCHIVO_EXCLUSIONES and _CTL_OBJETIVO.search(activas):
+        issues.append(Issue("regla_prohibida", "ctl de objetivo: solo en REQUEST-900", relativo))
+    if ruta == ARCHIVO_EXCLUSIONES:
+        issues.extend(_revisar_forma_exclusion(activas, relativo))
     if regex_peligrosa(activas):
         issues.append(Issue("regex_peligrosa", "hay un cuantificador anidado con riesgo de ReDoS", relativo))
     for regla in reglas:
@@ -439,6 +548,58 @@ def _revisar_conf_empaquetable(texto: str, relativo: str, reglas: list[Regla]) -
                     relativo,
                 )
             )
+    return issues
+
+
+def _revisar_forma_exclusion(activas: str, relativo: str) -> list[Issue]:
+    issues: list[Issue] = []
+    plano = re.sub(r"\\\s*\n", " ", activas)
+    bloques = re.findall(r"SecRule\b.*?(?=SecRule\b|$)", plano, flags=re.S)
+    if not bloques:
+        return [Issue("regla_prohibida", "la exclusión no tiene SecRule", relativo)]
+    for bloque in bloques:
+        tiene_id = bool(re.search(r"\bid:\d+\b", bloque))
+        if tiene_id:
+            for pedazo, motivo in (
+                (r"phase:\s*1\b", "phase:1"),
+                (r"(?:^|[,\s\"])pass(?:[,\s\"]|$)", "pass"),
+                (r"(?:^|[,\s\"])nolog(?:[,\s\"]|$)", "nolog"),
+                (r"(?:^|[,\s\"])chain(?:[,\s\"]|$)", "chain"),
+                (r"\bREQUEST_URI\b", "REQUEST_URI"),
+            ):
+                if not re.search(pedazo, bloque):
+                    issues.append(Issue("regla_prohibida", f"la exclusión de URI debe declarar {motivo}", relativo))
+            if "ctl:" in bloque:
+                issues.append(Issue("regla_prohibida", "el ctl va en el eslabón final, no en el starter", relativo))
+        else:
+            if "REQUEST_URI" not in bloque:
+                issues.append(Issue("regla_prohibida", "el eslabón final también ata la URI", relativo))
+            if "ctl:" not in bloque:
+                issues.append(Issue("regla_prohibida", "el eslabón final no tiene ctl", relativo))
+    for ctl in re.findall(r"ctl:[^\s,\"\\]+", plano):
+        if not _CTL_PERMITIDO.fullmatch(ctl):
+            issues.append(Issue("regla_prohibida", "ctl no admitido en la exclusión", relativo))
+    return issues
+
+
+def _revisar_conf_puntaje(texto: str, relativo: str) -> list[Issue]:
+    issues: list[Issue] = []
+    activas = _activas(texto)
+    for patron, motivo in _SIEMPRE_PROHIBIDO:
+        if "SecRuleUpdateActionById" in patron.pattern:
+            continue
+        if patron.search(activas):
+            issues.append(Issue("regla_prohibida", motivo, relativo))
+    if re.search(r"\bSecRule\b", activas):
+        issues.append(Issue("regla_prohibida", "el conf de puntaje no lleva SecRule", relativo))
+    if _CTL_OBJETIVO.search(activas) or re.search(r"\bctl:ruleRemoveById\b", activas):
+        issues.append(Issue("regla_prohibida", "el conf de puntaje no quita reglas ni objetivos", relativo))
+    directivas = [linea.strip() for linea in activas.splitlines() if linea.strip()]
+    if not directivas:
+        issues.append(Issue("regla_prohibida", "el conf de puntaje está vacío", relativo))
+    for linea in directivas:
+        if not _LINEA_PUNTAJE.fullmatch(linea):
+            issues.append(Issue("regla_prohibida", "la directiva no resta el crítico y suma el warning", relativo))
     return issues
 
 
@@ -534,7 +695,43 @@ def validar_repositorio(root: Path, settings: Settings, manifiesto_data: dict[st
         politica = cargar_politica(politica_data)
     issues.extend(validar_conf_de_reglas(root, manifiesto.reglas))
     issues.extend(_cruce_politica(manifiesto, politica))
+    issues.extend(_deriva_generados(root))
     return manifiesto, politica, issues
+
+
+def _deriva_generados(root: Path) -> list[Issue]:
+    from hostium_waf.exclusiones_crs import render_exclusiones
+    from hostium_waf.puntaje_crs import render_puntaje
+
+    issues: list[Issue] = []
+    catalogo = root / "config" / "exclusions.yaml"
+    if not catalogo.is_file():
+        issues.append(Issue("archivo", "falta el catálogo de exclusiones", "config/exclusions.yaml"))
+    else:
+        try:
+            data = yaml.safe_load(catalogo.read_text(encoding="utf-8"))
+        except yaml.YAMLError as exc:
+            issues.append(Issue("yaml", f"no se pudo leer el catálogo: {exc}", "config/exclusions.yaml"))
+            data = None
+        if isinstance(data, dict):
+            fallas = validar_exclusiones(data)
+            issues.extend(fallas)
+            conf = root / ARCHIVO_EXCLUSIONES
+            if not fallas and conf.is_file() and conf.read_text(encoding="utf-8").replace("\r\n", "\n") != render_exclusiones(data):
+                issues.append(Issue("deriva", "el conf no coincide con config/exclusions.yaml", ARCHIVO_EXCLUSIONES))
+        elif data is not None:
+            issues.append(Issue("tipo_invalido", "el catálogo debe ser un mapa", "config/exclusions.yaml"))
+    puntaje = root / ARCHIVO_PUNTAJE
+    try:
+        esperado = render_puntaje(root)
+    except OSError as exc:
+        issues.append(Issue("archivo", f"no se pudo leer CRS para el puntaje: {exc}", ARCHIVO_PUNTAJE))
+        return issues
+    if not puntaje.is_file():
+        return issues
+    if puntaje.read_text(encoding="utf-8").replace("\r\n", "\n") != esperado:
+        issues.append(Issue("deriva", "el conf de puntaje no coincide con CRS 3.3.10", ARCHIVO_PUNTAJE))
+    return issues
 
 
 def _cruce_politica(manifiesto: Manifiesto, politica: Politica) -> list[Issue]:

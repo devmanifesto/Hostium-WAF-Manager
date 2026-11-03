@@ -65,7 +65,6 @@ def inicializar(root: Path) -> list[str]:
         ("config/settings.example.yaml", "config/settings.yaml"),
         ("config/fleet.example.yaml", "config/fleet.yaml"),
         ("config/policy.example.yaml", "config/policy.yaml"),
-        ("config/exclusions.example.yaml", "config/exclusions.yaml"),
     ]
     mensajes: list[str] = []
     for origen, destino in pares:

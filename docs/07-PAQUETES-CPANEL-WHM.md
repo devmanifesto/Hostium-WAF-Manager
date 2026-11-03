@@ -42,14 +42,14 @@ Esa URL es la del archivo en git. `package verify` no la descarga. El repositori
 ## Comandos
 
 ```powershell
-python -m hostium_waf package build --version 2.0.0 --engine 2.9.15
-python -m hostium_waf package verify --zip dist/hostium-2.0.0.zip --metadata dist/meta_hostium.yaml
+python -m hostium_waf package build --version 2.1.0 --engine 2.9.15
+python -m hostium_waf package verify --zip dist/hostium-2.1.0.zip --metadata dist/meta_hostium.yaml
 python -m hostium_waf metadata show --file dist/meta_hostium.yaml
 ```
 
 Son locales. No modifican un servidor.
 
-`package build --version 1.0.0` falla en este árbol: el paquete incluye reglas introducidas en 1.1.2 y no se reutiliza `distribution: hostium-1.0.0`. El ZIP de 1.0.0 que está en `publish/stable/` queda como estaba. La release de este árbol es `2.0.0`.
+`package build --version 1.0.0`, `--version 1.1.2` y `--version 2.0.0` fallan en este árbol: el paquete incluye reglas introducidas en 2.1.0 y no se reutiliza una distribution ya publicada. Los ZIP anteriores que están en `publish/stable/` quedan como estaban. La release de este árbol es `2.1.0` y trae tres `.conf`: `REQUEST-410`, `REQUEST-900` y `REQUEST-910`. WHM cuenta tres sets.
 
 ## Qué rechaza el validador
 

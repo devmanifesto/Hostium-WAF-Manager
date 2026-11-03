@@ -23,8 +23,8 @@ def _miembros() -> list[tuple[str, bytes]]:
 
 def test_dos_builds_son_identicos(tmp_path: Path) -> None:
     settings = load_settings(ROOT)
-    primero = build_package(ROOT, settings, version="1.1.2", engine="2.9.15", output=tmp_path / "a")
-    segundo = build_package(ROOT, settings, version="1.1.2", engine="2.9.15", output=tmp_path / "b")
+    primero = build_package(ROOT, settings, version="2.1.0", engine="2.9.15", output=tmp_path / "a")
+    segundo = build_package(ROOT, settings, version="2.1.0", engine="2.9.15", output=tmp_path / "b")
     assert primero.zip_path.read_bytes() == segundo.zip_path.read_bytes()
     assert primero.md5 == segundo.md5
     assert primero.sha512 == segundo.sha512
@@ -33,45 +33,55 @@ def test_dos_builds_son_identicos(tmp_path: Path) -> None:
 
 def test_zip_solo_contiene_la_regla_productiva(tmp_path: Path) -> None:
     settings = load_settings(ROOT)
-    artefacto = build_package(ROOT, settings, version="2.0.0", engine="2.9.15", output=tmp_path)
+    artefacto = build_package(ROOT, settings, version="2.1.0", engine="2.9.15", output=tmp_path)
     with ZipFile(artefacto.zip_path) as zf:
         nombres = zf.namelist()
     assert nombres == [
         "hostium/",
         "hostium/REQUEST-410-PHP-UPLOAD-PROGRESS.conf",
+        "hostium/REQUEST-900-CRS-EXCLUSIONS.conf",
+        "hostium/REQUEST-910-CRS-ANOMALY-SCORE.conf",
     ]
     data = yaml.safe_load(artefacto.metadata_path.read_text(encoding="utf-8"))
     assert isinstance(next(clave for clave in data if clave != "attributes"), str)
-    assert data["2.9.15"]["distribution"] == "hostium-2.0.0"
+    assert data["2.9.15"]["distribution"] == "hostium-2.1.0"
     assert "SHA512" in data["2.9.15"]
     assert "report_url" not in data["attributes"]
-    assert data["attributes"]["description"] == "Reglas complementarias de seguridad administradas por Hostium 2.0.0"
+    assert data["attributes"]["description"] == "Reglas complementarias de seguridad administradas por Hostium 2.1.0"
     with ZipFile(artefacto.zip_path) as zf:
+        textos: list[str] = []
         for nombre in zf.namelist():
             if not nombre.endswith(".conf"):
                 continue
             texto = zf.read(nombre).decode("utf-8")
-            assert texto.startswith("# Reglas complementarias de seguridad administradas por Hostium 2.0.0\n")
+            textos.append(texto)
+            assert texto.startswith("# Reglas complementarias de seguridad administradas por Hostium 2.1.0\n")
             assert "id:5500100" not in texto
             assert "id:5500101" not in texto
+            assert "SecRuleRemoveById" not in texto
+            assert "SecRuleEngine Off" not in texto
+    unido = "\n".join(textos)
+    assert "ctl:ruleRemoveTargetById" in unido
+    assert "SecRuleUpdateActionById" in unido
 
 
 def test_no_reconstruye_una_distribution_vieja(tmp_path: Path) -> None:
     settings = load_settings(ROOT)
-    try:
-        build_package(ROOT, settings, version="1.0.0", engine="2.9.15", output=tmp_path)
-    except Exception as exc:
-        assert "introducidas en 1.1.2" in str(exc)
-    else:
-        raise AssertionError("1.0.0 no puede empaquetar reglas de 1.1.2")
+    for version in ("1.0.0", "1.1.2", "2.0.0"):
+        try:
+            build_package(ROOT, settings, version=version, engine="2.9.15", output=tmp_path / version)
+        except Exception as exc:
+            assert "introducidas en 2.1.0" in str(exc)
+        else:
+            raise AssertionError(f"{version} no puede empaquetar reglas de 2.1.0")
 
 
 def test_no_sobrescribe_bytes_distintos(tmp_path: Path) -> None:
     settings = load_settings(ROOT)
-    artefacto = build_package(ROOT, settings, version="1.1.2", engine="2.9.15", output=tmp_path)
+    artefacto = build_package(ROOT, settings, version="2.1.0", engine="2.9.15", output=tmp_path)
     artefacto.zip_path.write_bytes(artefacto.zip_path.read_bytes() + b"x")
     try:
-        build_package(ROOT, settings, version="1.1.2", engine="2.9.15", output=tmp_path)
+        build_package(ROOT, settings, version="2.1.0", engine="2.9.15", output=tmp_path)
     except Exception as exc:
         assert "no se sobrescribe" in str(exc)
     else:
@@ -80,7 +90,7 @@ def test_no_sobrescribe_bytes_distintos(tmp_path: Path) -> None:
 
 def test_verify_detecta_hash_alterado(tmp_path: Path) -> None:
     settings = load_settings(ROOT)
-    artefacto = build_package(ROOT, settings, version="1.1.2", engine="2.9.15", output=tmp_path)
+    artefacto = build_package(ROOT, settings, version="2.1.0", engine="2.9.15", output=tmp_path)
     blob = bytearray(artefacto.zip_path.read_bytes())
     blob[-1] ^= 0x01
     alterado = tmp_path / "alterado.zip"

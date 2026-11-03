@@ -20,6 +20,14 @@ Editar los `.conf` de OWASP los pisa el próximo `rpm` update. Un plugin de WHM 
 
 El orden respecto de CRS no queda garantizado por el alta del vendor. Las exclusiones `ctl:ruleRemoveById` y `SecRuleRemoveById` viven fuera del ZIP. La compatibilidad se declara solo para motores probados; hoy el generador escribe la versión que le pases, y la única que el piloto describió es 2.9.15.
 
+## Enmienda del 2 de noviembre de 2026
+
+`hostium-2.1.0` agrega dos archivos al mismo ZIP. El texto de octubre queda como estaba.
+
+`REQUEST-900-CRS-EXCLUSIONS.conf` lleva `ctl:ruleRemoveTargetById` en fase 1, atado a una URI, en el eslabón final de la cadena. Ese `ctl` queda en la transacción y alcanza una regla CRS de fase 2 aunque WHM incluya hostium después de OWASP3. `ctl:ruleRemoveById` y `SecRuleRemoveById` siguen fuera del ZIP.
+
+`REQUEST-910-CRS-ANOMALY-SCORE.conf` lleva `SecRuleUpdateActionById`. Esa directiva se resuelve al leer la configuración y solo aplica si el archivo se lee después de OWASP3. Si el id CRS todavía no existe, `httpd -t` falla y Apache no debe recargarse. Este repositorio no comprobó ese orden en un cPanel.
+
 ## Cómo se revierte esta decisión
 
 Dejar de ofrecer la URL de metadata y deshabilitar el vendor. Los RPM de OWASP no se tocan en ese camino.

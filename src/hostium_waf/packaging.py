@@ -193,8 +193,13 @@ def manifiesto_reglas(root: Path, politica: Politica, manifiesto: object, versio
         texto = aplicar_comentario_modulo(texto, version)
         if "INCOMPLETO" in texto:
             raise HostiumError(f"El archivo {path.name} está marcado INCOMPLETO")
-        if "ver:'hostium/" not in texto:
+        es_puntaje = path.name == "REQUEST-910-CRS-ANOMALY-SCORE.conf"
+        if es_puntaje and re.search(r"\bSecRule\b", texto):
+            raise HostiumError(f"El archivo {path.name} no puede traer SecRule")
+        if not es_puntaje and "ver:'hostium/" not in texto:
             raise HostiumError(f"El archivo {path.name} no declara ver:hostium")
+        if es_puntaje and "SecRuleUpdateActionById" not in texto:
+            raise HostiumError(f"El archivo {path.name} no baja el puntaje")
         miembros.append((f"hostium/{path.name}", texto.encode("utf-8")))
     return miembros
 
@@ -296,6 +301,27 @@ def _exigir_metadata_inmutable(path: Path, metadata: str, *, permitir_mismo_hash
     if permitir_mismo_hash and _huella(anterior) == _huella(metadata):
         return
     raise HostiumError(f"Ya hay metadata distinta y no se sobrescribe: {path}")
+
+
+def copiar_a_stable(root: Path, artefacto: Artefacto) -> Path:
+    """Copia el ZIP nuevo a publish/stable y pisa la metadata. No reescribe otro ZIP."""
+    destino = (root / "publish" / "stable").resolve()
+    if not destino.is_dir():
+        raise HostiumError("falta publish/stable")
+    payload = artefacto.zip_path.read_bytes()
+    zip_dest = destino / f"{artefacto.distribution}.zip"
+    _exigir_inmutable(zip_dest, payload)
+    zip_dest.write_bytes(payload)
+    if zip_dest.read_bytes() != payload:
+        raise HostiumError("el ZIP de stable releído no coincide")
+    (destino / f"{artefacto.distribution}.sha256").write_text(
+        artefacto.sha256 + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    meta = artefacto.metadata_path.read_text(encoding="utf-8").replace("\r\n", "\n")
+    (destino / "meta_hostium.yaml").write_text(meta, encoding="utf-8", newline="\n")
+    return zip_dest
 
 
 def verify_package(zip_path: Path, metadata_path: Path) -> list[Issue]:

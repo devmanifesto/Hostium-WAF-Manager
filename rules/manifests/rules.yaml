@@ -1952,3 +1952,282 @@ reglas:
     - version: '1.1.0'
       fecha: '2026-10-23'
       nota: Fuera del ZIP. En cPanel no se enciende SecResponseBodyAccess desde el vendor.
+  - id: 5500900
+    nombre: JPEG firmadatos en aceptar.php
+    descripcion: En fase 1, si la URI empieza con /aplicacion_customs/xqempresas/aceptar.php, saca
+      ARGS:firmadatos de 941130 y de 941170. El valor legítimo es un JPEG data-URI image/jpeg base64 /9j/.
+      941130 matchea punto y coma base64 y 941170 matchea data-URI con base64. 941140 no matchea data-URI image.
+    categoria: exclusion-crs
+    modulo: REQUEST-900-CRS-EXCLUSIONS
+    archivo: rules/hostium/REQUEST-900-CRS-EXCLUSIONS.conf
+    version_de_introduccion: 2.1.0
+    autor: Hostium
+    owner: equipo-seguridad-hostium
+    motivacion: El caso srv-admin 2026-11-02-siga-xqempresas-aceptar manda la firma como data-URI.
+      El ctl de fase 1 alcanza la regla CRS de fase 2 aunque el Include de hostium vaya después.
+    tipo_de_ataque: falso-positivo
+    referencias:
+    - https://coreruleset.org/docs/2-how-crs-works/2-3-false-positives-and-tuning/
+    - 2026-11-02-siga-xqempresas-aceptar
+    falsos_positivos_probables: La regla no niega. Si la URI no existe en el servidor, no matchea.
+      941100 sigue viendo firmadatos.
+    fase: 1
+    variables_inspeccionadas:
+    - REQUEST_URI
+    operador: '@beginsWith'
+    transformaciones:
+    - t:none
+    accion: pass
+    severidad: NOTICE
+    etiquetas:
+    - hostium-crs-exclusion
+    estado: produccion
+    modo_por_defecto: log-only
+    incluir_en_paquete: true
+    casos_de_prueba_positivos:
+    - titulo: aceptar.php con firma
+      path: /aplicacion_customs/xqempresas/aceptar.php
+      metodo: POST
+      dispara: true
+      ejecucion: automatizada
+      notas: 200 quiere decir que la regla no niega. La aproximación de la URI está en tests/unit/test_crs_210.py.
+        No es un POST observado en cPanel.
+      status: 200
+    casos_de_prueba_negativos:
+    - titulo: login no entra
+      path: /login
+      metodo: POST
+      dispara: false
+      ejecucion: automatizada
+      notas: /login no es esta URI. No se exceptúa el login de los sitios.
+    impacto_previsto: En esa URI, 941130 y 941170 dejan de mirar ARGS:firmadatos. El resto de las reglas
+      CRS siguen. ultima_validacion queda vacía hasta un cPanel real.
+    fecha_de_revision: '2027-05-02'
+    ultima_validacion: null
+    excepciones: []
+    registro_de_cambio:
+    - version: 2.1.0
+      fecha: '2026-11-02'
+      nota: Alta en 2.1.0. Para salir, sacá el módulo de la política y publicá otra release. No reescribas
+        hostium-2.0.0.zip ni este ZIP.
+  - id: 5500901
+    nombre: HTML de producto en el admin de PrestaShop
+    descripcion: En fase 1, si la URI es /admin más un token y /sell/catalog/products/, saca ARGS de las
+      XSS de paranoia 1 que un HTML de producto dispara. Esas reglas son 941100, 941110, 941120, 941130,
+      941140, 941160, 941170 y 941180. El frente y el resto del backoffice las conservan.
+    categoria: exclusion-crs
+    modulo: REQUEST-900-CRS-EXCLUSIONS
+    archivo: rules/hostium/REQUEST-900-CRS-EXCLUSIONS.conf
+    version_de_introduccion: 2.1.0
+    autor: Hostium
+    owner: equipo-seguridad-hostium
+    motivacion: Una sola XSS crítica suma 5 y dispara 949110. Sacar solo 941160 dejaba las otras en 5.
+    tipo_de_ataque: falso-positivo
+    referencias:
+    - https://coreruleset.org/docs/2-how-crs-works/2-3-false-positives-and-tuning/
+    falsos_positivos_probables: Un editor que mande HTML en esa URI deja de ser visto por esas ocho reglas.
+      942 y 933 siguen mirando ARGS. El directorio administrator también matchea el token alfanumérico.
+    fase: 1
+    variables_inspeccionadas:
+    - REQUEST_URI
+    operador: '@rx'
+    transformaciones:
+    - t:none
+    accion: pass
+    severidad: NOTICE
+    etiquetas:
+    - hostium-crs-exclusion
+    estado: produccion
+    modo_por_defecto: log-only
+    incluir_en_paquete: true
+    casos_de_prueba_positivos:
+    - titulo: ficha de producto
+      path: /adminAb12/sell/catalog/products/
+      metodo: POST
+      dispara: true
+      ejecucion: automatizada
+      notas: 200 quiere decir que la regla no niega. También matchea /adminAb12/index.php/sell/catalog/products/5/edit.
+        La aproximación está en tests/unit/test_crs_210.py.
+      status: 200
+    casos_de_prueba_negativos:
+    - titulo: catalogo del frente
+      path: /sell/catalog/products/
+      metodo: POST
+      dispara: false
+      ejecucion: automatizada
+      notas: Sin el directorio admin la URI no entra. /adminAb12/sell/orders/ tampoco.
+    impacto_previsto: En esa URI del backoffice, esas ocho reglas dejan de mirar ARGS. El resto del sitio
+      no cambia. ultima_validacion queda vacía hasta un cPanel real.
+    fecha_de_revision: '2027-05-02'
+    ultima_validacion: null
+    excepciones: []
+    registro_de_cambio:
+    - version: 2.1.0
+      fecha: '2026-11-02'
+      nota: Alta en 2.1.0. Para salir, sacá el módulo de la política y publicá otra release. No reescribas
+        hostium-2.0.0.zip ni este ZIP.
+  - id: 5500902
+    nombre: Lista de cuentas con barras
+    descripcion: En fase 1, si la URI empieza con /server20200601/mod/contabilidad/multisel_cuentacont.php,
+      saca ARGS:vseleccionados de 942100. El valor es una lista de cuentas unida con ||.
+    categoria: exclusion-crs
+    modulo: REQUEST-900-CRS-EXCLUSIONS
+    archivo: rules/hostium/REQUEST-900-CRS-EXCLUSIONS.conf
+    version_de_introduccion: 2.1.0
+    autor: Hostium
+    owner: equipo-seguridad-hostium
+    motivacion: 942100 es @detectSQLi y marca el ||. 942360 pide palabras SQL. 942120 es paranoia 2.
+    tipo_de_ataque: falso-positivo
+    referencias:
+    - https://coreruleset.org/docs/2-how-crs-works/2-3-false-positives-and-tuning/
+    falsos_positivos_probables: La regla no niega. Otras reglas de 942 siguen viendo el campo.
+    fase: 1
+    variables_inspeccionadas:
+    - REQUEST_URI
+    operador: '@beginsWith'
+    transformaciones:
+    - t:none
+    accion: pass
+    severidad: NOTICE
+    etiquetas:
+    - hostium-crs-exclusion
+    estado: produccion
+    modo_por_defecto: log-only
+    incluir_en_paquete: true
+    casos_de_prueba_positivos:
+    - titulo: multisel de cuentas
+      path: /server20200601/mod/contabilidad/multisel_cuentacont.php
+      metodo: POST
+      dispara: true
+      ejecucion: automatizada
+      notas: 200 quiere decir que la regla no niega. La aproximación de la URI está en tests/unit/test_crs_210.py.
+      status: 200
+    casos_de_prueba_negativos:
+    - titulo: otra pantalla
+      path: /server20200601/mod/contabilidad/index.php
+      metodo: POST
+      dispara: false
+      ejecucion: automatizada
+      notas: El prefijo tiene que ser el php de la multiselección.
+    impacto_previsto: 942100 deja de mirar ARGS:vseleccionados en esa URI. ultima_validacion queda vacía
+      hasta un cPanel real.
+    fecha_de_revision: '2027-05-02'
+    ultima_validacion: null
+    excepciones: []
+    registro_de_cambio:
+    - version: 2.1.0
+      fecha: '2026-11-02'
+      nota: Alta en 2.1.0. Para salir, sacá el módulo de la política y publicá otra release. No reescribas
+        hostium-2.0.0.zip ni este ZIP.
+  - id: 5500903
+    nombre: stdClass en el turnero
+    descripcion: En fase 1, si la URI empieza con /aplicacion_customs/marketingdirecto/recibepostturnero.php,
+      saca ARGS:datos de 933170. El valor es un stdClass serializado de PHP, O:8:"stdClass".
+    categoria: exclusion-crs
+    modulo: REQUEST-900-CRS-EXCLUSIONS
+    archivo: rules/hostium/REQUEST-900-CRS-EXCLUSIONS.conf
+    version_de_introduccion: 2.1.0
+    autor: Hostium
+    owner: equipo-seguridad-hostium
+    motivacion: 933170 matchea la letra O, dos puntos y dígitos. 933100 busca la marca php y no es este caso.
+    tipo_de_ataque: falso-positivo
+    referencias:
+    - https://coreruleset.org/docs/2-how-crs-works/2-3-false-positives-and-tuning/
+    falsos_positivos_probables: La regla no niega. Otras reglas de 933 siguen viendo ARGS:datos.
+    fase: 1
+    variables_inspeccionadas:
+    - REQUEST_URI
+    operador: '@beginsWith'
+    transformaciones:
+    - t:none
+    accion: pass
+    severidad: NOTICE
+    etiquetas:
+    - hostium-crs-exclusion
+    estado: produccion
+    modo_por_defecto: log-only
+    incluir_en_paquete: true
+    casos_de_prueba_positivos:
+    - titulo: recibe post del turnero
+      path: /aplicacion_customs/marketingdirecto/recibepostturnero.php
+      metodo: POST
+      dispara: true
+      ejecucion: automatizada
+      notas: 200 quiere decir que la regla no niega. La aproximación de la URI está en tests/unit/test_crs_210.py.
+      status: 200
+    casos_de_prueba_negativos:
+    - titulo: otro php del modulo
+      path: /aplicacion_customs/marketingdirecto/index.php
+      metodo: POST
+      dispara: false
+      ejecucion: automatizada
+      notas: El prefijo tiene que ser recibepostturnero.php.
+    impacto_previsto: 933170 deja de mirar ARGS:datos en esa URI. ultima_validacion queda vacía hasta un
+      cPanel real.
+    fecha_de_revision: '2027-05-02'
+    ultima_validacion: null
+    excepciones: []
+    registro_de_cambio:
+    - version: 2.1.0
+      fecha: '2026-11-02'
+      nota: Alta en 2.1.0. Para salir, sacá el módulo de la política y publicá otra release. No reescribas
+        hostium-2.0.0.zip ni este ZIP.
+  - id: 5500910
+    nombre: Anomaly score de cinco archivos CRS
+    descripcion: No es una SecRule. El conf REQUEST-910 repite SecRuleUpdateActionById para el anomaly
+      score crítico de 911, 922, 932, 934 y 944 en CRS 3.3.10. Cada directiva resta el crítico y suma el
+      warning. Neto 3. Este id documenta el archivo y no aparece como identificador dentro del conf.
+    categoria: exclusion-crs
+    modulo: REQUEST-910-CRS-ANOMALY-SCORE
+    archivo: rules/hostium/REQUEST-910-CRS-ANOMALY-SCORE.conf
+    version_de_introduccion: 2.1.0
+    autor: Hostium
+    owner: equipo-seguridad-hostium
+    motivacion: Una 922130 crítica suma 5, dispara 949110 y, a la décima en 900 segundos, CSF LF_MODSEC
+      puede banear la IP. Con warning, una sola no llega a 5. Dos reglas de esos archivos suman 6 y siguen
+      bloqueando. 920, 921, 930, 931, 933, 941, 942 y 943 quedan en 5.
+    tipo_de_ataque: falso-positivo
+    referencias:
+    - https://github.com/owasp-modsecurity/ModSecurity/wiki/Reference-Manual-(v2.x)-Configuration-Directives
+    - https://coreruleset.org/docs/2-how-crs-works/2-3-false-positives-and-tuning/
+    falsos_positivos_probables: Si hostium se incluye antes de OWASP3, httpd -t falla porque el id CRS no
+      existe todavía. No recargar. El caso hobbymav es multipart y 922130, no una excepción de /login.
+    fase: 1
+    variables_inspeccionadas:
+    - TX:anomaly_score_pl1
+    operador: '@rx'
+    transformaciones:
+    - t:none
+    accion: pass
+    severidad: NOTICE
+    etiquetas:
+    - hostium-crs-score
+    estado: produccion
+    modo_por_defecto: log-only
+    incluir_en_paquete: true
+    casos_de_prueba_positivos:
+    - titulo: una 922130 queda en 3
+      path: /login
+      metodo: POST
+      dispara: true
+      ejecucion: automatizada
+      notas: 200 documenta que no es un deny de Hostium. El caso es hobbymav, multipart, nombre _1_$action_1.
+        No se observó en cPanel. La directiva está en tests/unit/test_crs_210.py.
+      status: 200
+    casos_de_prueba_negativos:
+    - titulo: 941100 no se toca
+      path: /login
+      metodo: GET
+      dispara: false
+      ejecucion: automatizada
+      notas: /login no se exceptúa. 941100 sigue en 5. Un POST text/plain lo sigue cortando 920420.
+    impacto_previsto: Las reglas críticas de esos cinco archivos pasan a sumar 3. Una no dispara 949110.
+      Dos sí. No se midió CSF. ultima_validacion queda vacía hasta un cPanel real.
+    fecha_de_revision: '2027-05-02'
+    ultima_validacion: null
+    excepciones: []
+    registro_de_cambio:
+    - version: 2.1.0
+      fecha: '2026-11-02'
+      nota: Alta en 2.1.0. Para salir, sacá el módulo de la política y publicá otra release. No reescribas
+        hostium-2.0.0.zip ni este ZIP.

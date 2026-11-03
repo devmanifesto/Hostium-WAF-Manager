@@ -236,6 +236,38 @@ def rules_validate(
     _ejecutar(ctx, accion)
 
 
+@rules_app.command("render-exclusions")
+def rules_render_exclusions(ctx: typer.Context) -> None:
+    """Escribe REQUEST-900 desde config/exclusions.yaml."""
+
+    def accion() -> None:
+        from hostium_waf.exclusiones_crs import escribir_exclusiones
+        from hostium_waf.validation import validar_exclusiones
+
+        root = _raiz()
+        data = load_yaml(root / "config" / "exclusions.yaml")
+        issues = validar_exclusiones(data)
+        if issues:
+            raise HostiumError("el catálogo no se puede generar", issues=issues)
+        destino = escribir_exclusiones(root)
+        _emitir(ctx, {"ok": True, "archivo": str(destino)}, f"escrito {destino}")
+
+    _ejecutar(ctx, accion)
+
+
+@rules_app.command("render-score")
+def rules_render_score(ctx: typer.Context) -> None:
+    """Escribe REQUEST-910 desde los cinco conf de CRS 3.3.10."""
+
+    def accion() -> None:
+        from hostium_waf.puntaje_crs import escribir_puntaje
+
+        destino = escribir_puntaje(_raiz())
+        _emitir(ctx, {"ok": True, "archivo": str(destino)}, f"escrito {destino}")
+
+    _ejecutar(ctx, accion)
+
+
 @rules_app.command("check-ids")
 def rules_check_ids(
     ctx: typer.Context,

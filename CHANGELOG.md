@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.1.0 — 2026-11-02
+
+Entran `REQUEST-900-CRS-EXCLUSIONS.conf` y `REQUEST-910-CRS-ANOMALY-SCORE.conf`. Los ids de `REQUEST-410` conservan id, fase y acción. `5500900`–`5500903` son fase 1, `pass`, `nolog`, atadas a una URI, y el `ctl:ruleRemoveTargetById` está en el segundo eslabón. `5500910` documenta el conf de puntaje y no es una `SecRule`. Cada `SecRuleUpdateActionById` resta el anomaly score crítico y suma el warning de 911, 922, 932, 934 y 944 en CRS 3.3.10. Neto 3. El RPM de cPanel no se diffé. Si hostium se incluye antes de OWASP3, `httpd -t` falla.
+
+`publish/stable/meta_hostium.yaml` pasa a `hostium-2.1.0`. No se reescribe `hostium-2.0.0.zip`. `ultima_validacion` sigue vacía. No se ejecutó `upcp`, `modsec_vendor` ni `httpd -t`. WHM cuenta tres sets.
+
 ## 2.0.0 — 2026-11-02
 
 Sale del ZIP `REQUEST-100-SENSITIVE-FILES.conf`. `5500100` y `5500101` quedan en el repo con estado retirado. CRS 3.3.10, regla `930130`, PL1, ya pone score crítico 5 sobre las frases `/.env` y `/.git/` de `restricted-files.data`, y el umbral de `949110` es 5. El cruce es contra el tag upstream `v3.3.10`. No se releyó el `restricted-files.data` del RPM en un servidor.

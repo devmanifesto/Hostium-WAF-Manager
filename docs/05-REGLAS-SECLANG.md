@@ -66,7 +66,7 @@ Manual v2.x y la guía de excepciones de CRS.
 
 ## Módulo 1.1.0, PHP upload progress
 
-Ids `5500600`–`5500626`. Los de pedido están en `REQUEST-410-PHP-UPLOAD-PROGRESS.conf` y entran al ZIP 2.0.0. Los de `RESPONSE_BODY` están en el example 411 y no entran. Cubren vectores publicados de CVE-2026-109618 y CVE-2026-109619. No cubren CVE-2026-115560 y no reemplazan PHP 8.2.35, 8.3.36, 8.4.27 u 8.5.12.
+Ids `5500600`–`5500626`. Los de pedido están en `REQUEST-410-PHP-UPLOAD-PROGRESS.conf` y siguen en el ZIP, también en `2.1.0`. Los de `RESPONSE_BODY` están en el example 411 y no entran. Cubren vectores publicados de CVE-2026-109618 y CVE-2026-109619. No cubren CVE-2026-115560 y no reemplazan PHP 8.2.35, 8.3.36, 8.4.27 u 8.5.12.
 
 Mientras el parche no esté, el aviso de PHP pide `session.upload_progress.enabled=0` en `php.ini` o en el pool, y reiniciar los workers. `ini_set` y `.user.ini` no alcanzan: el parseo ocurre antes.
 
@@ -89,3 +89,9 @@ Señales que no son un crash de PHP, según la taxonomía que acompañaba el bor
 ## Limitaciones
 
 No hay regla de WordPress ni de escáneres. Esos archivos siguen marcados INCOMPLETO. El id `5500400` sigue vacío. `apache2ctl configtest` aceptó los dos `.conf` empaquetados en la imagen local `hostium-waf-apache:local`, paquete `modsecurity 2.9.7-1+deb12u2`, Apache/2.4.68 (Debian). No es el RPM de cPanel. El 24 de octubre de 2026 `test_motor_ve_las_reglas_410` vio 403 con id en `5500613` (también `PHPSESSID[0]`), `5500602` (100 cabeceras `X-`) y `5500625` en mayúsculas, y `5500614` quedó en el log sin negar. 99 cabeceras `X-` y un filename vacío no negaron. `ultima_validacion` sigue vacía: esa imagen no es cPanel.
+
+## Módulo 2.1.0, exclusiones y puntaje
+
+`REQUEST-900-CRS-EXCLUSIONS.conf` sale de `config/exclusions.yaml` con `rules render-exclusions`. Ids `5500900`–`5500903`. Cada una es fase 1, `pass`, `nolog`, `chain` y `REQUEST_URI`. El `ctl:ruleRemoveTargetById` está en el segundo eslabón. La aproximación de las URI está en `tests/unit/test_crs_210.py`. No es el motor.
+
+`REQUEST-910-CRS-ANOMALY-SCORE.conf` sale de cinco conf de CRS 3.3.10 con `rules render-score`. No tiene `SecRule`. El id `5500910` ancla el archivo en el manifiesto. Cada `SecRuleUpdateActionById` resta el anomaly score crítico y suma el warning. Si el conf se incluye antes de OWASP3, `httpd -t` falla. Este árbol no corrió ese configtest sobre 2.1.0.

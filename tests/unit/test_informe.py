@@ -40,6 +40,8 @@ def test_scripts_y_reglas_usan_lf() -> None:
     archivos = list((ROOT / "scripts").glob("*.sh"))
     archivos.append(ROOT / "rules" / "hostium" / "REQUEST-100-SENSITIVE-FILES.conf")
     archivos.append(ROOT / "rules" / "hostium" / "REQUEST-410-PHP-UPLOAD-PROGRESS.conf")
+    archivos.append(ROOT / "rules" / "hostium" / "REQUEST-900-CRS-EXCLUSIONS.conf")
+    archivos.append(ROOT / "rules" / "hostium" / "REQUEST-910-CRS-ANOMALY-SCORE.conf")
     archivos.append(ROOT / "rules" / "hostium" / "REQUEST-411-PHP-UPLOAD-PROGRESS-RESPONSE.conf.example")
     for ruta in archivos:
         datos = ruta.read_bytes()

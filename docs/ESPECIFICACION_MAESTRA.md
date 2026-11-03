@@ -271,6 +271,8 @@ Documentá e implementá verificación del orden real de inclusión:
 - Documentar la forma segura de configurar excepciones por dominio/ruta/parámetro para WordPress/WooCommerce, sin apagar OWASP globalmente.
 - Exigir justificación y fecha de expiración/revisión para cada excepción.
 
+Enmienda del 2 de noviembre de 2026. `hostium-2.1.0` publica, en el mismo ZIP, `ctl:ruleRemoveTargetById` de fase 1 atado a una URI en `REQUEST-900-CRS-EXCLUSIONS.conf`, y `SecRuleUpdateActionById` en `REQUEST-910-CRS-ANOMALY-SCORE.conf`. El `ctl` de fase 1 alcanza una regla de fase 2 aunque el Include vaya después. `SecRuleUpdateActionById` exige que el conf se lea después de OWASP3; si no, `httpd -t` falla. `ctl:ruleRemoveById`, `SecRuleRemoveById`, `allow` y el apagado del motor siguen fuera del ZIP. El detalle operativo está en `docs/13-FALSOS-POSITIVOS-Y-EXCEPCIONES.md`.
+
 Referencia obligatoria: `https://coreruleset.org/docs/2-how-crs-works/2-3-false-positives-and-tuning/`.
 
 ## 9. CLI completa y comportamiento esperado

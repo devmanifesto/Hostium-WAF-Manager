@@ -17,7 +17,7 @@ Quien lee un ticket o un informe y no mantiene el ruleset.
 | CRS / OWASP3 | El vendor que instala el RPM de cPanel. No lo editamos |
 | Vendor | Un origen de reglas que WHM descarga con `modsec_vendor` |
 | `vendor_id` | El nombre corto. El nuestro es `hostium` porque el archivo se llama `meta_hostium.yaml` |
-| `distribution` | El identificador inmutable de una release. Stable nombra hoy `hostium-1.1.2` |
+| `distribution` | El identificador inmutable de una release. Stable nombra hoy `hostium-2.1.0` |
 | Mayor, sub, sub-sub | Los tres números del ruleset. `2.0.0` rompe un id ya instalado. `1.2.0` agrega un set. El salto por defecto de cada release es el sub-sub: la `1.1.2` sumó `5500606`, `5500607` y `5500608` |
 | DetectionOnly | Modo global del motor: las reglas no niegan. No es lo mismo que una regla escrita con `pass,log` |
 | deny | La regla interrumpe con el status que declare, en la nuestra 403 |
@@ -29,7 +29,7 @@ Quien lee un ticket o un informe y no mantiene el ruleset.
 | Código 3 | La operación existe en la ayuda y está bloqueada a propósito |
 | Fixture | Texto de prueba. No es una captura de calcium |
 | Include | Una línea de Apache que carga un `.conf`. El orden entre vendors se mira con `DUMP_INCLUDES` |
-| Exclusión runtime | `ctl:ruleRemoveById`, antes de la regla que quiere anular |
+| Exclusión runtime | En 2.1.0, `ctl:ruleRemoveTargetById` de fase 1 atado a una URI. `ctl:ruleRemoveById` sigue fuera del ZIP |
 | Exclusión configure-time | `SecRuleRemoveById`, después de incluir CRS |
 
 ## Verificación

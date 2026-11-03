@@ -30,9 +30,11 @@ Instalación del documento 04.
 | Comando | Efecto |
 | --- | --- |
 | `version` | Imprime 1.0.0 |
-| `init` | Copia los example a `config/*.yaml` si no existen |
+| `init` | Copia settings, fleet y policy de ejemplo si no existen. No crea `config/exclusions.yaml`: ese catálogo está versionado |
 | `doctor --local` | Valida el árbol |
 | `rules list` / `validate` / `check-ids` | Manifiesto e ids. `--installed-ids` es un archivo local, no una consulta a WHM |
+| `rules render-exclusions` | Escribe `REQUEST-900` desde `config/exclusions.yaml` |
+| `rules render-score` | Escribe `REQUEST-910` desde los cinco conf de CRS 3.3.10 en `third_party/` |
 | `package build --version --engine` | ZIP y metadata |
 | `package verify --zip --metadata` | Hashes y estructura |
 | `metadata show --file` | YAML ya validado |
