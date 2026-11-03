@@ -42,7 +42,11 @@ En CRS 3.3.10 la 933210 pide la forma de llamada variable, por ejemplo `(1) (1)`
 - ZIP: https://raw.githubusercontent.com/devmanifesto/Hostium-WAF-Manager/main/publish/stable/hostium-2.1.4.zip
 - Metadata: https://raw.githubusercontent.com/devmanifesto/Hostium-WAF-Manager/main/publish/stable/meta_hostium.yaml
 
-El ZIP contiene `hostium/`, REQUEST-410 y REQUEST-900. No contiene REQUEST-910 ni SecRuleUpdateActionById. hostium-2.1.3.zip y meta_hostium-tune.yaml no se reescriben. La comprobación pública por HTTPS se anota al final cuando el push ya está en main.
+El ZIP contiene `hostium/`, REQUEST-410 y REQUEST-900. No contiene REQUEST-910 ni SecRuleUpdateActionById. hostium-2.1.3.zip conserva MD5 `5006f1a7c49accbd1bcf37ea27ef6fc2` y 4628 bytes. meta_hostium-tune.yaml no se reescribió.
+
+## Verificación pública
+
+Commit 9e9e623 en origin/main. Un GET sin sesión de la metadata y del ZIP 2.1.4 devolvió ambos archivos. El ZIP público tiene 4764 bytes y MD5 `8a0b7c1ad1441e977dbb9622d8608950`. La metadata pública tiene 506 bytes, MD5 `db72729472d2c3128d62a8f9052c0489`, y nombra `hostium-2.1.4` con ese mismo MD5 de ZIP. No se ejecutó SSH ni `modsec_vendor`.
 
 ## Actualización en calcium a cargo del operador
 
