@@ -6,7 +6,7 @@ import hashlib
 import re
 from pathlib import Path
 
-from hostium_waf.packaging import Artefacto, build_package, copiar_a_stable
+from hostium_waf.packaging import Artefacto, build_package, build_tune_package, copiar_a_stable, copiar_tune_a_stable
 from hostium_waf.settings import load_settings
 from hostium_waf.validation import _revisar_conf_empaquetable, _revisar_conf_puntaje
 
@@ -18,48 +18,53 @@ SHA_200 = "d9644a8f5f8d83506a16d4beab39a27ef62b5a30f7cbccc07d3e29408e140c01"
 _FAMILIAS = ("920", "921", "930", "931", "933", "941", "942", "943")
 
 
-def _reglas_uri(texto: str) -> dict[int, tuple[str, str]]:
+def _reglas(texto: str) -> dict[int, tuple[str, str, str]]:
     plano = re.sub(r"\\\s*\n", " ", texto)
-    encontradas: dict[int, tuple[str, str]] = {}
-    for bloque in re.findall(r"SecRule\b.*?(?=SecRule\b|$)", plano, flags=re.S):
+    encontradas: dict[int, tuple[str, str, str]] = {}
+    for bloque in re.findall(r"(?:SecRule|SecAction)\b.*?(?=(?:SecRule|SecAction)\b|$)", plano, flags=re.S):
         marca = re.search(r"\bid:(\d+)\b", bloque)
-        if not marca:
+        assert marca is not None
+        if bloque.lstrip().startswith("SecAction"):
+            encontradas[int(marca.group(1))] = ("SecAction", "", "")
             continue
-        operador = re.search(r'REQUEST_URI\s+"(@beginsWith|@rx)\s+([^"]+)"', bloque)
+        operador = re.search(r'REQUEST_URI\s+"(@beginsWith|@contains|@rx)\s+([^"]+)"', bloque)
         assert operador is not None
-        encontradas[int(marca.group(1))] = (operador.group(1), operador.group(2))
+        encontradas[int(marca.group(1))] = ("SecRule", operador.group(1), operador.group(2))
     return encontradas
 
 
 def _coincide(operador: str, valor: str, path: str) -> bool:
     if operador == "@beginsWith":
         return path.startswith(valor)
+    if operador == "@contains":
+        return valor in path
     return re.search(valor, path) is not None
 
 
-def test_uris_de_los_cuatro_casos() -> None:
-    reglas = _reglas_uri(EXCLUSIONES.read_text(encoding="utf-8"))
-    assert set(reglas) == {5500900, 5500901, 5500902, 5500903}
-    positivos = {
-        5500900: "/aplicacion_customs/xqempresas/aceptar.php",
-        5500901: "/adminAb12/index.php/sell/catalog/products/5/edit?_token=abc",
-        5500902: "/server20200601/mod/contabilidad/multisel_cuentacont.php",
-        5500903: "/aplicacion_customs/marketingdirecto/recibepostturnero.php",
-    }
-    for identificador, path in positivos.items():
-        operador, valor = reglas[identificador]
-        assert _coincide(operador, valor, path)
-        for otro, otro_path in positivos.items():
-            if otro != identificador:
-                assert not _coincide(operador, valor, otro_path)
-    prestashop = reglas[5500901]
-    assert _coincide(*prestashop, "/adminAb12/sell/catalog/products/")
-    assert _coincide(*prestashop, "/administrator/sell/catalog/products/1")
-    assert not _coincide(*prestashop, "/sell/catalog/products/")
-    assert not _coincide(*prestashop, "/adminAb12/sell/orders/")
-    for _, (operador, valor) in reglas.items():
-        assert not _coincide(operador, valor, "/login")
-        assert not _coincide(operador, valor, "/wp-login.php")
+def test_selectores_de_las_cinco_exclusiones() -> None:
+    texto = EXCLUSIONES.read_text(encoding="utf-8")
+    reglas = _reglas(texto)
+    assert set(reglas) == {5500900, 5500901, 5500902, 5500903, 5500904}
+    for identificador in (5500900, 5500901, 5500902):
+        assert reglas[identificador][0] == "SecAction"
+    assert "ctl:ruleRemoveTargetById=941130;ARGS:firmadatos" in texto
+    assert "ctl:ruleRemoveTargetById=941170;ARGS:firmadatos" in texto
+    assert "ctl:ruleRemoveTargetById=942100;ARGS:vseleccionados" in texto
+    assert "ctl:ruleRemoveTargetByTag=attack-xss;ARGS:emailglobalheader" in texto
+    assert "ctl:ruleRemoveTargetByTag=attack-rce;ARGS:emailglobalfooter" in texto
+    assert "941100" not in texto
+    assert "922130" not in texto
+    assert "chain" not in texto
+    catalogo, valor = reglas[5500903][1:]
+    assert catalogo == "@contains"
+    assert _coincide(catalogo, valor, "/admin1911/sell/catalog/products/49")
+    assert _coincide(catalogo, valor, "/otro/sell/catalog/products/1")
+    assert not _coincide(catalogo, valor, "/admin1911/sell/orders/")
+    assert not _coincide(catalogo, valor, "/login")
+    turnero, ruta = reglas[5500904][1:]
+    assert _coincide(turnero, ruta, "/aplicacion_customs/marketingdirecto/recibepostturnero.php")
+    assert not _coincide(turnero, ruta, "/aplicacion_customs/marketingdirecto/index.php")
+    assert not _coincide(turnero, ruta, "/login")
 
 
 def test_el_conf_de_exclusion_no_abre_ni_quita_reglas() -> None:
@@ -80,7 +85,7 @@ def test_el_conf_de_exclusion_no_abre_ni_quita_reglas() -> None:
         'ctl:ruleRemoveTargetById=941100;ARGS"\n'
     )
     issues = _revisar_conf_empaquetable(starter, "rules/hostium/REQUEST-900-CRS-EXCLUSIONS.conf", [])
-    assert any("eslabón final" in item.mensaje for item in issues)
+    assert any("no usa cadena" in item.mensaje for item in issues)
 
 
 def test_el_ctl_de_objetivo_no_entra_en_410() -> None:
@@ -140,3 +145,27 @@ def test_copiar_a_stable_pisa_solo_la_metadata(tmp_path: Path) -> None:
     assert (estable / "hostium-2.0.0.zip").read_bytes() == viejo
     assert (estable / "hostium-2.1.0.zip").read_bytes() == artefacto.zip_path.read_bytes()
     assert "hostium-2.1.0" in (estable / "meta_hostium.yaml").read_text(encoding="utf-8")
+
+
+def test_tune_no_pisa_el_zip_de_hostium(tmp_path: Path) -> None:
+    settings = load_settings(ROOT)
+    tune = build_tune_package(ROOT, settings, engine="2.9.15", output=tmp_path / "tune")
+    assert tune.distribution == "hostium-tune-2.1.0"
+    from zipfile import ZipFile
+
+    with ZipFile(tune.zip_path) as zf:
+        assert zf.namelist() == [
+            "hostium-tune/",
+            "hostium-tune/REQUEST-910-CRS-ANOMALY-SCORE.conf",
+        ]
+        texto = zf.read("hostium-tune/REQUEST-910-CRS-ANOMALY-SCORE.conf").decode("utf-8")
+    assert "SecRuleUpdateActionById 922130 " in texto
+    assert "MULTIPART_PART_HEADERS" not in texto
+    estable = tmp_path / "publish" / "stable"
+    estable.mkdir(parents=True)
+    (estable / "hostium-2.0.0.zip").write_bytes(b"zip-2.0.0")
+    (estable / "meta_hostium.yaml").write_text("distribution: hostium-2.0.0\n", encoding="utf-8")
+    copiar_tune_a_stable(tmp_path, tune)
+    assert (estable / "hostium-2.0.0.zip").read_bytes() == b"zip-2.0.0"
+    assert (estable / "meta_hostium.yaml").read_text(encoding="utf-8") == "distribution: hostium-2.0.0\n"
+    assert "hostium-tune-2.1.0" in (estable / "meta_hostium-tune.yaml").read_text(encoding="utf-8")

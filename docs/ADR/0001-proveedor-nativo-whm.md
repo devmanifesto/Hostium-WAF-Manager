@@ -22,11 +22,9 @@ El orden respecto de CRS no queda garantizado por el alta del vendor. Las exclus
 
 ## Enmienda del 2 de noviembre de 2026
 
-`hostium-2.1.0` agrega dos archivos al mismo ZIP. El texto de octubre queda como estaba.
+El texto de octubre queda como estaba. `hostium-2.1.0` agrega `REQUEST-900-CRS-EXCLUSIONS.conf`. El ctl de objetivo es fase 1. Si el campo es propio de la aplicación, es un `SecAction` sin URI. Si el campo es genérico, es una sola `SecRule` sobre `REQUEST_URI`, sin cadena. El ctl queda en la transacción y alcanza una regla CRS de fase 2 aunque WHM incluya hostium después de OWASP3. `ctl:ruleRemoveById` y `SecRuleRemoveById` siguen fuera del ZIP.
 
-`REQUEST-900-CRS-EXCLUSIONS.conf` lleva `ctl:ruleRemoveTargetById` en fase 1, atado a una URI, en el eslabón final de la cadena. Ese `ctl` queda en la transacción y alcanza una regla CRS de fase 2 aunque WHM incluya hostium después de OWASP3. `ctl:ruleRemoveById` y `SecRuleRemoveById` siguen fuera del ZIP.
-
-`REQUEST-910-CRS-ANOMALY-SCORE.conf` lleva `SecRuleUpdateActionById`. Esa directiva se resuelve al leer la configuración y solo aplica si el archivo se lee después de OWASP3. Si el id CRS todavía no existe, `httpd -t` falla y Apache no debe recargarse. Este repositorio no comprobó ese orden en un cPanel.
+`SecRuleUpdateActionById` no entra en ese ZIP. El orden del vendor hostium respecto de OWASP3 no está garantizado y un id desconocido hace fallar `httpd -t`. El conf de puntaje es el vendor `hostium-tune`, metadata `meta_hostium-tune.yaml`, raíz `hostium-tune/`. srv-admin lo agrega después de OWASP3. Este repositorio no comprobó ese orden en un cPanel.
 
 ## Cómo se revierte esta decisión
 

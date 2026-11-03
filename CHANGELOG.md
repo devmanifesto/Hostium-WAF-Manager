@@ -2,9 +2,11 @@
 
 ## 2.1.0 — 2026-11-02
 
-Entran `REQUEST-900-CRS-EXCLUSIONS.conf` y `REQUEST-910-CRS-ANOMALY-SCORE.conf`. Los ids de `REQUEST-410` conservan id, fase y acción. `5500900`–`5500903` son fase 1, `pass`, `nolog`, atadas a una URI, y el `ctl:ruleRemoveTargetById` está en el segundo eslabón. `5500910` documenta el conf de puntaje y no es una `SecRule`. Cada `SecRuleUpdateActionById` resta el anomaly score crítico y suma el warning de 911, 922, 932, 934 y 944 en CRS 3.3.10. Neto 3. El RPM de cPanel no se diffé. Si hostium se incluye antes de OWASP3, `httpd -t` falla.
+`hostium-2.1.0` suma `REQUEST-900-CRS-EXCLUSIONS.conf`. Los ids de `REQUEST-410` conservan id, fase y acción. `5500900`, `5500901` y `5500902` son `SecAction` de fase 1, sin URI: sacan `ARGS:firmadatos` de 941130 y 941170, `ARGS:vseleccionados` de 942100, y `ARGS:emailglobalheader` más `ARGS:emailglobalfooter` de los tags `attack-xss` y `attack-rce`. `5500903` saca `ARGS` de 941160 cuando la URI contiene `/sell/catalog/`. `5500904` saca `ARGS:datos` de 933170 en el turnero. No hay `/login` ni directorio de admin.
 
-`publish/stable/meta_hostium.yaml` pasa a `hostium-2.1.0`. No se reescribe `hostium-2.0.0.zip`. `ultima_validacion` sigue vacía. No se ejecutó `upcp`, `modsec_vendor` ni `httpd -t`. WHM cuenta tres sets.
+El bajado de puntaje es el vendor `hostium-tune`, distribution `hostium-tune-2.1.0`. Cada `SecRuleUpdateActionById` resta el anomaly score crítico y suma el warning de 911, 922, 932, 934 y 944. Neto 3. Una 922130 no llega a 5. Dos reglas de esos archivos suman 6. El RPM de cPanel no se diffé. Si `hostium-tune` se incluye antes de OWASP3, `httpd -t` falla.
+
+`publish/stable/meta_hostium.yaml` pasa a `hostium-2.1.0`. `meta_hostium-tune.yaml` apunta al ZIP de puntaje. No se reescribe `hostium-2.0.0.zip`. `ultima_validacion` sigue vacía. No se ejecutó `upcp`, `modsec_vendor` ni `httpd -t`. WHM cuenta dos sets en hostium.
 
 ## 2.0.0 — 2026-11-02
 

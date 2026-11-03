@@ -1,20 +1,20 @@
 version_esquema: 1
 # Catálogo que genera rules/hostium/REQUEST-900-CRS-EXCLUSIONS.conf.
-# Cada ítem es fase 1, pass, nolog, atado a una URI. No hay /login ni IP.
+# Sin uri: el campo es propio de la aplicación y el ctl corre en cada petición.
+# Con uri: el campo es genérico y el ctl corre solo en esa ruta.
+# No hay /login, ni un directorio admin, ni configgeneral.php.
 exclusiones:
   - id: '5500900'
     tipo: runtime
     regla_objetivo: '941130,941170'
     motivo: >-
-      ARGS:firmadatos es un JPEG en data-URI, data:image/jpeg;base64,/9j/.
-      941130 matchea ;base64 y 941170 matchea data: con base64.
+      ARGS:firmadatos es un JPEG en data-URI. 941130 matchea punto y coma base64
+      y 941170 matchea el data-URI con base64. El resto de los ARGS sigue
+      inspeccionado y las demás reglas 941 siguen viendo firmadatos.
     owner: equipo-seguridad-hostium
     fecha_revision: '2027-05-02'
-    alcance: URI /aplicacion_customs/xqempresas/aceptar.php campo ARGS:firmadatos
+    alcance: campo ARGS:firmadatos en 941130 y 941170
     ticket: 2026-11-02-siga-xqempresas-aceptar
-    uri:
-      operador: '@beginsWith'
-      valor: /aplicacion_customs/xqempresas/aceptar.php
     controles:
       - tipo: ruleRemoveTargetById
         objetivo: '941130'
@@ -24,64 +24,65 @@ exclusiones:
         variable: ARGS:firmadatos
   - id: '5500901'
     tipo: runtime
-    regla_objetivo: '941100,941110,941120,941130,941140,941160,941170,941180'
-    motivo: >-
-      El backoffice de PrestaShop manda HTML de producto en ARGS.
-      En paranoia 1 una sola de estas XSS suma 5 y dispara 949110.
-      El resto del sitio conserva esas reglas.
-    owner: equipo-seguridad-hostium
-    fecha_revision: '2027-05-02'
-    alcance: URI /adminTOKEN/sell/catalog/products/ coleccion ARGS
-    uri:
-      operador: '@rx'
-      valor: '^/admin[A-Za-z0-9]+/(?:index\.php/)?sell/catalog/products(?:/|\?|$)'
-    controles:
-      - tipo: ruleRemoveTargetById
-        objetivo: '941100'
-        variable: ARGS
-      - tipo: ruleRemoveTargetById
-        objetivo: '941110'
-        variable: ARGS
-      - tipo: ruleRemoveTargetById
-        objetivo: '941120'
-        variable: ARGS
-      - tipo: ruleRemoveTargetById
-        objetivo: '941130'
-        variable: ARGS
-      - tipo: ruleRemoveTargetById
-        objetivo: '941140'
-        variable: ARGS
-      - tipo: ruleRemoveTargetById
-        objetivo: '941160'
-        variable: ARGS
-      - tipo: ruleRemoveTargetById
-        objetivo: '941170'
-        variable: ARGS
-      - tipo: ruleRemoveTargetById
-        objetivo: '941180'
-        variable: ARGS
-  - id: '5500902'
-    tipo: runtime
     regla_objetivo: '942100'
     motivo: >-
-      ARGS:vseleccionados es una lista de cuentas unida con ||.
-      En paranoia 1 la marca 942100. 942360 pide palabras SQL y 942120 es paranoia 2.
+      ARGS:vseleccionados es una lista de cuentas unida con dos barras
+      verticales. 942100 es detectSQLi. Las demás reglas 942 siguen viendo
+      ese campo.
     owner: equipo-seguridad-hostium
     fecha_revision: '2027-05-02'
-    alcance: URI /server20200601/mod/contabilidad/multisel_cuentacont.php campo ARGS:vseleccionados
-    uri:
-      operador: '@beginsWith'
-      valor: /server20200601/mod/contabilidad/multisel_cuentacont.php
+    alcance: campo ARGS:vseleccionados en 942100
     controles:
       - tipo: ruleRemoveTargetById
         objetivo: '942100'
         variable: ARGS:vseleccionados
+  - id: '5500902'
+    tipo: runtime
+    regla_objetivo: attack-xss,attack-rce
+    motivo: >-
+      ARGS:emailglobalheader y ARGS:emailglobalfooter son el HTML de la
+      plantilla de mail de WHMCS. El caso sumó 55 entre reglas 941 y 932
+      sobre esos dos campos. El resto de los argumentos sigue inspeccionado.
+    owner: equipo-seguridad-hostium
+    fecha_revision: '2027-05-02'
+    alcance: campos ARGS:emailglobalheader y ARGS:emailglobalfooter en attack-xss y attack-rce
+    ticket: 2026-11-02-whmcs-configgeneral-save
+    controles:
+      - tipo: ruleRemoveTargetByTag
+        objetivo: attack-xss
+        variable: ARGS:emailglobalheader
+      - tipo: ruleRemoveTargetByTag
+        objetivo: attack-rce
+        variable: ARGS:emailglobalheader
+      - tipo: ruleRemoveTargetByTag
+        objetivo: attack-xss
+        variable: ARGS:emailglobalfooter
+      - tipo: ruleRemoveTargetByTag
+        objetivo: attack-rce
+        variable: ARGS:emailglobalfooter
   - id: '5500903'
+    tipo: runtime
+    regla_objetivo: '941160'
+    motivo: >-
+      El HTML de la ficha de PrestaShop viaja en ARGS. La URI contiene
+      /sell/catalog/, con cualquier producto y cualquier token. 941160 deja
+      de mirar ARGS solo ahí. Las otras reglas 941 de ese POST siguen.
+    owner: equipo-seguridad-hostium
+    fecha_revision: '2027-05-02'
+    alcance: URI que contiene /sell/catalog/ coleccion ARGS en 941160
+    uri:
+      operador: '@contains'
+      valor: /sell/catalog/
+    controles:
+      - tipo: ruleRemoveTargetById
+        objetivo: '941160'
+        variable: ARGS
+  - id: '5500904'
     tipo: runtime
     regla_objetivo: '933170'
     motivo: >-
-      ARGS:datos es un stdClass serializado de PHP. 933170 matchea O:digitos:.
-      933100 busca <?php, no el objeto.
+      ARGS:datos es un stdClass serializado de PHP. 933170 matchea la letra O,
+      dos puntos y dígitos. No se saca ARGS:datos en el resto de los sitios.
     owner: equipo-seguridad-hostium
     fecha_revision: '2027-05-02'
     alcance: URI /aplicacion_customs/marketingdirecto/recibepostturnero.php campo ARGS:datos

@@ -1,7 +1,9 @@
 """Genera REQUEST-900 desde config/exclusions.yaml.
 
-Cada exclusión es fase 1, pass, nolog y una cadena. El ctl va en el eslabón
-final: en ModSecurity 2 un ctl del starter corre aunque la cadena no cierre.
+Un campo propio de la aplicación es SecAction de fase 1: el ctl nombra el
+campo y corre en cada petición. Un campo genérico es una sola SecRule sobre
+REQUEST_URI, sin cadena: el ctl corre solo si esa URI matchea. En los dos
+casos el ctl queda en la transacción y alcanza una regla CRS de fase 2.
 """
 
 from __future__ import annotations
@@ -19,6 +21,7 @@ _VARIABLE = re.compile(r"^ARGS(?::[A-Za-z_][A-Za-z0-9_]*)?$")
 _OBJETIVO_ID = re.compile(r"^\d+$")
 _OBJETIVO_TAG = re.compile(r"^[A-Za-z0-9_-]+$")
 _LOGIN = re.compile(r"(?:^|/)(?:wp-)?login(?:\.php)?(?:/|$)", re.I)
+_ADMIN = re.compile(r"(?:^|/)admin(?:[A-Za-z0-9_-]*)(?:/|$)", re.I)
 
 
 def render_exclusiones(data: dict[str, Any]) -> str:
@@ -27,12 +30,11 @@ def render_exclusiones(data: dict[str, Any]) -> str:
     cabecera = "\n".join(
         [
             f"# {descripcion_modulo(VERSION_RULESET)}",
-            "# Exclusiones de objetivo para falsos positivos concretos.",
-            "# Fase 1: el ctl queda en la transacción y alcanza una regla CRS de fase 2",
-            "# aunque WHM incluya este vendor después de OWASP3.",
-            "# El ctl está en el segundo eslabón. En ModSecurity 2 un ctl del starter",
-            "# corre aunque la cadena no cierre.",
-            "# No quita la regla. No abre la petición. Si la URI no se pide, no matchea.",
+            "# Exclusiones de objetivo. Fase 1, pass, nolog.",
+            "# El campo propio de la aplicación no lleva URI: el ctl nombra ese campo.",
+            "# El campo genérico lleva una sola regla de REQUEST_URI, sin cadena.",
+            "# El ctl queda en la transacción y alcanza una regla CRS de fase 2.",
+            "# No quita la regla. No abre la petición. No exceptúa login ni un admin.",
             "",
         ]
     )
@@ -51,9 +53,6 @@ def escribir_exclusiones(root: Path) -> Path:
 
 def _bloque(item: dict[str, Any]) -> str:
     identificador = int(item["id"])
-    uri = item["uri"]
-    operador = str(uri["operador"])
-    valor = str(uri["valor"])
     ctls = _lineas_ctl(item["controles"])
     ticket = item.get("ticket")
     nota_ticket = f" Ticket {ticket}." if isinstance(ticket, str) and ticket.strip() else ""
@@ -61,20 +60,24 @@ def _bloque(item: dict[str, Any]) -> str:
         f"# {identificador} {item['motivo']} "
         f"Owner {item['owner']}. Revisión {item['fecha_revision']}.{nota_ticket}"
     )
-    regla_uri = f'{operador} {valor}'
-    padre = (
-        f'SecRule REQUEST_URI "{regla_uri}" \\\n'
-        f'    "id:{identificador},\\\n'
+    acciones = (
+        f'"id:{identificador},\\\n'
         f"phase:1,\\\n"
         f"pass,\\\n"
         f"nolog,\\\n"
         f"t:none,\\\n"
         f"tag:'hostium-crs-exclusion',\\\n"
         f"ver:'hostium/{VERSION_RULESET}',\\\n"
-        f'chain"'
+        f'{ctls}"'
     )
-    hijo = f'    SecRule REQUEST_URI "{regla_uri}" \\\n        "t:none,\\\n{ctls}"'
-    return f"{comentario}\n{padre}\n{hijo}"
+    uri = item.get("uri")
+    if isinstance(uri, dict):
+        operador = str(uri["operador"])
+        valor = str(uri["valor"])
+        regla = f'SecRule REQUEST_URI "{operador} {valor}" \\\n    {acciones}'
+    else:
+        regla = f"SecAction \\\n    {acciones}"
+    return f"{comentario}\n{regla}"
 
 
 def _lineas_ctl(controles: list[dict[str, Any]]) -> str:
@@ -105,6 +108,10 @@ def _ctl(control: dict[str, Any]) -> str:
 
 def uri_prohibida(valor: str) -> bool:
     if _LOGIN.search(valor):
+        return True
+    if _ADMIN.search(valor):
+        return True
+    if "configgeneral" in valor.lower():
         return True
     if "REMOTE_ADDR" in valor.upper():
         return True

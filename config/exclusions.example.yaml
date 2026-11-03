@@ -1,5 +1,5 @@
 version_esquema: 1
 # Plantilla vacía. El catálogo que genera REQUEST-900 es config/exclusions.yaml.
-# Cada ítem es runtime, fase 1, y un ctl de objetivo atado a una URI.
+# Cada ítem es runtime, fase 1, y un ctl de objetivo. La URI va solo si el campo es genérico.
 # Este example no entra al ZIP.
 exclusiones: []

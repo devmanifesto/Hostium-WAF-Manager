@@ -1,7 +1,7 @@
 ---
 '2.9.15':
-  MD5: 'bd3b91d8a9a198d4df9888c1d89b60be'
-  SHA512: '2147b3977c42e60a6035657b4ac1eff9418ae365c8e6bd2c7cfd44ae19c8624b48ab662f45f7257942f4bd1bc341c98c4a6b5a619119472164c6c4b2a4df8500'
+  MD5: '44e9a02fd97cd5e4b325198f3a9bc44f'
+  SHA512: '5a0789ddd8046f71e833268d7854b1f7bfd6e027de5c6472d534ab80e0570396f1e5becbcaf88ab59e8819623d7fa990e0dfdf8e50a69cff796756a88508a07f'
   distribution: 'hostium-2.1.0'
   url: 'https://raw.githubusercontent.com/devmanifesto/Hostium-WAF-Manager/main/publish/stable/hostium-2.1.0.zip'
 attributes:

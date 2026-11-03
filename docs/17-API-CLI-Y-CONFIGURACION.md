@@ -35,7 +35,8 @@ Instalación del documento 04.
 | `rules list` / `validate` / `check-ids` | Manifiesto e ids. `--installed-ids` es un archivo local, no una consulta a WHM |
 | `rules render-exclusions` | Escribe `REQUEST-900` desde `config/exclusions.yaml` |
 | `rules render-score` | Escribe `REQUEST-910` desde los cinco conf de CRS 3.3.10 en `third_party/` |
-| `package build --version --engine` | ZIP y metadata |
+| `package build --version --engine` | ZIP y metadata de hostium |
+| `package build-tune --engine` | ZIP y metadata de hostium-tune, solo el conf de puntaje |
 | `package verify --zip --metadata` | Hashes y estructura |
 | `metadata show --file` | YAML ya validado |
 | `publish plan --version` | Plan. Falla si no hay artefacto |

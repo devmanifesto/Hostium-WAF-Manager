@@ -40,7 +40,6 @@ def test_zip_solo_contiene_la_regla_productiva(tmp_path: Path) -> None:
         "hostium/",
         "hostium/REQUEST-410-PHP-UPLOAD-PROGRESS.conf",
         "hostium/REQUEST-900-CRS-EXCLUSIONS.conf",
-        "hostium/REQUEST-910-CRS-ANOMALY-SCORE.conf",
     ]
     data = yaml.safe_load(artefacto.metadata_path.read_text(encoding="utf-8"))
     assert isinstance(next(clave for clave in data if clave != "attributes"), str)
@@ -60,9 +59,9 @@ def test_zip_solo_contiene_la_regla_productiva(tmp_path: Path) -> None:
             assert "id:5500101" not in texto
             assert "SecRuleRemoveById" not in texto
             assert "SecRuleEngine Off" not in texto
+            assert "SecRuleUpdateActionById" not in texto
     unido = "\n".join(textos)
     assert "ctl:ruleRemoveTargetById" in unido
-    assert "SecRuleUpdateActionById" in unido
 
 
 def test_no_reconstruye_una_distribution_vieja(tmp_path: Path) -> None:

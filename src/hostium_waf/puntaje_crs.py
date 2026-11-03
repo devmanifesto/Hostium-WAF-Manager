@@ -40,7 +40,9 @@ def render_puntaje(root: Path) -> str:
         "# Neto 3. Dos reglas de estos archivos suman 6 y 949110 sigue cortando.",
         "# El resto de los archivos REQUEST no entra. rce_score y lfi_score tampoco.",
         "# Fuente: coreruleset tag v3.3.10. El RPM 3.3.10-1.2.1.cpanel no se diffé.",
-        "# Si este archivo se incluye antes de OWASP3, httpd -t falla. No recargar.",
+        "# Este archivo es el vendor hostium-tune y se lee después de OWASP3.",
+        "# Si entra antes, httpd -t falla. No recargar.",
+        "# No se exceptúa un header multipart por URL.",
         "",
     ]
     for item in objetivos_de_puntaje(root):

@@ -2,4 +2,3 @@ version_esquema: 1
 modulos_habilitados:
   - REQUEST-410-PHP-UPLOAD-PROGRESS
   - REQUEST-900-CRS-EXCLUSIONS
-  - REQUEST-910-CRS-ANOMALY-SCORE

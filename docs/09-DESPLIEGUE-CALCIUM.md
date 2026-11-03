@@ -10,7 +10,7 @@ La persona con acceso root al piloto y aprobación para tocarlo.
 
 ## Prerrequisitos
 
-- Artefacto publicado: `publish/stable/meta_hostium.yaml` apunta a `hostium-2.1.0.zip`. Ese ZIP trae tres sets: `REQUEST-410-PHP-UPLOAD-PROGRESS.conf`, `REQUEST-900-CRS-EXCLUSIONS.conf` y `REQUEST-910-CRS-ANOMALY-SCORE.conf`. `5500100` y `5500101` no se empaquetan. Los ZIP anteriores siguen en el directorio y no se reescriben.
+- Artefacto publicado: `publish/stable/meta_hostium.yaml` apunta a `hostium-2.1.0.zip`. Ese ZIP trae dos sets: `REQUEST-410-PHP-UPLOAD-PROGRESS.conf` y `REQUEST-900-CRS-EXCLUSIONS.conf`. El puntaje está en `meta_hostium-tune.yaml`, ZIP `hostium-tune-2.1.0.zip`, y se agrega después de OWASP3. `5500100` y `5500101` no se empaquetan. Los ZIP anteriores siguen en el directorio y no se reescriben.
 - `package build --version 1.0.0` falla a propósito para no reescribir la distribution ya publicada. `hostium-1.1.0.zip` está en `publish/stable/` y `meta_hostium.yaml` no lo nombra. WHM no lo instala con el alta de este runbook.
 - Ventana acordada.
 - Un dominio de prueba autorizado, no un sitio de cliente al azar.
@@ -39,7 +39,7 @@ Solo con aprobación, y solo cuando la metadata sea alcanzable por HTTPS:
 /usr/local/cpanel/scripts/modsec_vendor add 'https://raw.githubusercontent.com/devmanifesto/Hostium-WAF-Manager/main/publish/stable/meta_hostium.yaml'
 ```
 
-Esa URL es la metadata de stable. El alta instala el ZIP que esa metadata nombra, hoy `hostium-2.1.0.zip`. Un servidor que ya tiene el vendor no cambia solo por este commit: lo hace `upcp` si las actualizaciones del vendor están activas. Un vendor deshabilitado no aplica las reglas. Este runbook no ejecutó ese script. Antes de recargar, `httpd -t` tiene que pasar: `REQUEST-910` exige que hostium se lea después de OWASP3. Si falla, no recargar.
+Esa URL es la metadata de stable. El alta instala el ZIP que esa metadata nombra, hoy `hostium-2.1.0.zip`. Un servidor que ya tiene el vendor no cambia solo por este commit: lo hace `upcp` si las actualizaciones del vendor están activas. Un vendor deshabilitado no aplica las reglas. Este runbook no ejecutó ese script. El puntaje se agrega con la URL de `meta_hostium-tune.yaml`, después de OWASP3. Antes de recargar ese vendor, `httpd -t` tiene que pasar. Si falla, no recargar.
 
 Esa URL es pública. No uses un HTTP ni pegues un PAT en la URL. El alta modifica el piloto y no se ejecutó desde este repositorio.
 

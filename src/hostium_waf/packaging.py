@@ -68,8 +68,12 @@ def inspect_zip(path: Path) -> list[Issue]:
             for info in infos:
                 issues.extend(_revisar_entrada(info, vistos))
                 vistos.add(info.filename)
-            if not any(nombre == "hostium/" or nombre.startswith("hostium/") for nombre in nombres):
-                issues.append(Issue("zip_raiz", "falta el directorio raíz hostium/", str(path)))
+            if not any(nombre.startswith("hostium/") or nombre.startswith("hostium-tune/") for nombre in nombres):
+                issues.append(Issue("zip_raiz", "falta el directorio raíz hostium/ o hostium-tune/", str(path)))
+            tiene_hostium = any(nombre.startswith("hostium/") for nombre in nombres)
+            tiene_tune = any(nombre.startswith("hostium-tune/") for nombre in nombres)
+            if tiene_hostium and tiene_tune:
+                issues.append(Issue("zip_raiz", "el ZIP mezcla hostium/ y hostium-tune/", str(path)))
             archivos = [nombre for nombre in nombres if not nombre.endswith("/")]
             if not archivos:
                 issues.append(Issue("paquete_vacio", "el ZIP no contiene reglas", str(path)))
@@ -92,17 +96,21 @@ def _revisar_entrada(info: ZipInfo, vistos: set[str]) -> list[Issue]:
     modo = (info.external_attr >> 16) & _UNIX_FILETYPE
     if modo == _UNIX_SYMLINK:
         issues.append(Issue("zip_symlink", "la entrada es un symlink", nombre))
-    if not nombre.startswith("hostium/"):
-        issues.append(Issue("zip_raiz", "hay una entrada fuera de hostium/", nombre))
+    if nombre.startswith("hostium-tune/"):
+        prefijo = "hostium-tune/"
+    elif nombre.startswith("hostium/"):
+        prefijo = "hostium/"
+    else:
+        issues.append(Issue("zip_raiz", "hay una entrada fuera de hostium/ o hostium-tune/", nombre))
         return issues
-    relativo = nombre[len("hostium/") :]
+    relativo = nombre[len(prefijo) :]
     if not relativo:
         return issues
     if nombre.endswith("/"):
         issues.append(Issue("zip_raiz", "no se admiten subdirectorios", nombre))
         return issues
     if "/" in relativo or "\\" in relativo:
-        issues.append(Issue("zip_raiz", "el archivo no está directamente bajo hostium/", nombre))
+        issues.append(Issue("zip_raiz", "el archivo no está directamente bajo el directorio del vendor", nombre))
     if not relativo.endswith(".conf") or ".example" in relativo:
         issues.append(Issue("zip_extension", "solo se admiten .conf habilitados", nombre))
     if info.file_size == 0:
@@ -303,6 +311,95 @@ def _exigir_metadata_inmutable(path: Path, metadata: str, *, permitir_mismo_hash
     raise HostiumError(f"Ya hay metadata distinta y no se sobrescribe: {path}")
 
 
+def build_tune_package(
+    root: Path,
+    settings: Settings,
+    *,
+    engine: str,
+    output: Path | None = None,
+) -> Artefacto:
+    """ZIP del vendor hostium-tune. Solo el conf de puntaje, para cargarlo después de OWASP3."""
+    from hostium_waf.crs_vendor import ARCHIVO_PUNTAJE, VERSION_RULESET
+
+    if not es_version_motor(engine):
+        raise HostiumError("La versión del motor debe ser un string de tres componentes, por ejemplo 2.9.15")
+    manifiesto_data = load_yaml(ruta_dentro(root, settings.manifiesto))
+    politica_data = load_yaml(ruta_dentro(root, settings.politica))
+    _, _, issues = validar_repositorio(root, settings, manifiesto_data, politica_data)
+    if issues:
+        raise HostiumError("El repositorio no pasa la validación", issues=issues)
+    path = ruta_dentro(root, ARCHIVO_PUNTAJE)
+    texto = aplicar_comentario_modulo(path.read_text(encoding="utf-8").replace("\r\n", "\n"), VERSION_RULESET)
+    if re.search(r"\bSecRule\b", texto):
+        raise HostiumError(f"El archivo {path.name} no puede traer SecRule")
+    if "SecRuleUpdateActionById" not in texto:
+        raise HostiumError(f"El archivo {path.name} no baja el puntaje")
+    distribution = f"hostium-tune-{VERSION_RULESET}"
+    miembros = [
+        ("hostium-tune/", b""),
+        (f"hostium-tune/{path.name}", texto.encode("utf-8")),
+    ]
+    salida = (output if output is not None else root / settings.directorio_salida).resolve()
+    salida.mkdir(parents=True, exist_ok=True)
+    payload = zip_bytes(miembros)
+    zip_final = salida / f"{distribution}.zip"
+    _exigir_inmutable(zip_final, payload)
+    url = f"{settings.base_url.rstrip('/')}/stable/{distribution}.zip"
+    md5 = hashlib.md5(payload).hexdigest()
+    sha512 = hashlib.sha512(payload).hexdigest()
+    sha256 = hashlib.sha256(payload).hexdigest()
+    metadata = render_metadata(
+        engine=engine,
+        md5=md5,
+        sha512=sha512,
+        distribution=distribution,
+        url=url,
+        nombre="Hostium Tune",
+        version=VERSION_RULESET,
+        vendor_url=settings.vendor_url,
+    )
+    metadata_path = salida / "meta_hostium-tune.yaml"
+    _exigir_metadata_inmutable(metadata_path, metadata, permitir_mismo_hash=True)
+    zip_final.write_bytes(payload)
+    if zip_final.read_bytes() != payload:
+        raise HostiumError("el ZIP releído no coincide con el payload")
+    metadata_path.write_text(metadata, encoding="utf-8", newline="\n")
+    return Artefacto(
+        version=VERSION_RULESET,
+        engine=engine,
+        canal="stable",
+        distribution=distribution,
+        zip_path=zip_final,
+        metadata_path=metadata_path,
+        md5=md5,
+        sha512=sha512,
+        sha256=sha256,
+        archivos=[f"hostium-tune/{path.name}"],
+        url=url,
+    )
+
+
+def copiar_tune_a_stable(root: Path, artefacto: Artefacto) -> Path:
+    """Copia el ZIP de hostium-tune y su metadata. No toca meta_hostium.yaml ni otros ZIP."""
+    destino = (root / "publish" / "stable").resolve()
+    if not destino.is_dir():
+        raise HostiumError("falta publish/stable")
+    payload = artefacto.zip_path.read_bytes()
+    zip_dest = destino / f"{artefacto.distribution}.zip"
+    _exigir_inmutable(zip_dest, payload)
+    zip_dest.write_bytes(payload)
+    if zip_dest.read_bytes() != payload:
+        raise HostiumError("el ZIP de tune releído no coincide")
+    (destino / f"{artefacto.distribution}.sha256").write_text(
+        artefacto.sha256 + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    meta = artefacto.metadata_path.read_text(encoding="utf-8").replace("\r\n", "\n")
+    (destino / "meta_hostium-tune.yaml").write_text(meta, encoding="utf-8", newline="\n")
+    return zip_dest
+
+
 def copiar_a_stable(root: Path, artefacto: Artefacto) -> Path:
     """Copia el ZIP nuevo a publish/stable y pisa la metadata. No reescribe otro ZIP."""
     destino = (root / "publish" / "stable").resolve()
@@ -346,7 +443,7 @@ def verify_package(zip_path: Path, metadata_path: Path) -> list[Issue]:
     if not coincidencias and not any(item.codigo == "hash" for item in issues):
         issues.append(Issue("hash", "ningún bloque de motor coincide con los hashes del ZIP", "metadata"))
     nombre = zip_path.name
-    match = re.fullmatch(r"(hostium-\d+\.\d+\.\d+)\.zip", nombre)
+    match = re.fullmatch(r"(hostium(?:-tune)?-\d+\.\d+\.\d+)\.zip", nombre)
     if match and isinstance(data, dict):
         dist = match.group(1)
         for clave, bloque in data.items():

@@ -175,7 +175,7 @@ def validar_metadata(data: Any) -> list[Issue]:
         if not isinstance(sha, str) or not _HEX_SHA512.fullmatch(sha):
             issues.append(Issue("hash", "SHA512 debe ser 128 hexadecimales en minúscula", f"{ruta}.SHA512"))
         dist = bloque.get("distribution")
-        if not isinstance(dist, str) or not re.fullmatch(r"hostium-\d+\.\d+\.\d+", dist):
+        if not isinstance(dist, str) or not re.fullmatch(r"hostium(?:-tune)?-\d+\.\d+\.\d+", dist):
             issues.append(
                 Issue(
                     "distribution",

@@ -17,7 +17,7 @@ from hostium_waf.fleet import auditar
 from hostium_waf.inventory import load_inventory, resolver_inventario
 from hostium_waf.metadata import load_metadata
 from hostium_waf.models import Settings
-from hostium_waf.packaging import build_package, verify_package
+from hostium_waf.packaging import build_package, build_tune_package, verify_package
 from hostium_waf.publishing import apply_publicacion, plan_publicacion
 from hostium_waf.reporting import cargar_evidencia_integracion, escribir_informe, generar_informe
 from hostium_waf.rollback import apply_rollback, plan_rollback
@@ -347,6 +347,41 @@ def package_build(
             f"MD5 {artefacto.md5}\n"
             f"SHA512 {artefacto.sha512}\n"
             f"URL {artefacto.url} (raw público; este comando no llama a WHM)"
+        )
+        _emitir(ctx, datos, texto)
+
+    _ejecutar(ctx, accion)
+
+
+@package_app.command("build-tune")
+def package_build_tune(
+    ctx: typer.Context,
+    engine: str = typer.Option(..., "--engine", help="Versión del motor ModSecurity, por ejemplo 2.9.15."),
+    output: Path | None = typer.Option(None, "--output", help="Directorio de artefactos."),
+    settings: Path | None = typer.Option(None, "--settings"),
+) -> None:
+    """Construye el ZIP de hostium-tune con el bajado de puntaje."""
+
+    def accion() -> None:
+        root = _raiz()
+        cfg = _settings(root, settings)
+        artefacto = build_tune_package(root, cfg, engine=engine, output=output)
+        datos = {
+            "ok": True,
+            "version": artefacto.version,
+            "engine": artefacto.engine,
+            "distribution": artefacto.distribution,
+            "zip": str(artefacto.zip_path),
+            "metadata": str(artefacto.metadata_path),
+            "sha256": artefacto.sha256,
+            "archivos": artefacto.archivos,
+            "url": artefacto.url,
+        }
+        texto = (
+            f"ZIP {artefacto.zip_path}\n"
+            f"metadata {artefacto.metadata_path}\n"
+            f"SHA256 {artefacto.sha256}\n"
+            "Vendor hostium-tune. Este comando no llama a WHM."
         )
         _emitir(ctx, datos, texto)
 

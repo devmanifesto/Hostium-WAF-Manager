@@ -14,7 +14,7 @@ Quien vaya a correr `modsec_vendor add` o a leer qué hay en stable.
 
 ## Lo que WHM instalaría hoy
 
-`publish/stable/meta_hostium.yaml` apunta a `hostium-2.1.0.zip`. Esa distribution trae tres `.conf`: `REQUEST-410-PHP-UPLOAD-PROGRESS.conf`, `REQUEST-900-CRS-EXCLUSIONS.conf` y `REQUEST-910-CRS-ANOMALY-SCORE.conf`. `5500100` y `5500101` no entran. `5500608` cuenta partes sin nombre y `5500615` niega en 500. `5500611` no niega `<?php`.
+`publish/stable/meta_hostium.yaml` apunta a `hostium-2.1.0.zip`. Esa distribution trae dos `.conf`: `REQUEST-410-PHP-UPLOAD-PROGRESS.conf` y `REQUEST-900-CRS-EXCLUSIONS.conf`. El puntaje está en `hostium-tune-2.1.0.zip`. `5500100` y `5500101` no entran. `5500608` cuenta partes sin nombre y `5500615` niega en 500. `5500611` no niega `<?php`.
 
 `modsec_vendor add` de la URL del runbook 09 instalaría esa 2.1.0. Un vendor ya instalado cambia cuando `upcp` relee la metadata, si las actualizaciones están activas. Este repositorio no ejecutó `upcp` ni `httpd -t`. `package build --version 2.0.0` falla para no reutilizar la distribution publicada.
 

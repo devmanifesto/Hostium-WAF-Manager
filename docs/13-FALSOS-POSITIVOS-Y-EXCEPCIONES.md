@@ -35,18 +35,17 @@ Id de la excepción, tipo `runtime`, URI, controles de objetivo, id de la regla 
 
 ## Catálogo de hostium-2.1.0
 
-`rules render-exclusions` escribe `REQUEST-900-CRS-EXCLUSIONS.conf`. Cada regla es fase 1, `pass`, `nolog` y una cadena sobre `REQUEST_URI`. El `ctl` está en el segundo eslabón: en ModSecurity 2 un `ctl` del starter corre aunque la cadena no cierre. El cuerpo del POST no está en fase 1, así que el JPEG, el HTML, el `||` y el `stdClass` son el motivo, no la condición.
+`rules render-exclusions` escribe `REQUEST-900-CRS-EXCLUSIONS.conf`. Cada regla es fase 1, `pass`, `nolog`. El campo propio de la aplicación es un `SecAction` sin URI. El campo genérico es una sola `SecRule` sobre `REQUEST_URI`, sin cadena. El cuerpo del POST no está en fase 1. El ctl nombra el campo y queda en la transacción.
 
-| Id | URI | Objetivo que deja de mirar |
+| Id | Selector | Qué deja de mirar |
 | --- | --- | --- |
-| 5500900 | Empieza con `/aplicacion_customs/xqempresas/aceptar.php` | `ARGS:firmadatos` en 941130 y 941170. El valor legítimo es un JPEG `data:image/jpeg;base64,/9j/`. Ticket `2026-11-02-siga-xqempresas-aceptar`. Revisión 2027-05-02 |
-| 5500901 | `/admin` más un token y `/sell/catalog/products/` | `ARGS` en 941100, 941110, 941120, 941130, 941140, 941160, 941170 y 941180. El frente y el resto del backoffice conservan esas reglas |
-| 5500902 | Empieza con `/server20200601/mod/contabilidad/multisel_cuentacont.php` | `ARGS:vseleccionados` en 942100. El valor es una lista de cuentas unida con dos barras verticales |
-| 5500903 | Empieza con `/aplicacion_customs/marketingdirecto/recibepostturnero.php` | `ARGS:datos` en 933170. El valor es un `stdClass` serializado |
+| 5500900 | Campo `ARGS:firmadatos` | 941130 y 941170. JPEG en data-URI. Ticket `2026-11-02-siga-xqempresas-aceptar` |
+| 5500901 | Campo `ARGS:vseleccionados` | 942100. Lista de cuentas unida con dos barras verticales |
+| 5500902 | Campos `ARGS:emailglobalheader` y `ARGS:emailglobalfooter` | Tags `attack-xss` y `attack-rce`. HTML de la plantilla de mail de WHMCS. Ticket `2026-11-02-whmcs-configgeneral-save` |
+| 5500903 | URI que contiene `/sell/catalog/` | `ARGS` en 941160. El resto de las 941 de ese POST sigue |
+| 5500904 | URI que empieza con `/aplicacion_customs/marketingdirecto/recibepostturnero.php` | `ARGS:datos` en 933170 |
 
-`rules render-score` escribe `REQUEST-910-CRS-ANOMALY-SCORE.conf` desde los cinco conf de CRS 3.3.10 guardados en `third_party/`. Esos archivos no entran al ZIP. El RPM `3.3.10-1.2.1.cpanel` no se diffé. Cada directiva resta `tx.critical_anomaly_score` y suma `tx.warning_anomaly_score` sobre la misma `tx.anomaly_score_plN`. Neto 3. Una sola no llega al umbral 5 de 949110. Dos reglas de 911, 922, 932, 934 o 944 suman 6 y siguen cortando. 920, 921, 930, 931, 933, 941, 942 y 943 quedan en 5. `tx.rce_score` y `tx.lfi_score` no se tocan. El id `5500910` documenta el archivo y no es una `SecRule`.
-
-El caso que motivó el puntaje es un POST multipart a `/login` con nombres de parte como `_1_$action_1`, regla 922130. `/login` no se exceptúa. Un POST `text/plain` de esa misma ruta lo sigue cortando 920420. No se midió CSF ni se observó el caso en cPanel. `ultima_validacion` sigue vacía.
+`rules render-score` escribe `REQUEST-910-CRS-ANOMALY-SCORE.conf`. Ese archivo no entra al ZIP de hostium. `package build-tune` lo publica como vendor `hostium-tune`, para agregarlo después de OWASP3. La fuente son los cinco conf de CRS 3.3.10 en `third_party/`. El RPM `3.3.10-1.2.1.cpanel` no se diffé. Cada directiva resta `tx.critical_anomaly_score` y suma `tx.warning_anomaly_score`. Neto 3. Una 922130 no llega al umbral 5. Dos reglas de 911, 922, 932, 934 o 944 suman 6. 920, 921, 930, 931, 933, 941, 942 y 943 quedan en 5. No se saca un header multipart por URL. `/login` no se exceptúa. No se midió CSF ni se observó el caso en cPanel. `ultima_validacion` sigue vacía.
 
 Siguen prohibidos en todo el ZIP: `SecRuleRemoveById`, `ctl:ruleRemoveById`, `allow`, `SecRuleEngine Off` y `ctl:ruleEngine=Off`. El `ctl` de objetivo solo se admite en REQUEST-900. `SecRuleUpdateActionById` solo en REQUEST-910, y cada línea tiene que restar el crítico y sumar el warning.
 
