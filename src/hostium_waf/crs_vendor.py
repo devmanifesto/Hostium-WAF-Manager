@@ -1,8 +1,9 @@
-"""Rutas del vendor 2.1.1. El conf de puntaje no entra al ZIP."""
+"""Rutas del vendor candidato 2.1.2. El conf de puntaje no entra al ZIP."""
 
 from __future__ import annotations
 
-VERSION_RULESET = "2.1.1"
+VERSION_RULESET = "2.1.2"
+MOTORES_CANDIDATA = frozenset({"2.9.15"})
 ARCHIVO_EXCLUSIONES = "rules/hostium/REQUEST-900-CRS-EXCLUSIONS.conf"
 ARCHIVO_PUNTAJE = "rules/hostium/REQUEST-910-CRS-ANOMALY-SCORE.conf"
 DIR_CRS = "third_party/coreruleset-v3.3.10/rules"

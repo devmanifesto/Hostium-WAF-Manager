@@ -27,7 +27,7 @@ La línea base de la especificación y `docs/11-PRUEBAS-Y-VALIDACION.md`.
 
 ## Verificación
 
-`package build --engine 2.9.15` escribe esa clave como string. Pasar otra versión de motor no la marca como probada: el YAML la acepta y la documentación tiene que decir si hubo prueba. En 1.0.0 la clave que escribe el flujo de desarrollo es `2.9.15`, que es la del piloto según la especificación. El Apache donde se vieron los ids es el de Debian 2.9.7 y el de la imagen CRS descrita arriba.
+`package build --engine 2.9.15` escribe esa clave como string. En la candidata 2.1.2 el builder rechaza otros motores; la validación de forma YAML no acredita compatibilidad. Ampliar MOTORES_CANDIDATA requiere evidencia de laboratorio y revisión, sin afirmar validación en cPanel. En 1.0.0 la clave que escribe el flujo de desarrollo es `2.9.15`, que es la del piloto según la especificación. El Apache donde se vieron los ids es el de Debian 2.9.7 y el de la imagen CRS descrita arriba.
 
 ## Deshacer
 
@@ -44,3 +44,7 @@ Leer la descripción del vendor OWASP en `modsec_vendor list` como si fuera la v
 ## Limitaciones
 
 La celda Debian usa el paquete que imprimió el contenedor. La celda CRS usa `apachectl` y una cadena del `.so`. Ninguna de las dos es el RPM `2.9.15-2.3.1.cpanel`. En la imagen local, `apache2ctl configtest` aceptó los dos `.conf` que entran al ZIP. El 24 de octubre de 2026 se repitió ese `configtest` y `test_motor_ve_las_reglas_410` pidió los casos de `docs/22-QA-TRES-PASADAS.md` ya cerrados en la 1.1.2. El example de fase 4 no se montó.
+
+## Candidata local 2.1.2
+
+Las pruebas nuevas cargan REQUEST-900 con CRS 3.3.10 en imagen fijada por digest. El conf de laboratorio se incluye después de CRS: los ctl fase 1 afectan los objetivos fase 2. Esto no comprueba el RPM, los includes, los virtualhosts ni la autenticación de un cPanel. La prueba de sintaxis ahora extrae REQUEST-410 y REQUEST-900 del ZIP candidato real. Los resultados actuales están en el documento 23; las filas fechadas arriba son históricas.

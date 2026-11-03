@@ -18,74 +18,20 @@ SHA_200 = "d9644a8f5f8d83506a16d4beab39a27ef62b5a30f7cbccc07d3e29408e140c01"
 _FAMILIAS = ("920", "921", "930", "931", "933", "941", "942", "943")
 
 
-def _reglas(texto: str) -> dict[int, tuple[str, str, str]]:
-    plano = re.sub(r"\\\s*\n", " ", texto)
-    encontradas: dict[int, tuple[str, str, str]] = {}
-    for bloque in re.findall(r"(?:SecRule|SecAction)\b.*?(?=(?:SecRule|SecAction)\b|$)", plano, flags=re.S):
-        marca = re.search(r"\bid:(\d+)\b", bloque)
-        assert marca is not None
-        if bloque.lstrip().startswith("SecAction"):
-            encontradas[int(marca.group(1))] = ("SecAction", "", "")
-            continue
-        operador = re.search(r'REQUEST_URI\s+"(@beginsWith|@contains|@rx)\s+([^"]+)"', bloque)
-        assert operador is not None
-        encontradas[int(marca.group(1))] = ("SecRule", operador.group(1), operador.group(2))
-    return encontradas
-
-
-def _coincide(operador: str, valor: str, path: str) -> bool:
-    if operador == "@beginsWith":
-        return path.startswith(valor)
-    if operador == "@contains":
-        return valor in path
-    return re.search(valor, path) is not None
-
-
-def test_selectores_de_las_cinco_exclusiones() -> None:
+def test_casos_pendientes_no_aplican_ctl() -> None:
     texto = EXCLUSIONES.read_text(encoding="utf-8")
-    reglas = _reglas(texto)
-    assert set(reglas) == {5500900, 5500901, 5500902, 5500903, 5500904}
-    for identificador in (5500900, 5500901, 5500902):
-        assert reglas[identificador][0] == "SecAction"
-    assert "ctl:ruleRemoveTargetById=941130;ARGS:firmadatos" in texto
-    assert "ctl:ruleRemoveTargetById=941170;ARGS:firmadatos" in texto
-    assert "ctl:ruleRemoveTargetById=942100;ARGS:vseleccionados" in texto
-    assert "ctl:ruleRemoveTargetByTag=attack-xss;ARGS:emailglobalheader" in texto
-    assert "ctl:ruleRemoveTargetByTag=attack-rce;ARGS:emailglobalfooter" in texto
-    assert "941100" not in texto
-    assert "922130" not in texto
-    assert "chain" not in texto
-    catalogo, valor = reglas[5500903][1:]
-    assert catalogo == "@contains"
-    assert _coincide(catalogo, valor, "/admin1911/sell/catalog/products/49")
-    assert _coincide(catalogo, valor, "/otro/sell/catalog/products/1")
-    assert not _coincide(catalogo, valor, "/admin1911/sell/orders/")
-    assert not _coincide(catalogo, valor, "/login")
-    turnero, ruta = reglas[5500904][1:]
-    assert _coincide(turnero, ruta, "/aplicacion_customs/marketingdirecto/recibepostturnero.php")
-    assert not _coincide(turnero, ruta, "/aplicacion_customs/marketingdirecto/index.php")
-    assert not _coincide(turnero, ruta, "/login")
+    assert set(re.findall(r"id:(550090[0-4])", texto)) == {str(i) for i in range(5500900, 5500905)}
+    assert texto.count('"@rx (?!)"') == 5
+    assert "ctl:" not in texto
+    assert "SecAction" not in texto
+    assert _revisar_conf_empaquetable(texto, EXCLUSIONES.relative_to(ROOT).as_posix(), []) == []
 
 
 def test_el_conf_de_exclusion_no_abre_ni_quita_reglas() -> None:
     texto = EXCLUSIONES.read_text(encoding="utf-8")
-    assert "REMOTE_ADDR" not in texto
-    assert "allow" not in texto
-    assert "SecRuleRemoveById" not in texto
-    assert _revisar_conf_empaquetable(texto, EXCLUSIONES.relative_to(ROOT).as_posix(), []) == []
-    con_quita = texto + "\nSecRuleRemoveById 941100\n"
-    issues = _revisar_conf_empaquetable(con_quita, "rules/hostium/REQUEST-900-CRS-EXCLUSIONS.conf", [])
-    assert any(item.codigo == "regla_prohibida" for item in issues)
-    con_allow = texto + '\nSecRule ARGS "@rx x" "id:5500900,phase:1,allow,nolog"\n'
-    issues = _revisar_conf_empaquetable(con_allow, "rules/hostium/REQUEST-900-CRS-EXCLUSIONS.conf", [])
-    assert any("allow" in item.mensaje for item in issues)
-    starter = (
-        'SecRule REQUEST_URI "@beginsWith /app" \\\n'
-        '    "id:5500900,\\\nphase:1,\\\npass,\\\nnolog,\\\nchain,\\\n'
-        'ctl:ruleRemoveTargetById=941100;ARGS"\n'
-    )
-    issues = _revisar_conf_empaquetable(starter, "rules/hostium/REQUEST-900-CRS-EXCLUSIONS.conf", [])
-    assert any("no usa cadena" in item.mensaje for item in issues)
+    for extra in ("SecRuleRemoveById 941100", 'SecRule ARGS "@rx x" "id:5500999,phase:1,allow,nolog"'):
+        issues = _revisar_conf_empaquetable(texto + "\n" + extra, EXCLUSIONES.relative_to(ROOT).as_posix(), [])
+        assert any(item.codigo == "regla_prohibida" for item in issues)
 
 
 def test_el_ctl_de_objetivo_no_entra_en_410() -> None:
@@ -116,14 +62,14 @@ def test_el_zip_200_no_cambia_de_bytes(tmp_path: Path) -> None:
     antes = hashlib.sha256(publicado.read_bytes()).hexdigest()
     assert antes == SHA_200
     settings = load_settings(ROOT)
-    build_package(ROOT, settings, version="2.1.1", engine="2.9.15", output=tmp_path)
+    build_package(ROOT, settings, version="2.1.2", engine="2.9.15", output=tmp_path)
     despues = hashlib.sha256(publicado.read_bytes()).hexdigest()
     assert despues == antes
 
 
 def test_copiar_a_stable_pisa_solo_la_metadata(tmp_path: Path) -> None:
     settings = load_settings(ROOT)
-    artefacto = build_package(ROOT, settings, version="2.1.1", engine="2.9.15", output=tmp_path / "dist")
+    artefacto = build_package(ROOT, settings, version="2.1.2", engine="2.9.15", output=tmp_path / "dist")
     estable = tmp_path / "publish" / "stable"
     estable.mkdir(parents=True)
     viejo = b"zip-2.0.0"
@@ -144,8 +90,8 @@ def test_copiar_a_stable_pisa_solo_la_metadata(tmp_path: Path) -> None:
     )
     copiar_a_stable(tmp_path, copiado)
     assert (estable / "hostium-2.0.0.zip").read_bytes() == viejo
-    assert (estable / "hostium-2.1.1.zip").read_bytes() == artefacto.zip_path.read_bytes()
-    assert "hostium-2.1.1" in (estable / "meta_hostium.yaml").read_text(encoding="utf-8")
+    assert (estable / "hostium-2.1.2.zip").read_bytes() == artefacto.zip_path.read_bytes()
+    assert "hostium-2.1.2" in (estable / "meta_hostium.yaml").read_text(encoding="utf-8")
 
 
 def test_tune_no_pisa_el_zip_de_hostium(tmp_path: Path) -> None:

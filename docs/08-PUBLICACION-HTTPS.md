@@ -64,3 +64,16 @@ Tutorial de vendor. El script `update` de `modsec_vendor` usa la URL con la que 
 ## Limitaciones
 
 GitHub pone el certificado. No hay allowlist de las IP de los cPanel. El archivo en `publish/stable/` no debe reescribirse con otros bytes para el mismo nombre `hostium-1.0.0.zip`. Cuentas de clientes de cPanel no tienen que poder cambiar ese archivo.
+
+## Preparación local segura de la candidata
+
+La candidata 2.1.2 permanece fuera de publish/stable. Para preparar otro directorio local, en Linux con el paquete Python instalado:
+
+```sh
+# MODIFICA solo /tmp/hostium-staging/stable. No ejecutar sobre el origen servido sin revisión.
+sh scripts/publish-local.sh 2.1.2 /tmp/hostium-staging/stable dist/candidata-2.1.2
+```
+
+El helper verifica ZIP y metadata, no reemplaza un ZIP de bytes distintos y cambia la metadata atómicamente después de releer el ZIP. La estructura del destino coincide con la URL del canal; no crea una mezcla de releases/ y channels/. Los tests ejercitan el helper Python en directorios temporales. El wrapper sh no se ejecutó en esta máquina Windows.
+
+Antes de promover la candidata hay que completar y validar los cinco alcances pendientes. No se hizo push, publicación HTTP ni operación de cPanel en esta serie. El motor admitido para nuevos builds es solo 2.9.15; ampliar compatibilidad requiere evidencia independiente.

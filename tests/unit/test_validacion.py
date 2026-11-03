@@ -6,7 +6,7 @@ from pathlib import Path
 import yaml
 
 from hostium_waf.settings import load_settings, load_yaml
-from hostium_waf.validation import validar_exclusiones, validar_manifiesto, validar_repositorio
+from hostium_waf.validation import _revisar_conf_empaquetable, cargar_manifiesto, validar_exclusiones, validar_manifiesto, validar_repositorio
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -105,3 +105,13 @@ def test_fase_del_conf_no_coincide() -> None:
 def test_yaml_del_manifiesto_es_mapa() -> None:
     texto = (ROOT / "rules" / "manifests" / "rules.yaml").read_text(encoding="utf-8")
     assert isinstance(yaml.safe_load(texto), dict)
+
+
+def test_deny_de_otra_regla_no_oculta_accion_incorrecta() -> None:
+    reglas = cargar_manifiesto(_manifiesto()).reglas
+    regla = next(r for r in reglas if r.id == 5500601)
+    path = ROOT / regla.archivo
+    texto = path.read_text(encoding="utf-8").replace("\ndeny,", "\npass,", 1)
+    # El archivo todavía tiene deny en otras reglas; el id 5500601 ya no.
+    assert "deny," in texto
+    assert any(i.codigo == "accion" for i in _revisar_conf_empaquetable(texto, regla.archivo, [regla]))

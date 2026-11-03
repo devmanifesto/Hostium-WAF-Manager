@@ -15,6 +15,7 @@ from zipfile import ZIP_DEFLATED, ZIP_STORED, ZipFile, ZipInfo
 
 import yaml
 
+from hostium_waf.crs_vendor import MOTORES_CANDIDATA, VERSION_RULESET
 from hostium_waf.errors import HostiumError, Issue
 from hostium_waf.metadata import aplicar_comentario_modulo, distribution_de, load_metadata, render_metadata
 from hostium_waf.models import Politica, Settings
@@ -134,6 +135,8 @@ def build_package(
         raise HostiumError("La versión del ruleset debe ser SemVer, distinta de la versión del motor")
     if not es_version_motor(engine):
         raise HostiumError("La versión del motor debe ser un string de tres componentes, por ejemplo 2.9.15")
+    if engine not in MOTORES_CANDIDATA:
+        raise HostiumError("Motor sin evidencia de laboratorio para esta candidata. Solo se declara 2.9.15; cPanel real sigue pendiente.")
     canal_final = canal or settings.canal_por_defecto
     manifiesto_data = load_yaml(ruta_dentro(root, settings.manifiesto))
     politica_data = load_yaml(ruta_dentro(root, settings.politica))
@@ -147,16 +150,20 @@ def build_package(
     if issues:
         raise HostiumError("El repositorio no pasa la validación", issues=issues)
     elegidas = seleccionar_reglas(manifiesto, politica)
-    maxima = _version_introduccion_maxima(elegidas)
+    maxima = max([VERSION_RULESET, _version_introduccion_maxima(elegidas) or VERSION_RULESET], key=_tupla_semver)
     if maxima is not None and _tupla_semver(version) < _tupla_semver(maxima):
         raise HostiumError(
             f"No se construye hostium-{version}: el paquete incluye reglas introducidas en {maxima}. "
             "No se reutiliza una distribution ya publicada para otro contenido."
         )
+    miembros = manifiesto_reglas(root, politica, manifiesto, version)
+    payload = zip_bytes(miembros)
+    for canal_publicado in ("stable", "canary"):
+        _exigir_inmutable(root / "publish" / canal_publicado / f"hostium-{version}.zip", payload)
     destino = (output if output is not None else root / settings.directorio_salida).resolve()
     return _empaquetar(
         settings,
-        manifiesto_reglas(root, politica, manifiesto, version),
+        miembros,
         version,
         engine,
         canal_final,
@@ -199,6 +206,7 @@ def manifiesto_reglas(root: Path, politica: Politica, manifiesto: object, versio
             raise HostiumError(f"Intento de empaquetar un archivo no permitido: {path.name}")
         texto = path.read_text(encoding="utf-8").replace("\r\n", "\n").replace("\r", "\n")
         texto = aplicar_comentario_modulo(texto, version)
+        texto = re.sub(r"ver:'hostium/\d+\.\d+\.\d+'", f"ver:'hostium/{version}'", texto)
         if "INCOMPLETO" in texto:
             raise HostiumError(f"El archivo {path.name} está marcado INCOMPLETO")
         es_puntaje = path.name == "REQUEST-910-CRS-ANOMALY-SCORE.conf"
@@ -425,6 +433,8 @@ def copiar_a_stable(root: Path, artefacto: Artefacto) -> Path:
 
 def verify_package(zip_path: Path, metadata_path: Path) -> list[Issue]:
     issues = inspect_zip(zip_path)
+    if not zip_path.is_file():
+        return issues
     if not metadata_path.is_file():
         return issues + [Issue("metadata", "no existe la metadata", str(metadata_path))]
     data, meta_issues = load_metadata(metadata_path)
@@ -446,11 +456,12 @@ def verify_package(zip_path: Path, metadata_path: Path) -> list[Issue]:
         issues.append(Issue("hash", "ningún bloque de motor coincide con los hashes del ZIP", "metadata"))
     nombre = zip_path.name
     match = re.fullmatch(r"(hostium(?:-tune)?-\d+\.\d+\.\d+)\.zip", nombre)
+    if match is None:
+        issues.append(Issue("distribution", "el ZIP debe llamarse hostium-<semver>.zip o hostium-tune-<semver>.zip", str(zip_path)))
     if match and isinstance(data, dict):
         dist = match.group(1)
-        for clave, bloque in data.items():
-            if clave == "attributes" or not isinstance(bloque, dict):
-                continue
+        for clave in coincidencias:
+            bloque = data[clave]
             if bloque.get("distribution") != dist:
                 issues.append(
                     Issue(
@@ -459,6 +470,17 @@ def verify_package(zip_path: Path, metadata_path: Path) -> list[Issue]:
                         f"metadata.{clave}.distribution",
                     )
                 )
+        if not any(item.codigo == "zip" for item in issues):
+            try:
+                with ZipFile(zip_path) as zf:
+                    prefijo = "hostium-tune/" if dist.startswith("hostium-tune-") else "hostium/"
+                    if any(not entrada.startswith(prefijo) for entrada in zf.namelist()):
+                        issues.append(Issue("zip_raiz", "la raíz ZIP no coincide con el vendor de la distribution", str(zip_path)))
+                    corrupta = zf.testzip()
+                    if corrupta is not None:
+                        issues.append(Issue("zip", "una entrada no pasa su CRC", str(zip_path)))
+            except Exception:  # noqa: BLE001 - ZIP no confiable, error explícito
+                issues.append(Issue("zip", "no se pudo comprobar el contenido del ZIP", str(zip_path)))
     return issues
 
 

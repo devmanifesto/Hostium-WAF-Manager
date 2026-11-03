@@ -1,5 +1,7 @@
 # QA para uso en cPanel
 
+> Bitácora histórica. No usar sus versiones ni comandos de build como estado actual. Estable: 2.1.1; candidata local sin promover: 2.1.2. Ver [QA actual](23-QA-TUNING.md) y [tuning](13-FALSOS-POSITIVOS-Y-EXCEPCIONES.md).
+
 ## Objetivo
 
 Decir si el ruleset de este árbol se puede cargar como vendor de WHM, y qué no se comprobó en un cPanel.

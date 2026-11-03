@@ -1,10 +1,4 @@
-"""Genera REQUEST-900 desde config/exclusions.yaml.
-
-Un campo propio de la aplicación es SecAction de fase 1: el ctl nombra el
-campo y corre en cada petición. Un campo genérico es una sola SecRule sobre
-REQUEST_URI, sin cadena: el ctl corre solo si esa URI matchea. En los dos
-casos el ctl queda en la transacción y alcanza una regla CRS de fase 2.
-"""
+"""Exclusiones runtime acotadas. El ctl solo corre al completar la cadena."""
 
 from __future__ import annotations
 
@@ -17,33 +11,31 @@ import yaml
 from hostium_waf.crs_vendor import ARCHIVO_EXCLUSIONES, VERSION_RULESET
 from hostium_waf.metadata import descripcion_modulo
 
-_VARIABLE = re.compile(r"^ARGS(?::[A-Za-z_][A-Za-z0-9_]*)?$")
+_VARIABLE = re.compile(r"^ARGS:[A-Za-z_][A-Za-z0-9_]*$")
 _OBJETIVO_ID = re.compile(r"^\d+$")
 _OBJETIVO_TAG = re.compile(r"^[A-Za-z0-9_-]+$")
-_LOGIN = re.compile(r"(?:^|/)(?:wp-)?login(?:\.php)?(?:/|$)", re.I)
-_ADMIN = re.compile(r"(?:^|/)admin(?:[A-Za-z0-9_-]*)(?:/|$)", re.I)
 
 
 def render_exclusiones(data: dict[str, Any]) -> str:
-    items = data["exclusiones"]
-    bloques = [_bloque(item) for item in sorted(items, key=lambda item: int(item["id"]))]
-    cabecera = "\n".join(
-        [
-            f"# {descripcion_modulo(VERSION_RULESET)}",
-            "# Exclusiones de objetivo. Fase 1, pass, nolog.",
-            "# El campo propio de la aplicación no lleva URI: el ctl nombra ese campo.",
-            "# El campo genérico lleva una sola regla de REQUEST_URI, sin cadena.",
-            "# El ctl queda en la transacción y alcanza una regla CRS de fase 2.",
-            "# No quita la regla. No abre la petición. No exceptúa login ni un admin.",
-            "",
-        ]
-    )
-    return cabecera + "\n\n".join(bloques) + "\n"
+    # Importación diferida: validation también compara este render con el conf.
+    from hostium_waf.validation import validar_exclusiones
+
+    issues = validar_exclusiones(data)
+    if issues:
+        raise ValueError("Catálogo inválido: " + "; ".join(i.formato() for i in issues))
+    cabecera = [
+        f"# {descripcion_modulo(VERSION_RULESET)}",
+        "# Runtime fase 1. Dominio exacto, ruta sin query y método; ctl al final de la cadena.",
+        "# Una entrada deshabilitada conserva su id con una condición que nunca coincide.",
+        "# No instalar esta candidata para corregir casos pendientes de alcance confirmado.",
+        "",
+    ]
+    bloques = [_bloque(i) for i in sorted(data["exclusiones"], key=lambda i: int(i["id"]))]
+    return "\n".join(cabecera) + "\n\n".join(bloques) + "\n"
 
 
 def escribir_exclusiones(root: Path) -> Path:
-    origen = root / "config" / "exclusions.yaml"
-    data = yaml.safe_load(origen.read_text(encoding="utf-8"))
+    data = yaml.safe_load((root / "config/exclusions.yaml").read_text(encoding="utf-8"))
     if not isinstance(data, dict):
         raise ValueError("config/exclusions.yaml no es un mapa")
     destino = root / ARCHIVO_EXCLUSIONES
@@ -53,48 +45,36 @@ def escribir_exclusiones(root: Path) -> Path:
 
 def _bloque(item: dict[str, Any]) -> str:
     identificador = int(item["id"])
-    ctls = _lineas_ctl(item["controles"])
-    ticket = item.get("ticket")
-    nota_ticket = f" Ticket {ticket}." if isinstance(ticket, str) and ticket.strip() else ""
     comentario = (
-        f"# {identificador} {item['motivo']} "
-        f"Owner {item['owner']}. Revisión {item['fecha_revision']}.{nota_ticket}"
+        f"# {identificador}: {item['motivo']} Owner {item['owner']}. "
+        f"Revisión {item['fecha_revision']}. Ticket {item['ticket']}."
     )
     acciones = (
-        f'"id:{identificador},\\\n'
-        f"phase:1,\\\n"
-        f"pass,\\\n"
-        f"nolog,\\\n"
-        f"t:none,\\\n"
-        f"tag:'hostium-crs-exclusion',\\\n"
-        f"ver:'hostium/{VERSION_RULESET}',\\\n"
-        f'{ctls}"'
+        f"id:{identificador},phase:1,pass,nolog,t:none,"
+        f"tag:'hostium-crs-exclusion',ver:'hostium/{VERSION_RULESET}'"
     )
-    uri = item.get("uri")
-    if isinstance(uri, dict):
-        operador = str(uri["operador"])
-        valor = str(uri["valor"])
-        regla = f'SecRule REQUEST_URI "{operador} {valor}" \\\n    {acciones}'
-    else:
-        regla = f"SecAction \\\n    {acciones}"
-    return f"{comentario}\n{regla}"
-
-
-def _lineas_ctl(controles: list[dict[str, Any]]) -> str:
-    lineas: list[str] = []
-    for indice, control in enumerate(controles):
-        texto = _ctl(control)
-        if indice < len(controles) - 1:
-            lineas.append(f"{texto},\\")
-        else:
-            lineas.append(texto)
-    return "\n".join(lineas)
+    if not item["habilitada"]:
+        return (
+            f"{comentario}\n# INACTIVA: {item['pendiente']}\n"
+            f'SecRule REQUEST_URI "@rx (?!)" "{acciones}"'
+        )
+    dominios = "|".join(re.escape(d) for d in sorted(item["dominios"]))
+    host = rf"(?i)\A(?:{dominios})(?::[0-9]{{1,5}})?\z"
+    uri = item["uri"]
+    ruta = f"{uri['operador']} {uri['valor']}"
+    metodos = "|".join(sorted(item["metodos"]))
+    ctls = ",".join(_ctl(c) for c in item["controles"])
+    return (
+        f"{comentario}\n"
+        f'SecRule REQUEST_HEADERS:Host "@rx {host}" \\\n'
+        f'    "{acciones},chain"\n'
+        f'    SecRule REQUEST_FILENAME "{ruta}" "t:none,chain"\n'
+        f'        SecRule REQUEST_METHOD "@rx \\A(?:{metodos})\\z" "t:none,{ctls}"'
+    )
 
 
 def _ctl(control: dict[str, Any]) -> str:
-    tipo = str(control["tipo"])
-    objetivo = str(control["objetivo"])
-    variable = str(control["variable"])
+    tipo, objetivo, variable = (str(control[c]) for c in ("tipo", "objetivo", "variable"))
     if not _VARIABLE.fullmatch(variable):
         raise ValueError(f"variable no admitida: {variable}")
     if tipo == "ruleRemoveTargetById" and not _OBJETIVO_ID.fullmatch(objetivo):
@@ -104,15 +84,3 @@ def _ctl(control: dict[str, Any]) -> str:
     if tipo not in {"ruleRemoveTargetById", "ruleRemoveTargetByTag"}:
         raise ValueError(f"ctl no admitido: {tipo}")
     return f"ctl:{tipo}={objetivo};{variable}"
-
-
-def uri_prohibida(valor: str) -> bool:
-    if _LOGIN.search(valor):
-        return True
-    if _ADMIN.search(valor):
-        return True
-    if "configgeneral" in valor.lower():
-        return True
-    if "REMOTE_ADDR" in valor.upper():
-        return True
-    return bool(re.search(r"(?:^|[^0-9])(?:\d{1,3}\.){3}\d{1,3}(?:[^0-9]|$)", valor))

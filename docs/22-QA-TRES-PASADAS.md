@@ -1,5 +1,7 @@
 # QA en tres pasadas
 
+> Bitácora histórica. No usar sus versiones ni comandos de build como estado actual. Estable: 2.1.1; candidata local sin promover: 2.1.2. Ver [QA actual](23-QA-TUNING.md) y [tuning](13-FALSOS-POSITIVOS-Y-EXCEPCIONES.md).
+
 ## Objetivo
 
 Contrastar el artefacto que WHM instalaría, leer las reglas como ataque y como sitio legítimo, y copiar lo que esta máquina ejecutó.

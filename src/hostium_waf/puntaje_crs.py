@@ -11,6 +11,7 @@ import re
 from pathlib import Path
 
 from hostium_waf.crs_vendor import ARCHIVO_PUNTAJE, ARCHIVOS_PUNTAJE, DIR_CRS
+from hostium_waf.errors import HostiumError
 from hostium_waf.metadata import descripcion_modulo
 
 _SETVAR = re.compile(
@@ -18,6 +19,18 @@ _SETVAR = re.compile(
 )
 _ID = re.compile(r"\bid:(\d+)\b")
 _CHAIN = re.compile(r"(?:^|[,\s\"])chain(?:[,\s\"]|$)")
+
+
+def comprobar_fuente_instalada(root: Path, crs_dir: Path) -> None:
+    """Compara copias locales; no abre SSH ni supone equivalencia por número RPM."""
+    for nombre in ARCHIVOS_PUNTAJE:
+        try:
+            local = (crs_dir / nombre).read_text(encoding="utf-8").replace("\r\n", "\n")
+            esperado = (root / DIR_CRS / nombre).read_text(encoding="utf-8").replace("\r\n", "\n")
+        except OSError as exc:
+            raise HostiumError(f"Falta una copia legible de CRS: {nombre}") from exc
+        if local != esperado:
+            raise HostiumError(f"CRS difiere de la fuente verificada del generador: {nombre}. No se genera puntaje.")
 
 
 def objetivos_de_puntaje(root: Path) -> list[dict[str, object]]:

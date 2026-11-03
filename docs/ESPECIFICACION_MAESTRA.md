@@ -275,6 +275,12 @@ Enmienda del 2 de noviembre de 2026. `hostium-2.1.1` publica ctl de objetivo en 
 
 Referencia obligatoria: `https://coreruleset.org/docs/2-how-crs-works/2-3-false-positives-and-tuning/`.
 
+### Enmienda posterior: candidata 2.1.2, 2 de noviembre de 2026
+
+Sustituye el modelo de alcance de la enmienda anterior para nuevas construcciones: ninguna excepción activa se identifica solo por nombre de campo. Requiere dominio exacto, ruta sin query, método y parámetro. Los ctl van al final de una cadena de fase 1. Se permiten rutas administrativas concretas cuando están justificadas; prohibir su nombre no reemplaza delimitar el alcance. No se permiten toda la colección ARGS ni coincidencias @contains sobre REQUEST_URI.
+
+Los cinco casos existentes quedan pendientes e inactivos hasta confirmar sus dominios y parámetros. Se conservan IDs, fase y pass con condiciones imposibles. La metadata estable sigue en 2.1.1, sin promoción ni escritura remota. El analizador local logs analyze normaliza mensajes v2 y compara conteos sin clasificar automáticamente falsos positivos. La revisión vencida bloquea nuevas construcciones, sin prometer caducidad en instalaciones existentes. El puntaje general continúa fuera del ZIP y su generación exige comparar CRS y aceptar el impacto. Todas las acciones ver de un nuevo ZIP identifican esa distribución.
+
 ## 9. CLI completa y comportamiento esperado
 
 Proponé e implementá una CLI coherente, documentada y testeada. Como mínimo:

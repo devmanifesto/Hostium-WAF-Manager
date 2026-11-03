@@ -28,4 +28,10 @@ La especificación repite lo que el operador observó en calcium: motor `ea-apac
 
 ## Licencias
 
-Este repositorio es Apache 2.0. No redistribuye CRS. La imagen de prueba, si se descarga, trae CRS upstream con su propia licencia y no entra al ZIP de Hostium.
+Este repositorio es Apache 2.0. Conserva cinco archivos upstream CRS 3.3.10 en third_party, con su LICENSE y procedencia; no los empaqueta como reglas Hostium. La imagen de prueba, si se descarga, trae CRS upstream con su propia licencia y no entra al ZIP de Hostium.
+
+## Revisión del 2 de noviembre de 2026
+
+Se consultaron nuevamente el tutorial oficial de cPanel, la guía de tuning de CRS y el manual v2 enlazados arriba. Contratos usados: ZIP bajo vendor_id, fase/orden de exclusiones, ctl sobre objetivos, REQUEST_URI con query frente a REQUEST_FILENAME sin query, cadenas con acciones no disruptivas en su último eslabón y setvar acumulativo en SecRuleUpdateActionById. La wiki v2 avisa que la documentación se mudó a https://modsecurity.org/docs/; se conserva la referencia v2 para el motor objetivo. No se comprobó el RPM ni un servidor real.
+
+La coincidencia de las cinco copias locales CRS se exige antes de generar puntaje; no equivale a comprobar umbrales, paranoia o el resto de los archivos instalados. Las pruebas HTTP registradas en QA 23 son laboratorio, no aplicaciones de producción.

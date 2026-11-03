@@ -1,95 +1,99 @@
 # Falsos positivos y excepciones
 
-## Objetivo
+## Estado y objetivo
 
-Sacar una regla del camino de una petición concreta sin apagar OWASP ni el vendor entero.
+La estable publicada sigue siendo **2.1.1**. La candidata local **2.1.2** corrige el modelo de excepciones; no se promovió ni instaló. Reducir bloqueos legítimos requiere evidencia de la operación, no solo un 403.
 
-## Audiencia
+Las cinco excepciones históricas están en `config/exclusions.yaml`, ahora con `habilitada: false`. No se conocen los dominios confirmados ni el parámetro de edición de PrestaShop. Por eso se conservan sus IDs mediante condiciones imposibles `@rx (?!)`, fase 1, `pass`, sin ctl. **Instalar la candidata sin completar el alcance puede hacer reaparecer los falsos positivos que la 2.1.1 exceptuaba.** No promoverla para resolver esos incidentes hasta validar cada caso.
 
-Soporte y seguridad de plataforma.
+## Diagnóstico local, solo lectura
 
-## Prerrequisitos
+1. Obtener por un mecanismo autorizado un error log de Apache o los mensajes de la sección H del audit log ModSecurity v2. Mantener el original fuera del repositorio, con acceso restringido. Este comando no descarga nada del servidor.
+2. Analizar sin persistir resultados:
 
-El id, el dominio, la ruta y, si aplica, el parámetro. La guía de CRS sobre el orden de las exclusiones.
-
-## Orden
-
-```mermaid
-flowchart TD
-  peticion[Peticion]
-  runtime[Exclusiones runtime antes de CRS]
-  crs[Reglas CRS]
-  configure[Exclusiones configure-time despues de CRS]
-  hostium[Reglas Hostium deny]
-  peticion --> runtime --> crs --> configure
-  peticion --> hostium
+```powershell
+python -m hostium_waf logs analyze --input C:/evidencias/error.log --server nodo-piloto
 ```
 
-Un `ctl` de fase 1 queda en la transacción y alcanza una regla CRS de fase 2 aunque el Include de hostium vaya después. `ctl:ruleRemoveById` y `SecRuleRemoveById` siguen fuera del ZIP. `SecRuleUpdateActionById` se resuelve al leer la configuración: si hostium entra antes de OWASP3, `httpd -t` falla y no hay que recargar. Comprobalo con `httpd -t -D DUMP_INCLUDES` en el servidor. Este repositorio no lo corrió.
+3. Para identificar rutas, usar explícitamente `--include-locations`. Siempre se elimina la query string. El path puede contener datos personales; proteger también el informe. Sin esa opción, dominios y rutas se representan por alias SHA256 estables, que no equivalen a anonimización irreversible.
+4. Revisar los IDs detectores y la variable. `949110` es evaluación del puntaje: no reemplaza el diagnóstico de los IDs que aportaron a ese puntaje. Un `Access denied with code` confirma una denegación observada por ModSecurity, no el estado final de toda la cadena proxy.
+5. Confirmar con el dueño de la aplicación que la operación era legítima y reproducirla en laboratorio. Nunca clasificar automáticamente todo hit como falso positivo.
 
-Las reglas Hostium de `REQUEST-410` hacen `deny` por su cuenta. No suman al anomaly score de CRS. Una exclusión de un id 9xxxxx de CRS no apaga un id 5500. `5500100` y `5500101` no están en el ZIP. Si hay que exceptuar una regla que sí se instala, el id es el de Hostium.
+## Configuración de una excepción activa
 
-## Datos de cada excepción
+Este ejemplo es exclusivamente de laboratorio; no inventa dominios productivos:
 
-Id de la excepción, tipo `runtime`, URI, controles de objetivo, id de la regla CRS, alcance, motivo, owner, ticket si existe, fecha de revisión y una prueba negativa. El catálogo que genera el conf es `config/exclusions.yaml`. `config/exclusions.example.yaml` sigue vacío. La validación rechaza una fecha que no sea `AAAA-MM-DD`, `/login` y una IP.
+```yaml
+version_esquema: 1
+exclusiones:
+  - id: '5500900'
+    tipo: runtime
+    habilitada: true
+    dominios: [tuning.example.test]
+    metodos: [POST]
+    uri:
+      operador: '@streq'
+      valor: /firma.php
+    controles:
+      - tipo: ruleRemoveTargetById
+        objetivo: '941170'
+        variable: ARGS:firmadatos
+    regla_objetivo: '941170'
+    motivo: Firma JPEG en data-URI, reproducida en laboratorio
+    owner: equipo-seguridad
+    ticket: LAB-5500900
+    fecha_revision: '2027-05-02'
+    alcance: POST de firma en el virtualhost de laboratorio
+```
 
-## Catálogo de hostium-2.1.1
+El dominio es exacto, sin comodines ni IP. Se permiten varios dominios explícitos si el mismo caso está confirmado para cada uno. Host es un selector del virtualhost, no autenticación. La configuración del servidor debe rechazar hosts ajenos al sitio; esta excepción no acredita permisos del usuario.
 
-`rules render-exclusions` escribe `REQUEST-900-CRS-EXCLUSIONS.conf`. Cada regla es fase 1, `pass`, `nolog`. El campo propio de la aplicación es un `SecAction` sin URI. El campo genérico es una sola `SecRule` sobre `REQUEST_URI`, sin cadena. El cuerpo del POST no está en fase 1. El ctl nombra el campo y queda en la transacción.
+`@streq` exige el endpoint completo. `@beginsWith` solo admite directorios terminados en `/`, por ejemplo `/admin1911/sell/catalog/products/`; exige confirmar que todo ese subárbol merece la excepción. Se usa `REQUEST_FILENAME`, que no incluye query string. No se admiten `@contains`, regex arbitrarias, rutas `/`, escapes ni toda la colección `ARGS`. Los parámetros soportados son nombres simples `ARGS:nombre`; otros formatos requieren implementar y probar soporte específico.
 
-| Id | Selector | Qué deja de mirar |
+Los controles admitidos son `ruleRemoveTargetById` y `ruleRemoveTargetByTag`; preferir IDs individuales. Excluir tags amplía el impacto y exige justificar cada familia afectada. No se admiten `allow`, quita de reglas completas ni apagado del motor.
+
+## Generación y orden
+
+```powershell
+# MODIFICA solo el conf local; valida el catálogo antes de escribir.
+python -m hostium_waf rules render-exclusions
+# SOLO LECTURA local.
+python -m hostium_waf rules validate
+python -m hostium_waf rules check-ids
+```
+
+Cada entrada activa genera una cadena fase 1: dominio → ruta → método. El ctl está en la última condición: no se ejecuta si falla cualquiera de las anteriores. No se inspecciona el cuerpo en fase 1; se configura el objetivo que CRS inspeccionará en fase 2.
+
+Las exclusiones runtime deben ejecutarse antes de las reglas afectadas. En laboratorio se probó incluir el conf después de CRS y alcanzar reglas de fase 2 desde fase 1. Esto no autoriza a aplicar el mismo mecanismo sobre reglas CRS de fase 1. El esquema no descubre la fase del RPM; hay que comprobar cada objetivo, includes y efecto en el cPanel real. Las exclusiones configure-time van después de las definiciones CRS.
+
+## Casos históricos pendientes
+
+| ID | Caso | Información que falta confirmar |
 | --- | --- | --- |
-| 5500900 | Campo `ARGS:firmadatos` | 941130 y 941170. JPEG en data-URI. Ticket `2026-11-02-siga-xqempresas-aceptar` |
-| 5500901 | Campo `ARGS:vseleccionados` | 942100. Lista de cuentas unida con dos barras verticales |
-| 5500902 | Campos `ARGS:emailglobalheader` y `ARGS:emailglobalfooter` | Tags `attack-xss` y `attack-rce`. HTML de la plantilla de mail de WHMCS. Ticket `2026-11-02-whmcs-configgeneral-save` |
-| 5500903 | URI que contiene `/sell/catalog/` | `ARGS` en 941160. El resto de las 941 de ese POST sigue |
-| 5500904 | URI que empieza con `/aplicacion_customs/marketingdirecto/recibepostturnero.php` | `ARGS:datos` en 933170 |
+| 5500900 | `firmadatos`: 941130 y 941170 | Dominio y endpoint de la firma |
+| 5500901 | `vseleccionados`: 942100 | Dominio y endpoint de selección |
+| 5500902 | Plantilla WHMCS: tags XSS y RCE | Dominio, endpoint administrativo, autorización y IDs mínimos necesarios |
+| 5500903 | Edición PrestaShop: 941160 | Dominio, ruta administrativa real y parámetro; no se permite `ARGS` completo |
+| 5500904 | Serialización en `datos`: 933170 | Dominio y endpoint exacto del turnero |
 
-`rules render-score` escribe `REQUEST-910-CRS-ANOMALY-SCORE.conf`. Ese archivo no entra al ZIP de hostium y no es un vendor. srv-admin lo lee después de `modsec2.conf`. La fuente son los cinco conf de CRS 3.3.10 en `third_party/`. Esos id y offsets coinciden con el tag `v3.3.9`. El RPM `ea-modsec2-rules-owasp-crs` no se diffé. El orden de Include respecto de REQUEST-901 no se midió en este árbol. Cada directiva resta `tx.critical_anomaly_score` y suma `tx.warning_anomaly_score`. Neto 3. Una 922130 no llega al umbral 5. Dos reglas de 911, 922, 932, 934 o 944 suman 6. 920, 921, 930, 931, 933, 941, 942 y 943 quedan en 5. No se saca un header multipart por URL. `/login` no se exceptúa. No se midió CSF ni se observó el caso en cPanel. `ultima_validacion` sigue vacía.
+`tests/fixtures/exclusiones-laboratorio.yaml` contiene el alcance sintético usado en pruebas. Sus dominios, rutas y fecha lejana no son datos de producción.
 
-Siguen prohibidos en todo el ZIP: `SecRuleRemoveById`, `ctl:ruleRemoveById`, `allow`, `SecRuleEngine Off` y `ctl:ruleEngine=Off`. El `ctl` de objetivo solo se admite en REQUEST-900. `SecRuleUpdateActionById` solo en REQUEST-910, y cada línea tiene que restar el crítico y sumar el warning.
+## Revisión y regresión
 
-## PHP upload progress, 1.1.0
+Una entrada activa vencida bloquea render y build. La fecha es una revisión de configuración, **no una caducidad automática en Apache**: una instalación existente sigue usando el conf anterior hasta cambiarla. No hay scheduler ni borrado remoto automático.
 
-La excepción se hace por id, con fecha de revisión. No se edita el ZIP.
+Antes de activar: petición legítima con el ID observado; mismo contenido en otro dominio, ruta, método y parámetro; ataque que otra regla siga detectando dentro del alcance. Verificar IDs por transacción, además del HTTP. Medir antes/después con ventanas comparables; conservar el ticket y rollback. `ultima_validacion` queda null hasta cPanel real.
 
-| Id | Cuándo molesta |
-| --- | --- |
-| 5500601 | Un multipart legítimo que llegue con `Transfer-Encoding: chunked` |
-| 5500603 | Un formulario con 40 o más niveles de corchetes |
-| 5500605 | Un POST con 300 archivos o más |
-| 5500613 | Una aplicación que manda `PHPSESSID` como campo porque no usa solo cookies |
-| 5500614 | Cualquier cuerpo con `<?php`. No niega; si el log estorba, se saca el id |
-| 5500615 | Quinientas partes sin `name` útil. Un formulario de campos con nombre no entra |
-| 5500617 | Un `PHPSESSID` de respuesta de más de 200 caracteres |
-| 5500619 | Una barra de progreso real. No niega |
-| 5500621 | Un id de cookie fuera de `[A-Za-z0-9,-]` o de más de 256 caracteres |
+## Puntaje y reglas propias
 
-`5500614` se dejó en `pass` a propósito. El resto de la tabla que niega se exceptúa con el id, no apagando el vendor, si el caso legítimo está identificado.
+`REQUEST-910` no entra al ZIP. Bajar puntajes de métodos, multipart, RCE, NodeJS o Java también reduce bloqueo de ataques que solo activen una detección. `rules render-score` exige `--crs-dir` con una copia local idéntica de los cinco archivos y `--acknowledge-reduced-sensitivity`. La comparación no prueba el resto de la configuración: umbrales, paranoia, includes y funcionamiento requieren validación adicional. `package build-tune` está bloqueado con código 3; el ZIP histórico se conserva intacto.
 
-## WordPress y WooCommerce
+`REQUEST-410` hace deny directo y no usa el puntaje CRS. Una exclusión 9xxxxx no elimina un bloqueo 5500xxx. Revisar especialmente multipart chunked, PHPSESSID como argumento, anidación profunda y grandes cargas. No se alteraron las expresiones ni las acciones de ese módulo en esta serie.
 
-No hay regla activa. Cuando exista, tiene que dejar pasar login, REST, `admin-ajax.php`, carrito y checkout de prueba. No se documenta aquí un `SecRuleRemoveById` global de CRS para “arreglar WordPress”.
+## Rollback
 
-## Procedimiento
-
-1. SOLO LECTURA: reproducí en un dominio de prueba y anotá el id.
-2. Escribí la excepción con vencimiento. MODIFICA la configuración del dominio o el include de excepciones, no el RPM de CRS.
-3. SOLO LECTURA: la petición legítima ya no muestra ese id. La petición maliciosa del mismo control sigue mostrándolo si la excepción fue estrecha.
-4. Al vencimiento, revisá o borrala.
-
-## Deshacer
-
-Quitar la excepción y recargar en la ventana acordada. Si el problema es masivo, el rollback del vendor está en el documento 14 y es preferible a deshabilitar CRS.
-
-## Problemas frecuentes
-
-Una excepción `allow` global. El empaquetador rechaza `allow` dentro de un `.conf` que vaya al ZIP. No la agregues en otro include sin una justificación y una prueba de que no abre el resto de CRS.
+Deshabilitar la entrada, regenerar y construir una versión nueva. No editar ZIP publicados. Retirar una exclusión restaura inspección y puede restaurar el falso positivo; requiere coordinar la operación legítima. Los procedimientos de servidor permanecen en el documento 14 y requieren autorización explícita. Volver a 2.1.1 también restaura sus excepciones globales: no es una solución al alcance inseguro.
 
 ## Referencias
 
-https://coreruleset.org/docs/2-how-crs-works/2-3-false-positives-and-tuning/
-
-## Limitaciones
-
-El catálogo de producción es el de la tabla de arriba. Una sola regla crítica de 920, 921, 930, 931, 933, 941, 942 o 943 sigue sumando 5. Si la paranoia sube de 1, 942120 puede marcar el `||` de las cuentas. No se amplía sin un id de log. `ultima_validacion` sigue vacía.
+Consultadas el 2 de noviembre de 2026: [CRS, tuning](https://coreruleset.org/docs/2-how-crs-works/2-3-false-positives-and-tuning/) y [ModSecurity v2, variables y cadenas](https://github.com/owasp-modsecurity/ModSecurity/wiki/Reference-Manual-(v2.x)).

@@ -2,7 +2,7 @@
 
 Herramienta para mantener un ruleset ModSecurity propio, empaquetarlo como proveedor de cPanel/WHM y auditar una flota sin tocarla por defecto.
 
-La versión de ruleset que construye este árbol es la 2.1.1. Los ZIP ya publicados en `publish/stable/` no se regeneran. No instala nada en un cPanel y no trata una sintaxis válida como una prueba de bloqueo en producción.
+La candidata local que construye este árbol es la 2.1.2. La metadata publicada sigue en 2.1.1; no se promovió la candidata. Los ZIP ya publicados en `publish/stable/` no se regeneran. No instala nada en un cPanel y no trata una sintaxis válida como una prueba de bloqueo en producción.
 
 ## Requisitos
 
@@ -19,13 +19,28 @@ python -m pip install -e ".[dev]"
 python -m hostium_waf version
 python -m hostium_waf doctor --local
 python -m hostium_waf rules validate
-python -m hostium_waf package build --version 2.1.1 --engine 2.9.15
-python -m hostium_waf package verify --zip dist/hostium-2.1.1.zip --metadata dist/meta_hostium.yaml
+python -m hostium_waf package build --version 2.1.2 --output dist/candidata-2.1.2 --engine 2.9.15
+python -m hostium_waf package verify --zip dist/candidata-2.1.2/hostium-2.1.2.zip --metadata dist/candidata-2.1.2/meta_hostium.yaml
 ```
 
 `python -m pytest` corre la suite unitaria. `python -m pytest -m integration --override-ini="addopts="` levanta Apache. Si Docker no está en marcha, esa prueba se omite y el informe lo dice: una omisión no es un bloqueo comprobado.
 
-## Qué entra al ZIP estable
+## Diagnosticar falsos positivos
+
+```powershell
+# SOLO LECTURA local. No abre SSH ni genera excepciones automáticamente.
+python -m hostium_waf logs analyze --input C:/evidencias/error.log --server nodo-piloto
+```
+
+El analizador agrupa por transacción, ID, variable, dominio y ruta; oculta ubicaciones por defecto y elimina query, valores y cuerpos. `--include-locations` permite investigar las rutas explícitamente. Ver [observabilidad](docs/12-OBSERVABILIDAD-Y-LOGS.md).
+
+La candidata 2.1.2 exige dominio exacto, ruta sin query, método y parámetro. **Los cinco casos históricos quedan inactivos porque faltan dominios y alcance confirmado.** Instalarla sin completar esos datos puede restaurar los falsos positivos anteriores. No se debe promover todavía sobre la estable. [Guía de tuning y activación](docs/13-FALSOS-POSITIVOS-Y-EXCEPCIONES.md).
+
+El ZIP candidato mantiene los dos módulos y los IDs, fase y acción. `REQUEST-410` no cambia sus expresiones; el build actualiza todas las acciones `ver` y la primera línea a la versión del paquete. `REQUEST-900` conserva IDs inactivos mediante condiciones imposibles hasta configurar cada caso. Las pruebas de laboratorio activan dominios sintéticos para verificar efecto y conservación de protección.
+
+CI obtiene la versión desde `crs_vendor.VERSION_RULESET`. La release depende de lint, pruebas unitarias, empaquetado e integración obligatoria; no publica ni instala automáticamente. `package build-tune` está retirado y devuelve código 3. `rules render-score` requiere copia local de CRS coincidente y aceptación explícita de la reducción de sensibilidad.
+
+## Qué entra al ZIP estable (2.1.1 histórica)
 
 `hostium-2.1.1.zip` lleva dos `.conf`. `REQUEST-410-PHP-UPLOAD-PROGRESS.conf` conserva los ids de pedido `5500600`–`5500619` y `5500621`, `5500622`, `5500625`. `REQUEST-900-CRS-EXCLUSIONS.conf` trae `5500900`–`5500904`: tres por nombre de campo y dos por URI, porque el campo es genérico. `5500100` y `5500101` siguen en `REQUEST-100-SENSITIVE-FILES.conf` y no entran al ZIP: el path lo corta CRS `930130`. Las de fase 4 (`5500620`, `5500623`, `5500624`, `5500626`) quedan en un `.example` y no se empaquetan: en cPanel no se enciende `SecResponseBodyAccess` para todo el servidor. Esas reglas no reemplazan actualizar PHP. El selftest `5500000` vive en un `.example` y no se empaqueta. Los borradores de WordPress, PHP genérico, el id vacío `5500400` y los escáneres tampoco.
 

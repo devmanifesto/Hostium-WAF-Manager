@@ -12,12 +12,12 @@ import typer
 from hostium_waf import __version__
 from hostium_waf.deployment import apply_despliegue, plan_despliegue, verificar_despliegue_local
 from hostium_waf.doctor import capacidades_locales, doctor_local, inicializar
-from hostium_waf.errors import EXIT_ERROR, HostiumError, Issue
+from hostium_waf.errors import EXIT_ERROR, BlockedOperation, HostiumError, Issue
 from hostium_waf.fleet import auditar
 from hostium_waf.inventory import load_inventory, resolver_inventario
 from hostium_waf.metadata import load_metadata
 from hostium_waf.models import Settings
-from hostium_waf.packaging import build_package, build_tune_package, verify_package
+from hostium_waf.packaging import build_package, verify_package
 from hostium_waf.publishing import apply_publicacion, plan_publicacion
 from hostium_waf.reporting import cargar_evidencia_integracion, escribir_informe, generar_informe
 from hostium_waf.rollback import apply_rollback, plan_rollback
@@ -47,6 +47,7 @@ deploy_app = typer.Typer(no_args_is_help=True, help="Planes de despliegue. apply
 rollback_app = typer.Typer(no_args_is_help=True, help="Planes de rollback. apply está bloqueado.")
 updates_app = typer.Typer(no_args_is_help=True, help="Actualizaciones del vendor. apply no abre SSH.")
 report_app = typer.Typer(no_args_is_help=True, help="Genera informes locales.")
+logs_app = typer.Typer(no_args_is_help=True, help="Analiza archivos locales de ModSecurity sin abrir SSH.")
 
 app.add_typer(rules_app, name="rules")
 app.add_typer(package_app, name="package")
@@ -57,6 +58,7 @@ app.add_typer(deploy_app, name="deploy")
 app.add_typer(rollback_app, name="rollback")
 app.add_typer(updates_app, name="updates")
 app.add_typer(report_app, name="report")
+app.add_typer(logs_app, name="logs")
 
 
 @app.callback()
@@ -256,12 +258,19 @@ def rules_render_exclusions(ctx: typer.Context) -> None:
 
 
 @rules_app.command("render-score")
-def rules_render_score(ctx: typer.Context) -> None:
-    """Escribe REQUEST-910 desde los cinco conf de CRS 3.3.10."""
+def rules_render_score(
+    ctx: typer.Context,
+    crs_dir: Path | None = typer.Option(None, "--crs-dir", help="Copia local de los archivos CRS instalados."),
+    acknowledge: bool = typer.Option(False, "--acknowledge-reduced-sensitivity", help="Acepta que también se reduce el bloqueo de ataques."),
+) -> None:
+    """Generación explícita de puntaje, fuera del vendor; exige comparar CRS."""
 
     def accion() -> None:
-        from hostium_waf.puntaje_crs import escribir_puntaje
+        from hostium_waf.puntaje_crs import comprobar_fuente_instalada, escribir_puntaje
 
+        if crs_dir is None or not acknowledge:
+            raise BlockedOperation("render-score requiere --crs-dir y --acknowledge-reduced-sensitivity. No es una corrección específica de falsos positivos.")
+        comprobar_fuente_instalada(_raiz(), crs_dir)
         destino = escribir_puntaje(_raiz())
         _emitir(ctx, {"ok": True, "archivo": str(destino)}, f"escrito {destino}")
 
@@ -326,6 +335,8 @@ def package_build(
         root = _raiz()
         cfg = _settings(root, settings)
         artefacto = build_package(root, cfg, version=version, engine=engine, canal=channel, output=output)
+        catalogo = load_yaml(root / "config/exclusions.yaml")
+        pendientes = [e["id"] for e in catalogo["exclusiones"] if not e["habilitada"]]
         datos = {
             "ok": True,
             "version": artefacto.version,
@@ -340,14 +351,17 @@ def package_build(
             "archivos": artefacto.archivos,
             "url": artefacto.url,
             "url_provisionada": False,
+            "exclusiones_pendientes": pendientes,
         }
         texto = (
             f"ZIP {artefacto.zip_path}\n"
             f"metadata {artefacto.metadata_path}\n"
             f"MD5 {artefacto.md5}\n"
             f"SHA512 {artefacto.sha512}\n"
-            f"URL {artefacto.url} (raw público; este comando no llama a WHM)"
+            f"URL prevista {artefacto.url} (no se publica ni se comprueba disponibilidad; este comando no llama a WHM)"
         )
+        if pendientes:
+            texto += "\nCandidata con exclusiones inactivas pendientes: " + ", ".join(pendientes) + ". No corrige esos casos hasta confirmar su alcance."
         _emitir(ctx, datos, texto)
 
     _ejecutar(ctx, accion)
@@ -360,30 +374,46 @@ def package_build_tune(
     output: Path | None = typer.Option(None, "--output", help="Directorio de artefactos."),
     settings: Path | None = typer.Option(None, "--settings"),
 ) -> None:
-    """Construye el ZIP de hostium-tune con el bajado de puntaje."""
+    """Comando legado bloqueado: el puntaje ya no se distribuye como vendor."""
 
     def accion() -> None:
-        root = _raiz()
-        cfg = _settings(root, settings)
-        artefacto = build_tune_package(root, cfg, engine=engine, output=output)
-        datos = {
-            "ok": True,
-            "version": artefacto.version,
-            "engine": artefacto.engine,
-            "distribution": artefacto.distribution,
-            "zip": str(artefacto.zip_path),
-            "metadata": str(artefacto.metadata_path),
-            "sha256": artefacto.sha256,
-            "archivos": artefacto.archivos,
-            "url": artefacto.url,
-        }
-        texto = (
-            f"ZIP {artefacto.zip_path}\n"
-            f"metadata {artefacto.metadata_path}\n"
-            f"SHA256 {artefacto.sha256}\n"
-            "Vendor hostium-tune. Este comando no llama a WHM."
-        )
-        _emitir(ctx, datos, texto)
+        raise BlockedOperation("build-tune está retirado. No se instala otro vendor. Usá rules render-score con comparación explícita de CRS y revisión del impacto.")
+
+    _ejecutar(ctx, accion)
+
+
+@logs_app.command("analyze")
+def logs_analyze(
+    ctx: typer.Context,
+    input_path: Path = typer.Option(..., "--input", help="Error log Apache o mensajes de la sección H del audit log v2."),
+    server: str = typer.Option(..., "--server", help="Alias del servidor de origen."),
+    output: Path | None = typer.Option(None, "--output", help="Informe local; por defecto solo stdout."),
+    formato: str = typer.Option("json", "--format", help="json o markdown."),
+    include_locations: bool = typer.Option(False, "--include-locations", help="Incluye dominio y ruta sin query; pueden contener datos personales."),
+    baseline: Path | None = typer.Option(None, "--baseline", help="Informe JSON previo del mismo servidor."),
+) -> None:
+    """Prioriza eventos sin etiquetarlos automáticamente como falsos positivos."""
+
+    def accion() -> None:
+        from hostium_waf.eventos import analizar_eventos, comparar_eventos, markdown_eventos
+
+        if formato not in {"json", "markdown"}:
+            raise HostiumError("--format debe ser json o markdown")
+        datos = analizar_eventos(input_path, servidor=server, incluir_ubicaciones=include_locations)
+        if baseline is not None:
+            try:
+                previo = json.loads(baseline.read_text(encoding="utf-8"))
+            except (OSError, ValueError) as exc:
+                raise HostiumError("No se pudo leer el informe base JSON") from exc
+            if not isinstance(previo, dict):
+                raise HostiumError("El informe base debe ser un objeto JSON")
+            datos["comparacion"] = comparar_eventos(datos, previo)
+        contenido = json.dumps(datos, ensure_ascii=False, indent=2) + "\n" if formato == "json" or _estado(ctx).get("json") else markdown_eventos(datos)
+        if output is not None:
+            if output.resolve() == input_path.resolve() or (baseline is not None and output.resolve() == baseline.resolve()):
+                raise HostiumError("La salida no puede sobrescribir el log ni el informe base")
+            escribir_informe(output, contenido)
+        sys.stdout.write(contenido)
 
     _ejecutar(ctx, accion)
 

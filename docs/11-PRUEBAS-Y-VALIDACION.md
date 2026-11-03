@@ -6,7 +6,7 @@ Decir qué se corrió, qué se omitió y qué no prueba protección en un cPanel
 
 ## Audiencia
 
-Quien lea el estado de stable. Hoy `publish/stable/meta_hostium.yaml` nombra `hostium-2.1.0`. La bitácora del 23 de octubre, más abajo, es de esa fecha. La del 24 está en «Corrida del 24 de octubre de 2026» y en `docs/22-QA-TRES-PASADAS.md`. Esas corridas describen `1.1.2` y anteriores. No hay una corrida de cPanel de la 2.1.0.
+La estable publicada es 2.1.1. La candidata local 2.1.2 no se promovió. El resultado de esta serie está en [QA de tuning](23-QA-TUNING.md). Las bitácoras del 23 y 24 de octubre más abajo describen versiones históricas; no son evidencia de la candidata ni de cPanel.
 
 ## Prerrequisitos
 
@@ -18,8 +18,8 @@ El entorno de `docs/04-INSTALACION-DESARROLLO.md`.
 python -m ruff check src tests
 python -m pytest
 python -m pytest -m integration --override-ini="addopts=" -rs
-python -m hostium_waf package build --version 2.0.0 --engine 2.9.15
-python -m hostium_waf package verify --zip dist/hostium-2.1.0.zip --metadata dist/meta_hostium.yaml
+python -m hostium_waf package build --version 2.1.2 --engine 2.9.15 --output dist/candidata-2.1.2
+python -m hostium_waf package verify --zip dist/candidata-2.1.2/hostium-2.1.2.zip --metadata dist/candidata-2.1.2/meta_hostium.yaml
 ```
 
 `package build --version 1.0.0` en este árbol termina en error. La 1.0.0 publicada no se reconstruye.
@@ -33,11 +33,15 @@ La primera línea es lint. La segunda es la suite unitaria y excluye la marca `i
 - `tests/ftw/sensitive-files.yaml`: casos en un formato parecido a go-ftw. El runner no es el binario go-ftw.
 - Integración: Apache con el paquete Debian de ModSecurity, y un segundo caso con la imagen `owasp/modsecurity-crs:3.3.10-apache-202610180210-lts` si descarga. En un positivo, el id de Hostium tiene que aparecer asociado a esa URI. En un negativo, ese id no puede aparecer en esa URI; un 403 de otra regla no falla el caso.
 
-## Reglas 5500600–5500626
+## Cobertura actual
 
-La corrida de abajo es la de los ids `5500100` y `5500101`. Los ids de PHP upload progress no están en esa tabla. Los de fase 4 no entran al ZIP. Su control automático es `tests/unit/test_php_upload_progress.py`, que aplica las expresiones en Python. El `configtest` del conf empaquetado está en `tests/integration/test_http.py` y se omite si Docker no está. No hubo un POST de prueba ni un 403 observado para esos ids, y `ultima_validacion` sigue vacía. El informe de cPanel está en `docs/21-QA-CPANEL.md`.
+El test de sintaxis extrae los dos conf del ZIP realmente construido. Los casos HTTP históricos de archivos sensibles son regresión de reglas retiradas del ZIP estable; no representan el contenido actual completo. `test_motor_ve_las_reglas_410` envía multipart con Content-Length y verifica algunos IDs del módulo PHP en Apache Debian.
 
-La suite HTTP solo pide casos del `.conf` montado en ese contenedor, hoy `REQUEST-100-SENSITIVE-FILES.conf`. Los POST de `REQUEST-410` siguen en el manifiesto como `ejecucion: automatizada` porque la regla entra al ZIP, pero no se envían a este Apache: el caso no trae cuerpo y, sin `Content-Length`, el servidor espera el cuerpo hasta cortar por timeout. Ese corte no es un bloqueo.
+`test_exclusiones_http.py` prueba las cinco exclusiones con alcance sintético y CRS real, con y sin excepción. Verifica dominio, ruta, método y parámetro fuera de alcance, query string, sufijos y protección por otras reglas. Los ctl de laboratorio se incluyen después de CRS y se verifica su efecto desde fase 1 sobre fase 2. El HTTP de las operaciones exceptuadas puede ser 503 porque el backend es deliberadamente inexistente: se exige la ausencia del ID concreto, no se inventa un 200 de la aplicación.
+
+CI exige Docker e imágenes mediante `HOSTIUM_REQUIRE_INTEGRATION=1`; una omisión de infraestructura no habilita la release. No se prueba cPanel, autenticación WHMCS ni funcionalidad de WordPress/WooCommerce reales.
+
+## Bitácoras históricas (no describen la candidata actual)
 
 ## Resultado de la corrida de cierre
 

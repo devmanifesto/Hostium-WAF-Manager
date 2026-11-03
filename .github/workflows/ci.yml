@@ -3,6 +3,7 @@ name: ci
 on:
   push:
   pull_request:
+  workflow_call:
 
 jobs:
   unidad:
@@ -20,10 +21,13 @@ jobs:
         run: python -m pytest -m "not integration"
       - name: Construir y verificar el paquete
         run: |
-          python -m hostium_waf package build --version 1.1.2 --engine 2.9.15
-          python -m hostium_waf package verify --zip dist/hostium-1.1.2.zip --metadata dist/meta_hostium.yaml
+          version=$(python -c 'from hostium_waf.crs_vendor import VERSION_RULESET; print(VERSION_RULESET)')
+          python -m hostium_waf package build --version "$version" --engine 2.9.15
+          python -m hostium_waf package verify --zip "dist/hostium-$version.zip" --metadata dist/meta_hostium.yaml
 
   integracion:
+    env:
+      HOSTIUM_REQUIRE_INTEGRATION: "1"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -35,11 +39,8 @@ jobs:
       - name: Pruebas con Apache y ModSecurity
         id: integracion
         run: python -m pytest -m integration --override-ini="addopts=" -rs
-      - name: Avisar si la integracion no llego a ejecutarse
+      - uses: actions/upload-artifact@v4
         if: always()
-        run: |
-          if [ -f reports/integracion-estado.txt ] && grep -q omitida reports/integracion-estado.txt; then
-            echo "::notice::La integracion se omitio. Eso no es evidencia de proteccion."
-            echo "### Integracion omitida" >> "$GITHUB_STEP_SUMMARY"
-            echo "No se construyo o no se descargo la imagen. La suite unitaria no cubre el bloqueo HTTP." >> "$GITHUB_STEP_SUMMARY"
-          fi
+        with:
+          name: evidencia-integracion
+          path: reports/

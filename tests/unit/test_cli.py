@@ -30,7 +30,7 @@ def test_rules_y_paquete(tmp_path: Path) -> None:
     assert runner.invoke(app, ["rules", "check-ids"]).exit_code == 0
     construido = runner.invoke(
         app,
-        ["package", "build", "--version", "2.1.1", "--engine", "2.9.15", "--output", str(tmp_path)],
+        ["package", "build", "--version", "2.1.2", "--engine", "2.9.15", "--output", str(tmp_path)],
     )
     assert construido.exit_code == 0, construido.stdout + construido.stderr
     verificado = runner.invoke(
@@ -39,7 +39,7 @@ def test_rules_y_paquete(tmp_path: Path) -> None:
             "package",
             "verify",
             "--zip",
-            str(tmp_path / "hostium-2.1.1.zip"),
+            str(tmp_path / "hostium-2.1.2.zip"),
             "--metadata",
             str(tmp_path / "meta_hostium.yaml"),
         ],
@@ -125,3 +125,9 @@ def test_informe(tmp_path: Path) -> None:
     assert resultado.exit_code == 0, resultado.stdout + resultado.stderr
     texto = (tmp_path / "informe.md").read_text(encoding="utf-8")
     assert "no demuestra protección" in texto
+
+
+def test_puntaje_no_se_distribuye_sin_revision() -> None:
+    for args in (["rules", "render-score"], ["package", "build-tune", "--engine", "2.9.15"]):
+        resultado = runner.invoke(app, args)
+        assert resultado.exit_code == 3, resultado.output

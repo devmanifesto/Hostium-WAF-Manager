@@ -23,7 +23,7 @@ Instalación del documento 04.
 | 0 | La operación local terminó bien |
 | 1 | Validación, artefacto ausente o diagnóstico con hallazgos |
 | 2 | Uso incorrecto, lo informa Typer |
-| 3 | Operación bloqueada: deploy apply, rollback apply, publish apply, updates apply |
+| 3 | Operación bloqueada: deploy apply, rollback apply, publish apply, updates apply, build-tune y render-score sin opt-in |
 
 ## Comandos
 
@@ -34,9 +34,9 @@ Instalación del documento 04.
 | `doctor --local` | Valida el árbol |
 | `rules list` / `validate` / `check-ids` | Manifiesto e ids. `--installed-ids` es un archivo local, no una consulta a WHM |
 | `rules render-exclusions` | Escribe `REQUEST-900` desde `config/exclusions.yaml` |
-| `rules render-score` | Escribe `REQUEST-910` desde los cinco conf de CRS 3.3.10 en `third_party/` |
+| `rules render-score --crs-dir RUTA --acknowledge-reduced-sensitivity` | Compara una copia local de CRS; solo genera puntaje si coincide y se acepta su impacto |
 | `package build --version --engine` | ZIP y metadata de hostium |
-| `package build-tune --engine` | ZIP local del conf de puntaje. No se copia a stable y no es el vendor a instalar |
+| `package build-tune --engine` | Retirado, código 3; el ZIP legado no se modifica |
 | `package verify --zip --metadata` | Hashes y estructura |
 | `metadata show --file` | YAML ya validado |
 | `publish plan --version` | Plan. Falla si no hay artefacto |
@@ -48,6 +48,7 @@ Instalación del documento 04.
 | `updates plan` | Comando `enable-updates hostium`. No se conecta. `--help-file` lee una ayuda local |
 | `updates apply` | Código 3. No abre SSH |
 | `report generate --format markdown` | Informe sin cuerpos |
+| `logs analyze --input ARCHIVO --server ALIAS` | Analiza mensajes locales v2; JSON por defecto, sin escribir archivos ni contactar servidores |
 
 `deploy verify` sale en 1 si el ZIP local no está. Eso no significa que el servidor falló.
 
@@ -55,7 +56,7 @@ Instalación del documento 04.
 
 `config/settings.example.yaml` apunta al manifiesto y a la política de ejemplo, con `base_url` en el raw de `devmanifesto/Hostium-WAF-Manager`, rama `main`, carpeta `publish`. `init` copia settings y hace que la copia use `config/policy.yaml`.
 
-Variables: `HOSTIUM_WAF_ROOT` fuerza la raíz. `HOSTIUM_REQUIRE_INTEGRATION=1` hace fallar la prueba si la imagen CRS no descarga, en lugar de omitirla.
+Variables: `HOSTIUM_WAF_ROOT` fuerza la raíz. `HOSTIUM_REQUIRE_INTEGRATION=1` hace fallar la integración si Docker no responde, la imagen no se construye o CRS no descarga. CI y release lo exigen. Los errores funcionales siempre fallan.
 
 ## JSON
 
@@ -80,3 +81,9 @@ Los YAML creados por `init` están en `.gitignore`. Borrarlos vuelve a los examp
 ## Limitaciones
 
 No hay API HTTP. La “API” de esta versión es la CLI.
+
+## Diagnóstico de eventos
+
+`logs analyze` admite `--format json|markdown`, `--output RUTA`, `--include-locations` y `--baseline INFORME.json`. Sin output solo escribe stdout. `--json` global fuerza JSON. La base requiere mismo servidor y modo de ubicaciones. Se admite error log Apache y mensajes H del audit log v2; no audit JSON. El error por formato no soportado, entrada ausente o salida que pisaría el original es explícito. Ver documento 12.
+
+El catálogo de exclusiones exige `habilitada`, `dominios`, `metodos`, ticket y fecha de revisión. Solo se activan rutas `@streq` o prefijos de directorio `@beginsWith` y controles de parámetros `ARGS:nombre`. Una entrada inactiva necesita motivo pendiente. Detalles y ejemplo completo en documento 13.

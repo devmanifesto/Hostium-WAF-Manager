@@ -11,7 +11,6 @@ import yaml
 
 from hostium_waf.crs_vendor import ARCHIVO_EXCLUSIONES, ARCHIVO_PUNTAJE
 from hostium_waf.errors import Issue
-from hostium_waf.exclusiones_crs import uri_prohibida
 from hostium_waf.metadata import comentario_modulo_valido
 from hostium_waf.models import Cambio, CasoPrueba, Manifiesto, Politica, Regla, Settings
 from hostium_waf.security import es_semver, regex_peligrosa
@@ -33,10 +32,14 @@ _CLAVES_EXCLUSION = {
     "ticket",
     "uri",
     "controles",
+    "habilitada",
+    "dominios",
+    "metodos",
+    "pendiente",
 }
 _CLAVES_URI = {"operador", "valor"}
 _CLAVES_CONTROL = {"tipo", "objetivo", "variable"}
-_OPERADORES_URI = {"@beginsWith", "@rx", "@contains"}
+_OPERADORES_URI = {"@streq", "@beginsWith"}
 _TIPOS_CONTROL = {"ruleRemoveTargetById", "ruleRemoveTargetByTag"}
 _VARIABLE_CONTROL = re.compile(r"^ARGS(?::[A-Za-z_][A-Za-z0-9_]*)?$")
 _OBJETIVO_TAG = re.compile(r"^[A-Za-z0-9_-]+$")
@@ -350,96 +353,89 @@ def _validar_item_exclusion(item: Any, ruta: str, ids_vistos: set[str] | None = 
     if not isinstance(item, dict):
         return [Issue("tipo_invalido", "la exclusión debe ser un mapa", ruta)]
     issues: list[Issue] = []
-    for extra in sorted(set(item) - _CLAVES_EXCLUSION):
-        issues.append(Issue("campo_desconocido", "campo no admitido", f"{ruta}.{extra}"))
-    requeridos = ("id", "tipo", "regla_objetivo", "motivo", "owner", "fecha_revision", "alcance", "controles")
-    for clave in requeridos:
-        if clave not in item:
-            issues.append(Issue("campo_faltante", "falta el campo", f"{ruta}.{clave}"))
-    for clave in ("id", "tipo", "regla_objetivo", "motivo", "owner", "fecha_revision", "alcance"):
+    requeridos = {"id", "tipo", "regla_objetivo", "motivo", "owner", "fecha_revision", "alcance", "controles", "habilitada", "ticket", "dominios", "metodos"}
+    for clave in sorted(requeridos - set(item)):
+        issues.append(Issue("campo_faltante", "falta el campo", f"{ruta}.{clave}"))
+    for clave in sorted(set(item) - _CLAVES_EXCLUSION):
+        issues.append(Issue("campo_desconocido", "campo no admitido", f"{ruta}.{clave}"))
+    for clave in ("id", "tipo", "regla_objetivo", "motivo", "owner", "fecha_revision", "alcance", "ticket"):
         valor = item.get(clave)
-        if clave in item and (not isinstance(valor, str) or not valor.strip()):
-            issues.append(Issue("campo_faltante", "falta el campo", f"{ruta}.{clave}"))
+        if not isinstance(valor, str) or not valor.strip() or any(c in valor for c in '\r\n"\\'):
+            issues.append(Issue("campo_faltante", "se requiere texto en una línea, sin comillas dobles ni barras inversas", f"{ruta}.{clave}"))
     exc_id = item.get("id")
-    if ids_vistos is not None and isinstance(exc_id, str) and exc_id.strip():
+    if not isinstance(exc_id, str) or not exc_id.isascii() or not exc_id.isdigit() or not 5500000 <= int(exc_id) <= 5509999:
+        issues.append(Issue("id_fuera_de_rango", "id numérico entre 5500000 y 5509999", f"{ruta}.id"))
+    if ids_vistos is not None and isinstance(exc_id, str):
         if exc_id in ids_vistos:
-            issues.append(Issue("id_duplicado", f"el id de exclusión {exc_id} está repetido", f"{ruta}.id"))
+            issues.append(Issue("id_duplicado", "id repetido", f"{ruta}.id"))
         ids_vistos.add(exc_id)
-    if item.get("tipo") not in {"runtime", "configure-time"}:
-        issues.append(Issue("exclusion", "tipo debe ser runtime o configure-time", f"{ruta}.tipo"))
-    if _fecha(item.get("fecha_revision")) is None:
-        issues.append(Issue("fecha", "cada exclusión necesita fecha de revisión", f"{ruta}.fecha_revision"))
-    if "uri" in item and item.get("uri") is not None:
+    if item.get("tipo") != "runtime":
+        issues.append(Issue("exclusion", "solo se admiten exclusiones runtime de objetivo", f"{ruta}.tipo"))
+    activa = item.get("habilitada") is True
+    if not isinstance(item.get("habilitada"), bool):
+        issues.append(Issue("tipo_invalido", "habilitada debe ser booleano", f"{ruta}.habilitada"))
+    fecha = _fecha(item.get("fecha_revision"))
+    if fecha is None:
+        issues.append(Issue("fecha", "fecha de revisión inválida", f"{ruta}.fecha_revision"))
+    elif activa and date.fromisoformat(fecha) <= date.today():
+        issues.append(Issue("exclusion_vencida", "revisar antes de volver a generar o empaquetar", f"{ruta}.fecha_revision"))
+    dominios = item.get("dominios")
+    if not isinstance(dominios, list) or (activa and not dominios):
+        issues.append(Issue("alcance", "dominios debe ser una lista; una exclusión habilitada necesita dominio confirmado", f"{ruta}.dominios"))
+    elif any(not isinstance(d, str) or not re.fullmatch(r"(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z][a-z0-9-]{0,62}", d) for d in dominios):
+        issues.append(Issue("alcance", "dominio DNS exacto en minúsculas; sin puerto, IP ni comodines", f"{ruta}.dominios"))
+    metodos = item.get("metodos")
+    if not isinstance(metodos, list) or not metodos or any(not isinstance(m, str) or m not in _METODOS_HTTP for m in metodos):
+        issues.append(Issue("alcance", "metodos debe ser una lista explícita de métodos HTTP", f"{ruta}.metodos"))
+    if activa or item.get("uri") is not None:
         issues.extend(_validar_uri_exclusion(item.get("uri"), f"{ruta}.uri"))
-    if "controles" in item:
-        issues.extend(_validar_controles(item.get("controles"), f"{ruta}.controles"))
-        issues.extend(_args_sin_uri(item.get("controles"), "uri" in item and item.get("uri") is not None, ruta))
-    if item.get("tipo") == "configure-time":
-        issues.append(Issue("exclusion", "el ZIP solo admite exclusiones runtime de objetivo", f"{ruta}.tipo"))
+    if not activa:
+        pendiente = item.get("pendiente")
+        if not isinstance(pendiente, str) or not pendiente.strip() or any(c in pendiente for c in '\r\n"\\'):
+            issues.append(Issue("alcance", "una exclusión inactiva necesita pendiente en una línea", f"{ruta}.pendiente"))
+    issues.extend(_validar_controles(item.get("controles"), f"{ruta}.controles", activa=activa))
+    if isinstance(item.get("controles"), list) and isinstance(item.get("regla_objetivo"), str):
+        objetivos = {c.get("objetivo") for c in item["controles"] if isinstance(c, dict) and isinstance(c.get("objetivo"), str)}
+        declarados = {valor.strip() for valor in item["regla_objetivo"].split(",")}
+        if objetivos != declarados:
+            issues.append(Issue("exclusion", "regla_objetivo no coincide con los controles", f"{ruta}.regla_objetivo"))
     return issues
 
 
 def _validar_uri_exclusion(uri: Any, ruta: str) -> list[Issue]:
     if not isinstance(uri, dict):
-        return [Issue("tipo_invalido", "uri debe ser un mapa", ruta)]
+        return [Issue("alcance", "uri debe declarar operador y valor", ruta)]
     issues: list[Issue] = []
-    for extra in sorted(set(uri) - _CLAVES_URI):
-        issues.append(Issue("campo_desconocido", "campo no admitido", f"{ruta}.{extra}"))
-    operador = uri.get("operador")
-    valor = uri.get("valor")
+    if set(uri) != _CLAVES_URI:
+        issues.append(Issue("alcance", "uri solo admite operador y valor", ruta))
+    operador, valor = uri.get("operador"), uri.get("valor")
     if operador not in _OPERADORES_URI:
-        issues.append(Issue("exclusion", "operador debe ser @beginsWith, @contains o @rx", f"{ruta}.operador"))
-    if not isinstance(valor, str):
-        issues.append(Issue("exclusion", "el valor de la URI debe ser texto", f"{ruta}.valor"))
-    else:
-        cuerpo = valor[1:] if operador == "@rx" and valor.startswith("^") else valor
-        if not cuerpo.startswith("/"):
-            issues.append(Issue("exclusion", "el valor de la URI debe empezar con /", f"{ruta}.valor"))
-        elif uri_prohibida(valor):
-            issues.append(Issue("exclusion", "no se exceptúa /login, un admin, configgeneral ni una IP", f"{ruta}.valor"))
+        issues.append(Issue("alcance", "usar @streq o @beginsWith de directorio", ruta))
+    if not isinstance(valor, str) or not re.fullmatch(r"/[A-Za-z0-9_./-]+", valor) or any(p in {".", ".."} for p in valor.split("/")) or "//" in valor:
+        issues.append(Issue("alcance", "ruta absoluta literal sin query, espacios, escapes ni segmentos . o ..", ruta))
+    elif operador == "@beginsWith" and not valor.endswith("/"):
+        issues.append(Issue("alcance", "el prefijo debe terminar en /; para endpoints usar @streq", ruta))
     return issues
 
 
-def _validar_controles(controles: Any, ruta: str) -> list[Issue]:
+def _validar_controles(controles: Any, ruta: str, *, activa: bool = True) -> list[Issue]:
     if not isinstance(controles, list) or not controles:
         return [Issue("campo_faltante", "hace falta al menos un control", ruta)]
     issues: list[Issue] = []
     for indice, control in enumerate(controles):
         actual = f"{ruta}[{indice}]"
-        if not isinstance(control, dict):
-            issues.append(Issue("tipo_invalido", "el control debe ser un mapa", actual))
+        if not isinstance(control, dict) or set(control) != _CLAVES_CONTROL:
+            issues.append(Issue("exclusion", "control requiere tipo, objetivo y variable", actual))
             continue
-        for extra in sorted(set(control) - _CLAVES_CONTROL):
-            issues.append(Issue("campo_desconocido", "campo no admitido", f"{actual}.{extra}"))
-        tipo = control.get("tipo")
-        objetivo = control.get("objetivo")
-        variable = control.get("variable")
+        tipo, objetivo, variable = (control.get(c) for c in ("tipo", "objetivo", "variable"))
         if tipo not in _TIPOS_CONTROL:
-            issues.append(Issue("exclusion", "tipo debe ser ruleRemoveTargetById o ruleRemoveTargetByTag", f"{actual}.tipo"))
-        if not isinstance(objetivo, str) or not objetivo.strip():
-            issues.append(Issue("campo_faltante", "falta el objetivo", f"{actual}.objetivo"))
-        elif tipo == "ruleRemoveTargetById" and not objetivo.isdigit():
-            issues.append(Issue("exclusion", "el objetivo de ById es numérico", f"{actual}.objetivo"))
-        elif tipo == "ruleRemoveTargetByTag" and not _OBJETIVO_TAG.fullmatch(objetivo):
-            issues.append(Issue("exclusion", "el tag no es un token", f"{actual}.objetivo"))
-        if not isinstance(variable, str) or not _VARIABLE_CONTROL.fullmatch(variable):
-            issues.append(Issue("exclusion", "la variable debe ser ARGS o ARGS:nombre", f"{actual}.variable"))
-    return issues
-
-
-def _args_sin_uri(controles: Any, tiene_uri: bool, ruta: str) -> list[Issue]:
-    if tiene_uri or not isinstance(controles, list):
-        return []
-    issues: list[Issue] = []
-    for indice, control in enumerate(controles):
-        if isinstance(control, dict) and control.get("variable") == "ARGS":
-            issues.append(
-                Issue(
-                    "exclusion",
-                    "ARGS sin URI sacaría todos los argumentos del sitio",
-                    f"{ruta}.controles[{indice}].variable",
-                )
-            )
+            issues.append(Issue("exclusion", "tipo de ctl no admitido", actual))
+        if not isinstance(objetivo, str) or not _OBJETIVO_TAG.fullmatch(objetivo):
+            issues.append(Issue("exclusion", "objetivo inválido", actual))
+        elif tipo == "ruleRemoveTargetById" and not re.fullmatch(r"9[0-9]{5}", objetivo):
+            issues.append(Issue("exclusion", "se requiere un ID CRS de seis dígitos", actual))
+        if not isinstance(variable, str) or not _VARIABLE_CONTROL.fullmatch(variable) or (activa and variable == "ARGS"):
+            issues.append(Issue("exclusion", "una exclusión activa requiere ARGS:nombre; no se admite toda la colección", actual))
     return issues
 
 
@@ -546,17 +542,17 @@ def _revisar_conf_empaquetable(texto: str, relativo: str, reglas: list[Regla]) -
     for regla in reglas:
         if f"id:{regla.id}" not in activas:
             issues.append(Issue("id_ausente", f"no aparece id:{regla.id}", relativo))
-        if regla.modo_por_defecto == "deny" and not re.search(r"(?:^|[,\s])deny(?:\s|,|$)", activas):
+        bloque = _bloque_de_id(activas, regla.id)
+        if regla.modo_por_defecto == "deny" and (bloque is None or not re.search(r"(?:^|[,\s])deny(?:\s|,|$)", bloque)):
             issues.append(Issue("accion", "la regla deny no contiene la acción deny", relativo))
-        if f"ver:'hostium/{regla.version_de_introduccion}'" not in activas:
+        if bloque is None or not re.search(r"ver:'hostium/\d+\.\d+\.\d+'", bloque):
             issues.append(
                 Issue(
                     "version",
-                    "falta ver:'hostium/<version_de_introduccion>'",
+                    "falta ver:'hostium/<semver>' en el bloque de la regla",
                     relativo,
                 )
             )
-        bloque = _bloque_de_id(activas, regla.id)
         if bloque is not None and not re.search(rf"phase:\s*{regla.fase}\b", bloque):
             issues.append(
                 Issue(
@@ -569,32 +565,37 @@ def _revisar_conf_empaquetable(texto: str, relativo: str, reglas: list[Regla]) -
 
 
 def _revisar_forma_exclusion(activas: str, relativo: str) -> list[Issue]:
+    # La forma autorizada es la del generador, incluyendo ubicación de cada ctl.
+    # El cotejo byte a byte con el catálogo se hace en _deriva_generados.
     issues: list[Issue] = []
     plano = re.sub(r"\\\s*\n", " ", activas)
-    if re.search(r"(?:^|[,\s\"])chain(?:[,\s\"]|$)", plano):
-        issues.append(Issue("regla_prohibida", "la exclusión no usa cadena", relativo))
-    bloques = re.findall(r"(?:SecRule|SecAction)\b.*?(?=(?:SecRule|SecAction)\b|$)", plano, flags=re.S)
-    if not bloques:
-        return [Issue("regla_prohibida", "la exclusión no tiene SecRule ni SecAction", relativo)]
+    bloques = re.split(r"(?=SecRule\s+REQUEST_HEADERS:Host|SecRule\s+REQUEST_URI)", plano)
     for bloque in bloques:
-        directiva = "SecAction" if bloque.lstrip().startswith("SecAction") else "SecRule"
-        for pedazo, motivo in (
-            (r"\bid:\d+\b", "id"),
-            (r"phase:\s*1\b", "phase:1"),
-            (r"(?:^|[,\s\"])pass(?:[,\s\"]|$)", "pass"),
-            (r"(?:^|[,\s\"])nolog(?:[,\s\"]|$)", "nolog"),
-        ):
-            if not re.search(pedazo, bloque):
-                issues.append(Issue("regla_prohibida", f"la exclusión debe declarar {motivo}", relativo))
-        if "ctl:" not in bloque:
-            issues.append(Issue("regla_prohibida", "la exclusión no tiene ctl", relativo))
-        if directiva == "SecRule" and "REQUEST_URI" not in bloque:
-            issues.append(Issue("regla_prohibida", "la regla de URI tiene que mirar REQUEST_URI", relativo))
-        if directiva == "SecAction" and "REQUEST_URI" in bloque:
-            issues.append(Issue("regla_prohibida", "el campo propio no se ata a una URI", relativo))
-    for ctl in re.findall(r"ctl:[^\s,\"\\]+", plano):
-        if not _CTL_PERMITIDO.fullmatch(ctl):
-            issues.append(Issue("regla_prohibida", "ctl no admitido en la exclusión", relativo))
+        if not bloque.strip():
+            continue
+        inactiva = re.fullmatch(
+            r'\s*SecRule REQUEST_URI "@rx \(\?!\)" "id:\d+,phase:1,pass,nolog,t:none,'
+            r"tag:'hostium-crs-exclusion',ver:'hostium/\d+\.\d+\.\d+'\"\s*", bloque,
+        )
+        if inactiva:
+            continue
+        if not re.search(r'SecRule REQUEST_HEADERS:Host "@rx \(\?i\)\\A', bloque):
+            issues.append(Issue("regla_prohibida", "falta dominio exacto al inicio de la cadena", relativo))
+        if 'SecRule REQUEST_FILENAME "@' not in bloque or 'SecRule REQUEST_METHOD "@rx \\A' not in bloque:
+            issues.append(Issue("regla_prohibida", "faltan ruta sin query y método", relativo))
+        if len(re.findall(r"\bchain\b", bloque)) != 2:
+            issues.append(Issue("regla_prohibida", "se requiere la cadena dominio, ruta y método", relativo))
+        if 'phase:1,pass,nolog,t:none,' not in bloque:
+            issues.append(Issue("regla_prohibida", "la exclusión debe ser fase 1, pass y nolog", relativo))
+        if "ctl:" not in bloque.split("SecRule REQUEST_METHOD")[-1]:
+            issues.append(Issue("regla_prohibida", "el ctl debe estar al final de la cadena", relativo))
+        if "ctl:" in bloque.split("SecRule REQUEST_METHOD")[0]:
+            issues.append(Issue("regla_prohibida", "el ctl no puede ejecutarse antes de completar la cadena", relativo))
+        for ctl in re.findall(r'ctl:[^\s,"\\]+', bloque):
+            if not _CTL_PERMITIDO.fullmatch(ctl) or ctl.endswith(";ARGS"):
+                issues.append(Issue("regla_prohibida", "ctl de objetivo no admitido", relativo))
+    if not bloques or not activas.strip():
+        issues.append(Issue("regla_prohibida", "faltan reglas de exclusión", relativo))
     return issues
 
 

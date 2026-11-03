@@ -1,0 +1,115 @@
+# SOLO LABORATORIO. No usar estos dominios ni fechas para producción.
+version_esquema: 1
+exclusiones:
+- id: '5500900'
+  tipo: runtime
+  regla_objetivo: 941130,941170
+  motivo: Caso sintético de laboratorio; no corresponde a un dominio productivo.
+  owner: equipo-seguridad-hostium
+  fecha_revision: '2099-01-01'
+  alcance: Inactiva hasta confirmar dominio, ruta, método y parámetro.
+  ticket: LAB-5500900
+  controles:
+  - tipo: ruleRemoveTargetById
+    objetivo: '941130'
+    variable: ARGS:firmadatos
+  - tipo: ruleRemoveTargetById
+    objetivo: '941170'
+    variable: ARGS:firmadatos
+  habilitada: true
+  dominios:
+  - tuning.example.test
+  metodos:
+  - POST
+  uri:
+    operador: '@streq'
+    valor: /firma.php
+- id: '5500901'
+  tipo: runtime
+  regla_objetivo: '942100'
+  motivo: Caso sintético de laboratorio; no corresponde a un dominio productivo.
+  owner: equipo-seguridad-hostium
+  fecha_revision: '2099-01-01'
+  alcance: Inactiva hasta confirmar dominio, ruta, método y parámetro.
+  controles:
+  - tipo: ruleRemoveTargetById
+    objetivo: '942100'
+    variable: ARGS:vseleccionados
+  habilitada: true
+  dominios:
+  - tuning.example.test
+  metodos:
+  - POST
+  ticket: LAB-5500901
+  uri:
+    operador: '@streq'
+    valor: /cuentas.php
+- id: '5500902'
+  tipo: runtime
+  regla_objetivo: attack-xss,attack-rce
+  motivo: Caso sintético de laboratorio; no corresponde a un dominio productivo.
+  owner: equipo-seguridad-hostium
+  fecha_revision: '2099-01-01'
+  alcance: Inactiva hasta confirmar dominio, ruta, método y parámetro.
+  ticket: LAB-5500902
+  controles:
+  - tipo: ruleRemoveTargetByTag
+    objetivo: attack-xss
+    variable: ARGS:emailglobalheader
+  - tipo: ruleRemoveTargetByTag
+    objetivo: attack-rce
+    variable: ARGS:emailglobalheader
+  - tipo: ruleRemoveTargetByTag
+    objetivo: attack-xss
+    variable: ARGS:emailglobalfooter
+  - tipo: ruleRemoveTargetByTag
+    objetivo: attack-rce
+    variable: ARGS:emailglobalfooter
+  habilitada: true
+  dominios:
+  - tuning.example.test
+  metodos:
+  - POST
+  uri:
+    operador: '@streq'
+    valor: /configgeneral.php
+- id: '5500903'
+  tipo: runtime
+  regla_objetivo: '941160'
+  motivo: Caso sintético de laboratorio; no corresponde a un dominio productivo.
+  owner: equipo-seguridad-hostium
+  fecha_revision: '2099-01-01'
+  alcance: Inactiva hasta confirmar dominio, ruta, método y parámetro.
+  controles:
+  - tipo: ruleRemoveTargetById
+    objetivo: '941160'
+    variable: ARGS:description
+  habilitada: true
+  dominios:
+  - tuning.example.test
+  metodos:
+  - POST
+  ticket: LAB-5500903
+  uri:
+    operador: '@beginsWith'
+    valor: /admin1911/sell/catalog/products/
+- id: '5500904'
+  tipo: runtime
+  regla_objetivo: '933170'
+  motivo: Caso sintético de laboratorio; no corresponde a un dominio productivo.
+  owner: equipo-seguridad-hostium
+  fecha_revision: '2099-01-01'
+  alcance: Inactiva hasta confirmar dominio, ruta, método y parámetro.
+  controles:
+  - tipo: ruleRemoveTargetById
+    objetivo: '933170'
+    variable: ARGS:datos
+  habilitada: true
+  dominios:
+  - tuning.example.test
+  metodos:
+  - POST
+  ticket: LAB-5500904
+  uri:
+    operador: '@streq'
+    valor: /turnero.php

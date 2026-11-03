@@ -47,6 +47,8 @@ def _docker(*args: str, timeout: int = 120) -> subprocess.CompletedProcess[str]:
 
 def _exigir_docker() -> None:
     if shutil.which("docker") is None or _docker("info", timeout=30).returncode != 0:
+        if os.environ.get("HOSTIUM_REQUIRE_INTEGRATION") == "1":
+            pytest.fail("Docker es obligatorio en esta ejecución.")
         _marcar("omitida")
         pytest.skip("Docker no está en ejecución. La prueba de integración no se ejecutó.")
 
@@ -68,6 +70,8 @@ def _construir() -> str:
         timeout=600,
     )
     if resultado.returncode != 0:
+        if os.environ.get("HOSTIUM_REQUIRE_INTEGRATION") == "1":
+            pytest.fail(resultado.stderr[-2000:])
         _marcar("omitida")
         pytest.skip("No se pudo construir la imagen local:\n" + resultado.stderr[-2000:])
     version = _docker("run", "--rm", IMAGE, "cat", "/etc/hostium-modsec-version.txt", timeout=60)
@@ -291,12 +295,6 @@ def test_coexistencia_con_crs() -> None:
             pytest.fail(pull.stderr[-2000:])
         _marcar("omitida")
         pytest.skip("No se pudo descargar la imagen CRS. No es un resultado de protección.")
-    inspect = _docker("image", "inspect", "--format", "{{index .RepoDigests 0}}", CRS_TAG)
-    digest = inspect.stdout.strip()
-    if "@" in digest:
-        digest = digest.split("@", 1)[1]
-    if digest.startswith("sha256:"):
-        CRS_DIGEST_FILE.write_text(digest + "\n", encoding="utf-8")
     nombre = "hostium-waf-crs"
     _docker("rm", "-f", nombre)
     conf = ROOT / "rules" / "hostium" / "REQUEST-100-SENSITIVE-FILES.conf"
@@ -357,15 +355,19 @@ def test_sintaxis_del_conf_empaquetado(tmp_path: Path) -> None:
     """configtest del ZIP lógico. Si Docker no está, se omite y no es un bloqueo comprobado."""
     _exigir_docker()
     _construir()
-    for nombre in ("REQUEST-100-SENSITIVE-FILES.conf", "REQUEST-410-PHP-UPLOAD-PROGRESS.conf"):
-        origen = ROOT / "rules" / "hostium" / nombre
-        activas = [
-            linea
-            for linea in origen.read_text(encoding="utf-8").splitlines()
-            if linea.strip() and not linea.strip().startswith("#")
-        ]
-        assert not any("SecResponseBodyAccess" in linea for linea in activas)
-        shutil.copy(origen, tmp_path / nombre)
+    from zipfile import ZipFile
+
+    from hostium_waf.crs_vendor import VERSION_RULESET
+    from hostium_waf.packaging import build_package
+    from hostium_waf.settings import load_settings
+
+    artefacto = build_package(ROOT, load_settings(ROOT), version=VERSION_RULESET, engine="2.9.15", output=tmp_path / "dist")
+    reglas = tmp_path / "reglas"
+    reglas.mkdir()
+    with ZipFile(artefacto.zip_path) as zf:
+        for nombre in zf.namelist():
+            if nombre.endswith(".conf"):
+                (reglas / Path(nombre).name).write_bytes(zf.read(nombre))
     ejemplo = ROOT / "rules" / "hostium" / "REQUEST-411-PHP-UPLOAD-PROGRESS-RESPONSE.conf.example"
     assert not (tmp_path / ejemplo.name).exists()
     contenedor = "hostium-waf-sintaxis"
@@ -375,7 +377,7 @@ def test_sintaxis_del_conf_empaquetado(tmp_path: Path) -> None:
         "-d",
         "--name",
         contenedor,
-        *_montaje(tmp_path, "/etc/modsecurity/hostium"),
+        *_montaje(reglas, "/etc/modsecurity/hostium"),
         IMAGE,
     )
     if alta.returncode != 0:

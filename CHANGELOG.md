@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.1.2 candidata local — 2026-11-02 (sin promover)
+
+Exclusiones con dominio exacto, ruta sin query, método y parámetro; ctl al final de la cadena. Los cinco casos sin dominio confirmado quedan inactivos, conservando IDs, fase y pass. No se altera la estable 2.1.1: instalar la candidata sin completar el alcance puede restaurar los falsos positivos previos.
+
+Nuevo logs analyze: lectura local de mensajes ModSecurity v2, deduplicación/correlación por transacción, agrupación de IDs detectores y evaluadores, privacidad por defecto y comparación de conteos. No clasifica automáticamente falsos positivos ni aplica excepciones.
+
+El builder sincroniza ver con la distribución y comprueba archivos ya publicados aunque cambie el directorio de salida. Se validan vencimientos y alcance. build-tune queda bloqueado; render-score exige comparar una copia CRS y aceptar menor sensibilidad. CI usa la versión candidata y la release depende de lint, unitarias e integración estricta. Nuevos tests HTTP prueban las cinco exclusiones con CRS y conservación de protección fuera del alcance. Se corrigen comandos y se distinguen bitácoras históricas.
+
+No se modificaron expresiones ni acciones de REQUEST-410, ZIP publicados o metadata estable. ultima_validacion continúa null. Ver docs/23-QA-TUNING.md para resultados realmente ejecutados.
+
+
 ## 2.1.1 — 2026-11-02
 
 `hostium-2.1.1` repite los dos conf de `hostium-2.1.0`. Las `SecRule` de `REQUEST-410` no cambian. En `5500900`–`5500904` cambia solo `ver:'hostium/2.1.1'`. Ids, fase, `pass`, `nolog` y los ctl quedan. No entra `REQUEST-910` ni `SecRuleUpdateActionById`. `publish/stable/meta_hostium.yaml` apunta a `hostium-2.1.1.zip`. No se reescribe `hostium-2.1.0.zip`.

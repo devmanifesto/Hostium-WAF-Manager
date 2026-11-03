@@ -55,3 +55,13 @@ No se publica sola. Si una release llegara a un piloto, la vía rápida es `mods
 ## Limitaciones
 
 `ultima_validacion` de cada regla es null. La corrida de contenedor del 23 de octubre de 2026 está copiada en `docs/11-PRUEBAS-Y-VALIDACION.md`. No hubo prueba de extremo a extremo en calcium.
+
+## Serie del 2 de noviembre de 2026: tuning verificable
+
+Candidata local 2.1.2, sin promover metadata estable ni cambiar ZIP publicados.
+Se implementan exclusiones delimitadas por dominio, ruta exacta/prefijo de directorio,
+método y parámetro; los cinco casos sin dominio confirmado quedan inactivos.
+Se agrega diagnóstico local de eventos, comparación de conteos, revisión de vencimientos,
+trazabilidad de versión, CI estricto e integración de exclusiones con CRS.
+Cierre: pytest, Ruff, build reproducible, hashes históricos intactos y commit local.
+No se ejecutan operaciones remotas. ultima_validacion permanece null.
