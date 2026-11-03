@@ -2225,9 +2225,10 @@ reglas:
         hostium-2.0.0.zip.
   - id: 5500910
     nombre: Anomaly score de cinco archivos CRS
-    descripcion: No es una SecRule y no entra al ZIP de hostium. El conf REQUEST-910 es el vendor
-      hostium-tune. Repite SecRuleUpdateActionById para el anomaly score crítico de 911, 922, 932, 934
-      y 944 en CRS 3.3.10. Cada directiva resta el crítico y suma el warning. Neto 3.
+    descripcion: SecAction pass, nolog, fase 1. No entra al ZIP de hostium. El conf REQUEST-910
+      es el vendor hostium-tune. Repite SecRuleUpdateActionById para el anomaly score crítico de 911,
+      922, 932, 934 y 944. Cada directiva resta el crítico y suma el warning. Neto 3. Los id coinciden
+      en los tags upstream 3.3.9 y 3.3.10.
     categoria: exclusion-crs
     modulo: REQUEST-910-CRS-ANOMALY-SCORE
     archivo: rules/hostium/REQUEST-910-CRS-ANOMALY-SCORE.conf

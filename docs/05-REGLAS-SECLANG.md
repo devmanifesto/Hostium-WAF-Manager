@@ -94,4 +94,4 @@ No hay regla de WordPress ni de escáneres. Esos archivos siguen marcados INCOMP
 
 `REQUEST-900-CRS-EXCLUSIONS.conf` sale de `config/exclusions.yaml` con `rules render-exclusions`. Ids `5500900` a `5500904`. Tres son SecAction sin URI. Dos son una SecRule de REQUEST_URI, sin cadena. La aproximación está en `tests/unit/test_crs_210.py`. No es el motor.
 
-`REQUEST-910-CRS-ANOMALY-SCORE.conf` sale de cinco conf de CRS 3.3.10 con `rules render-score` y se empaqueta como vendor `hostium-tune`. No tiene `SecRule`. El id `5500910` ancla el archivo en el manifiesto. Cada `SecRuleUpdateActionById` resta el anomaly score crítico y suma el warning. Si el conf se incluye antes de OWASP3, `httpd -t` falla. Este árbol no corrió ese configtest.
+`REQUEST-910-CRS-ANOMALY-SCORE.conf` sale de cinco conf de CRS 3.3.10 con `rules render-score` y se empaqueta como vendor `hostium-tune`. La ancla es una `SecAction` `5500910`, fase 1, `pass`, `nolog`. No tiene `SecRule`. Cada `SecRuleUpdateActionById` resta el anomaly score crítico y suma el warning. Si el conf se incluye antes de OWASP3, `httpd -t` falla. Este árbol no corrió ese configtest.

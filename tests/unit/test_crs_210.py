@@ -101,6 +101,7 @@ def test_el_puntaje_baja_solo_cinco_archivos() -> None:
     assert "SecRuleUpdateActionById 932200:2 " in texto
     assert "-%{tx.critical_anomaly_score}" in texto
     assert "+%{tx.warning_anomaly_score}" in texto
+    assert "SecAction \"id:5500910,phase:1,pass,nolog" in texto
     assert not re.search(r"\bSecRule\b", texto)
     for familia in _FAMILIAS:
         assert not re.search(rf"\b{familia}\d+\b", texto)
@@ -150,7 +151,7 @@ def test_copiar_a_stable_pisa_solo_la_metadata(tmp_path: Path) -> None:
 def test_tune_no_pisa_el_zip_de_hostium(tmp_path: Path) -> None:
     settings = load_settings(ROOT)
     tune = build_tune_package(ROOT, settings, engine="2.9.15", output=tmp_path / "tune")
-    assert tune.distribution == "hostium-tune-2.1.0"
+    assert tune.distribution == "hostium-tune-2.1.1"
     from zipfile import ZipFile
 
     with ZipFile(tune.zip_path) as zf:
@@ -159,6 +160,7 @@ def test_tune_no_pisa_el_zip_de_hostium(tmp_path: Path) -> None:
             "hostium-tune/REQUEST-910-CRS-ANOMALY-SCORE.conf",
         ]
         texto = zf.read("hostium-tune/REQUEST-910-CRS-ANOMALY-SCORE.conf").decode("utf-8")
+    assert "SecAction \"id:5500910,phase:1,pass,nolog" in texto
     assert "SecRuleUpdateActionById 922130 " in texto
     assert "MULTIPART_PART_HEADERS" not in texto
     estable = tmp_path / "publish" / "stable"
@@ -168,4 +170,4 @@ def test_tune_no_pisa_el_zip_de_hostium(tmp_path: Path) -> None:
     copiar_tune_a_stable(tmp_path, tune)
     assert (estable / "hostium-2.0.0.zip").read_bytes() == b"zip-2.0.0"
     assert (estable / "meta_hostium.yaml").read_text(encoding="utf-8") == "distribution: hostium-2.0.0\n"
-    assert "hostium-tune-2.1.0" in (estable / "meta_hostium-tune.yaml").read_text(encoding="utf-8")
+    assert "hostium-tune-2.1.1" in (estable / "meta_hostium-tune.yaml").read_text(encoding="utf-8")

@@ -1,10 +1,10 @@
 ---
 '2.9.15':
-  MD5: '992fd8bf83fbaef098ee2fcf277e9939'
-  SHA512: 'deea88b0f87dda2b637ed51a485491c06cf805ac056b9316ee04b134cc640ef969e41fc159c2ec1ce91c5923a6a45e5dd407647e2098e73bec62bdf2b3dcee4f'
-  distribution: 'hostium-tune-2.1.0'
-  url: 'https://raw.githubusercontent.com/devmanifesto/Hostium-WAF-Manager/main/publish/stable/hostium-tune-2.1.0.zip'
+  MD5: 'c26c75a8da2e07e78c956253e787233a'
+  SHA512: '45b830bd6f8599cfca97c4d2668c99609d15e5868bd7fe08a7beffbd6d8fcb2313764f2350a821dc583c9b737b2ed5786a4ee888e711f3f004c27e56254cbd4f'
+  distribution: 'hostium-tune-2.1.1'
+  url: 'https://raw.githubusercontent.com/devmanifesto/Hostium-WAF-Manager/main/publish/stable/hostium-tune-2.1.1.zip'
 attributes:
   name: 'Hostium Tune'
-  description: 'Reglas complementarias de seguridad administradas por Hostium 2.1.0'
+  description: 'Reglas complementarias de seguridad administradas por Hostium 2.1.1'
   vendor_url: 'https://hostium.com'

@@ -319,7 +319,7 @@ def build_tune_package(
     output: Path | None = None,
 ) -> Artefacto:
     """ZIP del vendor hostium-tune. Solo el conf de puntaje, para cargarlo después de OWASP3."""
-    from hostium_waf.crs_vendor import ARCHIVO_PUNTAJE, VERSION_RULESET
+    from hostium_waf.crs_vendor import ARCHIVO_PUNTAJE, VERSION_TUNE
 
     if not es_version_motor(engine):
         raise HostiumError("La versión del motor debe ser un string de tres componentes, por ejemplo 2.9.15")
@@ -329,12 +329,14 @@ def build_tune_package(
     if issues:
         raise HostiumError("El repositorio no pasa la validación", issues=issues)
     path = ruta_dentro(root, ARCHIVO_PUNTAJE)
-    texto = aplicar_comentario_modulo(path.read_text(encoding="utf-8").replace("\r\n", "\n"), VERSION_RULESET)
+    texto = aplicar_comentario_modulo(path.read_text(encoding="utf-8").replace("\r\n", "\n"), VERSION_TUNE)
     if re.search(r"\bSecRule\b", texto):
         raise HostiumError(f"El archivo {path.name} no puede traer SecRule")
+    if "SecAction " not in texto or "id:5500910" not in texto:
+        raise HostiumError(f"El archivo {path.name} no tiene la ancla 5500910")
     if "SecRuleUpdateActionById" not in texto:
         raise HostiumError(f"El archivo {path.name} no baja el puntaje")
-    distribution = f"hostium-tune-{VERSION_RULESET}"
+    distribution = f"hostium-tune-{VERSION_TUNE}"
     miembros = [
         ("hostium-tune/", b""),
         (f"hostium-tune/{path.name}", texto.encode("utf-8")),
@@ -355,7 +357,7 @@ def build_tune_package(
         distribution=distribution,
         url=url,
         nombre="Hostium Tune",
-        version=VERSION_RULESET,
+        version=VERSION_TUNE,
         vendor_url=settings.vendor_url,
     )
     metadata_path = salida / "meta_hostium-tune.yaml"
@@ -365,7 +367,7 @@ def build_tune_package(
         raise HostiumError("el ZIP releído no coincide con el payload")
     metadata_path.write_text(metadata, encoding="utf-8", newline="\n")
     return Artefacto(
-        version=VERSION_RULESET,
+        version=VERSION_TUNE,
         engine=engine,
         canal="stable",
         distribution=distribution,

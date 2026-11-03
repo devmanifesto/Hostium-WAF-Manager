@@ -1,5 +1,9 @@
 # Changelog
 
+## hostium-tune 2.1.1 — 2026-11-02
+
+WHM mostró el vendor Hostium Tune activo y con cero sets. `hostium-2.1.0` sigue en 2/2 y no se reescribe. `hostium-tune-2.1.0.zip` tampoco. `meta_hostium-tune.yaml` pasa a `hostium-tune-2.1.1.zip`. El conf suma una `SecAction` `5500910`, fase 1, `pass`, `nolog`. Las treinta directivas de puntaje no cambian. Los id y offsets del tag upstream `v3.3.9` coinciden con `v3.3.10`. El RPM `ea-modsec2-rules-owasp-crs` no se diffé. `ultima_validacion` sigue vacía. No se ejecutó `upcp`, `modsec_vendor` ni `httpd -t`.
+
 ## 2.1.0 — 2026-11-02
 
 `hostium-2.1.0` suma `REQUEST-900-CRS-EXCLUSIONS.conf`. Los ids de `REQUEST-410` conservan id, fase y acción. `5500900`, `5500901` y `5500902` son `SecAction` de fase 1, sin URI: sacan `ARGS:firmadatos` de 941130 y 941170, `ARGS:vseleccionados` de 942100, y `ARGS:emailglobalheader` más `ARGS:emailglobalfooter` de los tags `attack-xss` y `attack-rce`. `5500903` saca `ARGS` de 941160 cuando la URI contiene `/sell/catalog/`. `5500904` saca `ARGS:datos` de 933170 en el turnero. No hay `/login` ni directorio de admin.
