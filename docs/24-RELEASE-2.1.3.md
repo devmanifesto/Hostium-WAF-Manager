@@ -57,3 +57,7 @@ Conservar copia de metadata 2.1.1 y su ZIP antes de actualizar. Para volver, pub
 ## Referencias oficiales
 
 Consulta del 2 de noviembre de 2026: https://raw.githubusercontent.com/coreruleset/coreruleset/v3.3.10/rules/REQUEST-921-PROTOCOL-ATTACK.conf y https://docs.cpanel.net/whm/scripts/the-modsec_vendor-script/. El comando oficial update hostium actualiza desde la URL con la que se instaló el vendor.
+
+## Publicación del ZIP verificada
+
+Commit e15cbfa enviado a origin/main. Se descargó la URL pública exacta del ZIP por HTTPS: HTTP 200, 4628 bytes, MD5/SHA512/SHA256 idénticos al artefacto local. Solo después de esta verificación se preparó la promoción de meta_hostium.yaml a 2.1.3. Calcium no se actualizó desde esta sesión; el operador indicó que lo hará después.

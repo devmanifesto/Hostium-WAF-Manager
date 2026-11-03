@@ -26,7 +26,7 @@ Una tarea está terminada cuando el comando que dice implementar existe, falla d
 
 ## Cada serie de cambios
 
-Al cerrar una serie, hacé un commit. El número de ruleset se mira contra la distribution que nombra `publish/stable/meta_hostium.yaml`, hoy `hostium-2.1.1`. No reutilices ese número ni reescribas su ZIP. El siguiente salto por defecto es `2.1.2`. Si hay ZIP nuevo, el build escribe la versión en la primera línea de cada `.conf` empaquetado y en `attributes.description`.
+Al cerrar una serie, hacé un commit. El número de ruleset se mira contra la distribution que nombra `publish/stable/meta_hostium.yaml`, hoy `hostium-2.1.3`. No reutilices ese número ni reescribas su ZIP. El siguiente salto por defecto es `2.1.4`. Si hay ZIP nuevo, el build escribe la versión en la primera línea de cada `.conf` empaquetado y en `attributes.description`.
 
 El número es `mayor.sub.subsub` (`2.0.0`, `1.2.0`, `2.0.1`). Cada release que armes sube solo el sub-sub, salvo que el usuario pida sub o mayor.
 
@@ -42,3 +42,7 @@ Si la serie no cambia reglas empaquetadas, el commit no crea otra distribution. 
 - `enable-updates hostium` es el comando documentado para el flag de updates. `updates apply` no abre SSH. No lo corras en calcium sin un pedido explícito de esa operación.
 - Archivos bajo el vendor OWASP3 instalado por RPM.
 - `deploy apply` y `rollback apply`: siguen bloqueados hasta que haya captura de estado, idempotencia ensayada y rollback ensayado.
+
+## Estado de tuning tras 2.1.3
+
+WHMCS 5500902 está acotado a clientes.hostium.com, /admin1911/configgeneral.php y POST; solo agrega 921130 para los dos campos de plantilla, no toda attack-protocol. Los otros cuatro casos mantienen compatibilidad transitoria fijada al ZIP 2.1.1 (heredada_estable); no ampliar ese modo ni inventar nuevos casos. Migrar cada uno con dominio/ruta/método/parámetro confirmados y regresión. La candidata local 2.1.2 no se publicó ni se reescribe. El operador realizará la actualización de calcium; la publicación no acredita un guardado real de WHMCS ni autoriza rellenar ultima_validacion.

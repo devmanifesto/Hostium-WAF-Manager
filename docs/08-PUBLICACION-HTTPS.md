@@ -19,11 +19,11 @@ Un ZIP que ya pasó `package verify`. El origen es `publish/` en este repositori
 El origen es el propio repositorio, en `publish/stable/`. Las URL que WHM tiene que poder bajar sin usuario son:
 
 - `https://raw.githubusercontent.com/devmanifesto/Hostium-WAF-Manager/main/publish/stable/meta_hostium.yaml`
-- `https://raw.githubusercontent.com/devmanifesto/Hostium-WAF-Manager/main/publish/stable/hostium-2.1.1.zip`
+- `https://raw.githubusercontent.com/devmanifesto/Hostium-WAF-Manager/main/publish/stable/hostium-2.1.3.zip`
 - `https://raw.githubusercontent.com/devmanifesto/Hostium-WAF-Manager/main/publish/stable/hostium-2.0.0.zip`
 - `https://raw.githubusercontent.com/devmanifesto/Hostium-WAF-Manager/main/publish/stable/hostium-1.0.0.zip`
 
-La metadata nombra `hostium-2.1.1`. Es el único meta de instalación. Los ZIP anteriores quedan en el directorio y no se reescriben. El 23 de octubre de 2026 un GET sin sesión de la metadata y del ZIP 1.0.0 devolvió 200. Ese ZIP tiene 877 bytes y MD5 `3aea69ba720a6508b54999ca5aa42038`. El MD5 y el SHA512 los compara cPanel después de bajar el archivo. Si el repo volviera a privado, `modsec_vendor` recibiría 404: no envía `Authorization`. Este árbol no repitió ese GET para el ZIP 2.1.1.
+La metadata nombra `hostium-2.1.3`. Es el único meta de instalación. Los ZIP anteriores quedan en el directorio y no se reescriben. El 23 de octubre de 2026 un GET sin sesión de la metadata y del ZIP 1.0.0 devolvió 200. Ese ZIP tiene 877 bytes y MD5 `3aea69ba720a6508b54999ca5aa42038`. El MD5 y el SHA512 los compara cPanel después de bajar el archivo. Si el repo volviera a privado, `modsec_vendor` recibiría 404: no envía `Authorization`. Este árbol no repitió ese GET para el ZIP 2.1.1.
 
 ## Orden, cuando alguien publique de verdad
 
@@ -77,3 +77,7 @@ sh scripts/publish-local.sh 2.1.2 /tmp/hostium-staging/stable dist/candidata-2.1
 El helper verifica ZIP y metadata, no reemplaza un ZIP de bytes distintos y cambia la metadata atómicamente después de releer el ZIP. La estructura del destino coincide con la URL del canal; no crea una mezcla de releases/ y channels/. Los tests ejercitan el helper Python en directorios temporales. El wrapper sh no se ejecutó en esta máquina Windows.
 
 Antes de promover la candidata hay que completar y validar los cinco alcances pendientes. No se hizo push, publicación HTTP ni operación de cPanel en esta serie. El motor admitido para nuevos builds es solo 2.9.15; ampliar compatibilidad requiere evidencia independiente.
+
+## Publicación 2.1.3 autorizada
+
+Ver documento 24. El ZIP se subió antes de cambiar metadata y se descargó para verificar los tres hashes. La actualización de calcium quedó a cargo del operador; no se ejecutó SSH. Las instrucciones de preparación de candidata 2.1.2 más arriba son históricas y no indican instalar ese artefacto.

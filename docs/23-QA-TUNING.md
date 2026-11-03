@@ -1,5 +1,7 @@
 # QA de tuning: candidata local 2.1.2
 
+> Bitácora de la candidata local 2.1.2, sin publicación. La estable posterior es 2.1.3; ver [QA de release](24-RELEASE-2.1.3.md).
+
 ## Fecha y alcance
 
 2 de noviembre de 2026, fecha del operador (America/Buenos_Aires). Estable publicada: 2.1.1. No se promovió metadata, no se hizo push y no se contactaron servidores. Los tests HTTP usan contenedores locales. `ultima_validacion` de todas las reglas continúa null.

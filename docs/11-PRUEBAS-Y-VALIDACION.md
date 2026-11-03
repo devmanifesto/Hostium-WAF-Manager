@@ -6,7 +6,7 @@ Decir qué se corrió, qué se omitió y qué no prueba protección en un cPanel
 
 ## Audiencia
 
-La estable publicada es 2.1.1. La candidata local 2.1.2 no se promovió. El resultado de esta serie está en [QA de tuning](23-QA-TUNING.md). Las bitácoras del 23 y 24 de octubre más abajo describen versiones históricas; no son evidencia de la candidata ni de cPanel.
+La estable publicada es 2.1.3, con corrección WHMCS y [QA de release](24-RELEASE-2.1.3.md). La candidata local 2.1.2 no se promovió; su bitácora histórica está en [QA de tuning](23-QA-TUNING.md). Las bitácoras del 23 y 24 de octubre más abajo describen versiones históricas; no son evidencia de la candidata ni de cPanel.
 
 ## Prerrequisitos
 
@@ -18,8 +18,8 @@ El entorno de `docs/04-INSTALACION-DESARROLLO.md`.
 python -m ruff check src tests
 python -m pytest
 python -m pytest -m integration --override-ini="addopts=" -rs
-python -m hostium_waf package build --version 2.1.2 --engine 2.9.15 --output dist/candidata-2.1.2
-python -m hostium_waf package verify --zip dist/candidata-2.1.2/hostium-2.1.2.zip --metadata dist/candidata-2.1.2/meta_hostium.yaml
+python -m hostium_waf package build --version 2.1.3 --engine 2.9.15 --output dist/release-2.1.3
+python -m hostium_waf package verify --zip dist/release-2.1.3/hostium-2.1.3.zip --metadata dist/release-2.1.3/meta_hostium.yaml
 ```
 
 `package build --version 1.0.0` en este árbol termina en error. La 1.0.0 publicada no se reconstruye.
