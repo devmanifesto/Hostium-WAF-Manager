@@ -40,7 +40,7 @@ El ZIP contiene `hostium/`, REQUEST-410 y REQUEST-900. No contiene REQUEST-910 n
 
 ## Verificación pública
 
-Pendiente del GET sin sesión, después de subir este commit. No se ejecutó SSH ni `modsec_vendor`.
+Commit f02ffc1 en origin/main. Un GET sin sesión de la metadata y del ZIP 2.1.7 devolvió ambos archivos. El ZIP público tiene 5737 bytes y MD5 `0d93c26ee8302c84540748083453bbea`. La metadata pública tiene 506 bytes, MD5 `60cc5a39e6e738a4099aaa90c77512b5`, y nombra `hostium-2.1.7` con ese mismo MD5 de ZIP. El ZIP público 2.1.6 sigue en 5672 bytes y MD5 `fb920ce9bb67244dcebf100b3d45c19d`. No se ejecutó SSH ni `modsec_vendor`.
 
 ## Actualización en calcium a cargo del operador
 
