@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.1.7 — 2026-11-03
+
+Publicación estable autorizada por el operador. Nuevo id 5500917 en REQUEST-900, generado desde exclusions.yaml. Fase 1, pass, nolog, sin dominio. POST cuyo path empieza por /aplicacion_customs/MCP/ quita 941100, 941130, 941160, 941170 y 941200 de ARGS entero. No quita 932, 942, 933 ni 930. Los controles de 5500900–5500916 no cambian. No entra REQUEST-910 ni se refresca hostium-tune. hostium-2.1.6.zip no se reescribe. ultima_validacion continúa null. Ver docs/28-RELEASE-2.1.7.md.
+
 ## 2.1.6 — 2026-11-03
 
 Publicación estable autorizada por el operador. Ids 5500907–5500916 en REQUEST-900, generados desde exclusions.yaml. Fase 1, pass, nolog, sin dominio. El path o el nombre del campo viaja con la cuenta. ARGS entero solo en 5500912, sobre 930110 y el script laboractividad.php. Moodle queda en tres directivas porque los selectores no se pueden unir en un id. El id de catálogo del puntaje pasa a 5500990; el conf y hostium-tune no cambian. Los controles de 5500900–5500906 no cambian. No entra REQUEST-910. hostium-2.1.5.zip no se reescribe. ultima_validacion continúa null. Ver docs/27-RELEASE-2.1.6.md.

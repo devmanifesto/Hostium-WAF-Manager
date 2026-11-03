@@ -156,8 +156,24 @@ def test_rutas_sin_dominio_conservan_los_controles_anteriores() -> None:
     labor = _bloque_id(texto, 5500912)
     assert "@streq /server20200601/mod/agro/laboractividad.php" in labor
     assert "ctl:ruleRemoveTargetById=930110;ARGS\"" in labor or "ctl:ruleRemoveTargetById=930110;ARGS\n" in labor
-    for identificador in range(5500907, 5500917):
-        if identificador == 5500912:
+    with ZipFile(ROOT / "publish/stable/hostium-2.1.6.zip") as zf:
+        publicado = zf.read("hostium/REQUEST-900-CRS-EXCLUSIONS.conf").decode("utf-8")
+    assert "id:5500917" not in publicado
+    for identificador in range(5500900, 5500917):
+        assert re.findall(r"ctl:[^\s,\"\\]+", _bloque_id(publicado, identificador)) == re.findall(
+            r"ctl:[^\s,\"\\]+", _bloque_id(texto, identificador),
+        )
+    mcp = _bloque_id(texto, 5500917)
+    assert 'SecRule REQUEST_FILENAME "@beginsWith /aplicacion_customs/MCP/"' in mcp
+    assert 'SecRule REQUEST_METHOD "@rx \\A(?:POST)\\z"' in mcp
+    assert mcp.count("chain") == 1
+    assert "ctl:" not in mcp.split("SecRule REQUEST_METHOD")[0]
+    assert re.findall(r"ctl:[^\s,\"\\]+", mcp) == [
+        f"ctl:ruleRemoveTargetById={objetivo};ARGS"
+        for objetivo in ("941100", "941130", "941160", "941170", "941200")
+    ]
+    for identificador in range(5500907, 5500918):
+        if identificador in {5500912, 5500917}:
             continue
         bloque = _bloque_id(texto, identificador)
         assert not re.search(r"ctl:[^\s,\"\\]+;ARGS(?:[,\"]|$)", bloque)
@@ -169,6 +185,11 @@ def test_rutas_sin_dominio_conservan_los_controles_anteriores() -> None:
     ajena["coleccion"] = True
     ajena["controles"][0]["variable"] = "ARGS"
     assert any(i.codigo == "exclusion" for i in validar_exclusiones(copia))
+    ampliada = yaml.safe_load((ROOT / "config/exclusions.yaml").read_text(encoding="utf-8"))
+    extra = next(i for i in ampliada["exclusiones"] if i["id"] == "5500917")
+    extra["controles"].append({"tipo": "ruleRemoveTargetById", "objetivo": "932110", "variable": "ARGS"})
+    extra["regla_objetivo"] = "941100,941130,941160,941170,941200,932110"
+    assert any(i.codigo == "exclusion" for i in validar_exclusiones(ampliada))
 
 
 def _bloque_id(texto: str, identificador: int) -> str:

@@ -2916,6 +2916,66 @@ reglas:
       fecha: '2026-11-03'
       nota: Tercer control de Moodle. No reescribas hostium-2.1.5.zip.
 
+  - id: 5500917
+    nombre: HTML bajo aplicacion_customs MCP
+    descripcion: POST si REQUEST_FILENAME empieza por /aplicacion_customs/MCP/. Quita cinco XSS de ARGS entero. Sin dominio.
+    categoria: exclusion-crs
+    modulo: REQUEST-900-CRS-EXCLUSIONS
+    archivo: rules/hostium/REQUEST-900-CRS-EXCLUSIONS.conf
+    version_de_introduccion: 2.1.7
+    autor: Hostium
+    owner: equipo-seguridad-hostium
+    motivacion: El campo no es fijo. El mismo HTML aparecio en reemplazar, buscar y x. No se tocan 932, 942, 933 ni 930.
+    tipo_de_ataque: falso-positivo
+    referencias:
+    - https://coreruleset.org/docs/2-how-crs-works/2-3-false-positives-and-tuning/
+    - 2026-11-03-mcp-html
+    falsos_positivos_probables: Un script o un comando en ese prefijo sigue inspeccionado. Fuera del prefijo el HTML sigue sumando.
+    fase: 1
+    variables_inspeccionadas:
+    - REQUEST_FILENAME
+    - REQUEST_METHOD
+    - ARGS
+    operador: '@beginsWith'
+    transformaciones:
+    - t:none
+    accion: pass
+    severidad: NOTICE
+    etiquetas:
+    - hostium-crs-exclusion
+    estado: produccion
+    modo_por_defecto: log-only
+    incluir_en_paquete: true
+    casos_de_prueba_positivos:
+    - titulo: img en reemplazar dentro de MCP
+      path: /aplicacion_customs/MCP/api_plantillas/plantillas_h2_editar_html.php
+      metodo: POST
+      dispara: true
+      ejecucion: automatizada
+      status: 200
+      notas: Status 200 es el contrato del manifiesto. 503 es el backend de laboratorio. No se observo en cPanel.
+    casos_de_prueba_negativos:
+    - titulo: el mismo img fuera del prefijo
+      path: /index.php
+      metodo: POST
+      dispara: false
+      ejecucion: automatizada
+      notas: Fuera de /aplicacion_customs/MCP/ el HTML sigue y 949110 dispara.
+    - titulo: comando en descripcion dentro de MCP
+      path: /aplicacion_customs/MCP/api_compras/compras_h3_crear_factura_compra.php
+      metodo: POST
+      dispara: false
+      ejecucion: automatizada
+      notas: 932110 sigue. Esta regla no quita la familia 932.
+    impacto_previsto: Cinco reglas XSS dejan de ver ARGS solo en ese prefijo y solo en POST. ultima_validacion queda vacia.
+    fecha_de_revision: '2027-05-02'
+    ultima_validacion: null
+    excepciones: []
+    registro_de_cambio:
+    - version: 2.1.7
+      fecha: '2026-11-03'
+      nota: Alta sin dominio. No reescribas hostium-2.1.6.zip.
+
   - id: 5500990
     nombre: Anomaly score de cinco archivos CRS
     descripcion: No es una SecRule y no entra al ZIP de hostium. El conf REQUEST-910 no es un vendor.

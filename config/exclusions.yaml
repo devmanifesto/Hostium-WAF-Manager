@@ -1,4 +1,4 @@
-# Estable 2.1.6. Los casos nuevos no llevan dominio. 5500906 sigue con su host.
+# Estable 2.1.7. 5500917 quita cinco XSS de ARGS entero bajo /aplicacion_customs/MCP/.
 version_esquema: 1
 exclusiones:
 - id: '5500900'
@@ -382,3 +382,36 @@ exclusiones:
   dominios: []
   metodos: []
   selector: campo
+- id: '5500917'
+  tipo: runtime
+  regla_objetivo: 941100,941130,941160,941170,941200
+  motivo: HTML de plantillas bajo /aplicacion_customs/MCP/. El nombre del campo cambia.
+  owner: equipo-seguridad-hostium
+  fecha_revision: '2027-05-02'
+  alcance: POST si REQUEST_FILENAME empieza por /aplicacion_customs/MCP/. Sin dominio. Solo cinco XSS sobre ARGS.
+  ticket: 2026-11-03-mcp-html
+  controles:
+  - tipo: ruleRemoveTargetById
+    objetivo: '941100'
+    variable: ARGS
+  - tipo: ruleRemoveTargetById
+    objetivo: '941130'
+    variable: ARGS
+  - tipo: ruleRemoveTargetById
+    objetivo: '941160'
+    variable: ARGS
+  - tipo: ruleRemoveTargetById
+    objetivo: '941170'
+    variable: ARGS
+  - tipo: ruleRemoveTargetById
+    objetivo: '941200'
+    variable: ARGS
+  habilitada: true
+  dominios: []
+  metodos:
+  - POST
+  uri:
+    operador: '@beginsWith'
+    valor: /aplicacion_customs/MCP/
+  selector: ruta
+  coleccion: true

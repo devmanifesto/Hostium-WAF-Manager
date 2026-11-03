@@ -333,3 +333,20 @@ def test_foro_solo_quita_message_text(crs_acotado):
     )
     assert status == 403, delta[-5000:]
     assert _id_en_esta_uri(delta, 949110, ruta), delta[-5000:]
+
+
+@pytest.mark.integration
+def test_html_de_mcp_no_abre_comandos(crs_acotado):
+    host = "mcp.example.test"
+    ruta = "/aplicacion_customs/MCP/api_plantillas/plantillas_h2_editar_html.php"
+    cuerpo = {"reemplazar": '<img src="logo.jpg">'}
+    status, delta = pedir_form(crs_acotado["produccion"], ruta, cuerpo, host=host)
+    assert status == 503, delta[-5000:]
+    assert not _id_en_esta_uri(delta, 949110, ruta), delta[-5000:]
+    status, delta = pedir_form(crs_acotado["produccion"], "/index.php", cuerpo, host=host)
+    assert status == 403, delta[-5000:]
+    assert _id_en_esta_uri(delta, 949110, "/index.php"), delta[-5000:]
+    compras = "/aplicacion_customs/MCP/api_compras/compras_h3_crear_factura_compra.php"
+    status, delta = pedir_form(crs_acotado["produccion"], compras, {"descripcion": "; cmd"}, host=host)
+    assert status == 403, delta[-5000:]
+    assert _id_en_esta_uri(delta, 932110, compras), delta[-5000:]

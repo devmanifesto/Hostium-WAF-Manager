@@ -303,6 +303,12 @@ El operador pidió publicar hostium-2.1.6 subiendo solo el último número, con 
 
 5500907–5500916 se generan desde exclusions.yaml. Fase 1, pass, nolog, t:none, tag hostium-crs-exclusion, ver hostium/2.1.6. Sin dominio. 5500907 y 5500908 usan prefijos distintos: `/modules_/imno_/` y `/modules_/imno/`. 5500909 acota ctas a `/server20200601/mod/reportes/`. 5500910 y 5500911 son scripts exactos de compras. 5500912 quita ARGS entero de 930110 solo en laboractividad.php. 5500913 y 5500916 son SecAction por nombre de campo. Moodle no cabe en un id: 5500914 es el quiz y MULTIPART_PART_HEADERS de 922130, 5500915 es el foro y message[text], 5500916 es summary_editor[text]. No se baja el puntaje global. El id de catálogo del puntaje pasa a 5500990. ultima_validacion sigue null.
 
+### Autorización de publicación 2.1.7, 3 de noviembre de 2026
+
+El operador pidió publicar hostium-2.1.7 sin cambiar 5500900–5500916, con ZIP nuevo y sin reescribir hostium-2.1.6.zip ni los anteriores. No se publica ni refresca hostium-tune. REQUEST-910 y SecRuleUpdateActionById siguen fuera del ZIP. El único meta de instalación sigue siendo meta_hostium.yaml.
+
+5500917 se genera desde exclusions.yaml. Fase 1, pass, nolog, t:none, tag hostium-crs-exclusion, ver hostium/2.1.7. Sin dominio. REQUEST_FILENAME @beginsWith /aplicacion_customs/MCP/, REQUEST_METHOD POST, y en el último eslabón ctl:ruleRemoveTargetById de 941100, 941130, 941160, 941170 y 941200 sobre ARGS entero. El nombre del campo no es fijo. No quita 932, 942, 933 ni 930. No usa SecRuleRemoveById ni allow. ultima_validacion sigue null.
+
 ## 9. CLI completa y comportamiento esperado
 
 Proponé e implementá una CLI coherente, documentada y testeada. Como mínimo:

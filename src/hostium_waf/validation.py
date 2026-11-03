@@ -47,6 +47,8 @@ _TIPOS_CONTROL = {"ruleRemoveTargetById", "ruleRemoveTargetByTag"}
 _VARIABLE_CONTROL = re.compile(r"^ARGS(?::[A-Za-z_][A-Za-z0-9_]*)?$")
 _VARIABLE_CAMPO = re.compile(r"^ARGS:[A-Za-z_][A-Za-z0-9_]*(?:\[[A-Za-z_][A-Za-z0-9_]*\])?$")
 _SCRIPT_COLECCION = "/server20200601/mod/agro/laboractividad.php"
+_PREFIJO_COLECCION_XSS = "/aplicacion_customs/MCP/"
+_IDS_COLECCION_XSS = frozenset({"941100", "941130", "941160", "941170", "941200"})
 _OBJETIVO_TAG = re.compile(r"^[A-Za-z0-9_-]+$")
 _CLAVES_REGLA = {
     "id",
@@ -492,13 +494,18 @@ def _validar_regla_ruta(item: dict[str, Any], ruta: str, *, activa: bool) -> lis
     issues.extend(_validar_uri_exclusion(item.get("uri"), f"{ruta}.uri"))
     uri = item.get("uri") if isinstance(item.get("uri"), dict) else {}
     coleccion = item.get("coleccion") is True
-    if coleccion and (uri.get("operador") != "@streq" or uri.get("valor") != _SCRIPT_COLECCION):
-        issues.append(Issue("exclusion", "ARGS entero solo se admite en laboractividad.php", f"{ruta}.coleccion"))
+    perfil = _perfil_coleccion(uri, item.get("controles")) if coleccion else None
+    if coleccion and perfil is None:
+        issues.append(Issue(
+            "exclusion",
+            "ARGS entero solo se admite en laboractividad.php o en /aplicacion_customs/MCP/ con las cinco XSS",
+            f"{ruta}.coleccion",
+        ))
     if not activa:
         pendiente = item.get("pendiente")
         if not isinstance(pendiente, str) or not pendiente.strip() or any(c in pendiente for c in '\r\n"\\'):
             issues.append(Issue("alcance", "una exclusión inactiva necesita pendiente en una línea", f"{ruta}.pendiente"))
-    issues.extend(_validar_controles_ruta(item.get("controles"), f"{ruta}.controles", coleccion=coleccion))
+    issues.extend(_validar_controles_ruta(item.get("controles"), f"{ruta}.controles", coleccion=coleccion, perfil=perfil))
     _exigir_objetivos(item, ruta, issues)
     return issues
 
@@ -531,11 +538,33 @@ def _validar_regla_campo(item: dict[str, Any], ruta: str, *, activa: bool) -> li
     return issues
 
 
-def _validar_controles_ruta(controles: Any, ruta: str, *, coleccion: bool) -> list[Issue]:
+def _perfil_coleccion(uri: dict[str, Any], controles: Any) -> str | None:
+    """Solo dos usos de ARGS entero: un script y 930110, o el prefijo MCP y cinco XSS."""
+    if not isinstance(controles, list) or not controles:
+        return None
+    if not all(
+        isinstance(control, dict) and control.get("tipo") == "ruleRemoveTargetById" and control.get("variable") == "ARGS"
+        for control in controles
+    ):
+        return None
+    objetivos = [str(control.get("objetivo")) for control in controles]
+    if uri.get("operador") == "@streq" and uri.get("valor") == _SCRIPT_COLECCION and objetivos == ["930110"]:
+        return "labor"
+    if (
+        uri.get("operador") == "@beginsWith"
+        and uri.get("valor") == _PREFIJO_COLECCION_XSS
+        and len(objetivos) == len(set(objetivos))
+        and set(objetivos) == _IDS_COLECCION_XSS
+    ):
+        return "mcp"
+    return None
+
+
+def _validar_controles_ruta(controles: Any, ruta: str, *, coleccion: bool, perfil: str | None = None) -> list[Issue]:
     if not isinstance(controles, list) or not controles:
         return [Issue("campo_faltante", "hace falta al menos un control", ruta)]
     issues: list[Issue] = []
-    if coleccion and len(controles) != 1:
+    if coleccion and perfil != "mcp" and len(controles) != 1:
         issues.append(Issue("exclusion", "ARGS entero es un solo ctl", ruta))
     for indice, control in enumerate(controles):
         actual = f"{ruta}[{indice}]"
@@ -747,6 +776,15 @@ def _revisar_secaction_campo(bloque: str, relativo: str) -> list[Issue]:
     return issues
 
 
+def _args_entero_admitido(bloque: str, ctls: list[str]) -> bool:
+    if _SCRIPT_COLECCION in bloque:
+        return ctls == ["ctl:ruleRemoveTargetById=930110;ARGS"]
+    if 'SecRule REQUEST_FILENAME "@beginsWith /aplicacion_customs/MCP/"' in bloque:
+        esperados = {f"ctl:ruleRemoveTargetById={identificador};ARGS" for identificador in _IDS_COLECCION_XSS}
+        return set(ctls) == esperados and len(ctls) == len(esperados)
+    return False
+
+
 def _revisar_regla_sin_dominio(bloque: str, relativo: str) -> list[Issue]:
     issues: list[Issue] = []
     ctls = re.findall(r'ctl:[^\s,"\\]+', bloque)
@@ -774,8 +812,8 @@ def _revisar_regla_sin_dominio(bloque: str, relativo: str) -> list[Issue]:
     for ctl in ctls:
         if not _CTL_PERMITIDO.fullmatch(ctl) or ctl.endswith(";REQUEST_FILENAME"):
             issues.append(Issue("regla_prohibida", "ctl de ruta no admitido", relativo))
-        if ctl.endswith(";ARGS") and _SCRIPT_COLECCION not in bloque:
-            issues.append(Issue("regla_prohibida", "ARGS entero solo en laboractividad.php", relativo))
+        if ctl.endswith(";ARGS") and not _args_entero_admitido(bloque, ctls):
+            issues.append(Issue("regla_prohibida", "ARGS entero fuera de los dos casos cerrados", relativo))
     if not ctls:
         issues.append(Issue("regla_prohibida", "la regla de ruta necesita ctl", relativo))
     return issues

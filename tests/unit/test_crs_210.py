@@ -20,7 +20,7 @@ _FAMILIAS = ("920", "921", "930", "931", "933", "941", "942", "943")
 
 def test_estable_conserva_casos_y_acota_whmcs() -> None:
     texto = EXCLUSIONES.read_text(encoding="utf-8")
-    assert set(re.findall(r"id:(55009\d{2})", texto)) == {str(i) for i in range(5500900, 5500917)}
+    assert set(re.findall(r"id:(55009\d{2})", texto)) == {str(i) for i in range(5500900, 5500918)}
     assert r"capacitaciones\.municipalidadsalta\.gob\.ar" in texto
     assert "ctl:ruleRemoveTargetById=941100;ARGS:excerpt" in texto
     assert "942190" not in texto
@@ -67,14 +67,14 @@ def test_el_zip_200_no_cambia_de_bytes(tmp_path: Path) -> None:
     antes = hashlib.sha256(publicado.read_bytes()).hexdigest()
     assert antes == SHA_200
     settings = load_settings(ROOT)
-    build_package(ROOT, settings, version="2.1.6", engine="2.9.15", output=tmp_path)
+    build_package(ROOT, settings, version="2.1.7", engine="2.9.15", output=tmp_path)
     despues = hashlib.sha256(publicado.read_bytes()).hexdigest()
     assert despues == antes
 
 
 def test_copiar_a_stable_pisa_solo_la_metadata(tmp_path: Path) -> None:
     settings = load_settings(ROOT)
-    artefacto = build_package(ROOT, settings, version="2.1.6", engine="2.9.15", output=tmp_path / "dist")
+    artefacto = build_package(ROOT, settings, version="2.1.7", engine="2.9.15", output=tmp_path / "dist")
     estable = tmp_path / "publish" / "stable"
     estable.mkdir(parents=True)
     viejo = b"zip-2.0.0"
@@ -95,8 +95,8 @@ def test_copiar_a_stable_pisa_solo_la_metadata(tmp_path: Path) -> None:
     )
     copiar_a_stable(tmp_path, copiado)
     assert (estable / "hostium-2.0.0.zip").read_bytes() == viejo
-    assert (estable / "hostium-2.1.6.zip").read_bytes() == artefacto.zip_path.read_bytes()
-    assert "hostium-2.1.6" in (estable / "meta_hostium.yaml").read_text(encoding="utf-8")
+    assert (estable / "hostium-2.1.7.zip").read_bytes() == artefacto.zip_path.read_bytes()
+    assert "hostium-2.1.7" in (estable / "meta_hostium.yaml").read_text(encoding="utf-8")
 
 
 def test_tune_no_pisa_el_zip_de_hostium(tmp_path: Path) -> None:

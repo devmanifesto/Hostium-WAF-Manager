@@ -19,6 +19,7 @@ Un ZIP que ya pasó `package verify`. El origen es `publish/` en este repositori
 El origen es el propio repositorio, en `publish/stable/`. Las URL que WHM tiene que poder bajar sin usuario son:
 
 - `https://raw.githubusercontent.com/devmanifesto/Hostium-WAF-Manager/main/publish/stable/meta_hostium.yaml`
+- `https://raw.githubusercontent.com/devmanifesto/Hostium-WAF-Manager/main/publish/stable/hostium-2.1.7.zip`
 - `https://raw.githubusercontent.com/devmanifesto/Hostium-WAF-Manager/main/publish/stable/hostium-2.1.6.zip`
 - `https://raw.githubusercontent.com/devmanifesto/Hostium-WAF-Manager/main/publish/stable/hostium-2.1.5.zip`
 - `https://raw.githubusercontent.com/devmanifesto/Hostium-WAF-Manager/main/publish/stable/hostium-2.1.4.zip`
@@ -26,7 +27,7 @@ El origen es el propio repositorio, en `publish/stable/`. Las URL que WHM tiene 
 - `https://raw.githubusercontent.com/devmanifesto/Hostium-WAF-Manager/main/publish/stable/hostium-2.0.0.zip`
 - `https://raw.githubusercontent.com/devmanifesto/Hostium-WAF-Manager/main/publish/stable/hostium-1.0.0.zip`
 
-La metadata nombra `hostium-2.1.6`. Es el único meta de instalación. Los ZIP anteriores quedan en el directorio y no se reescriben. El 23 de octubre de 2026 un GET sin sesión de la metadata y del ZIP 1.0.0 devolvió 200. Ese ZIP tiene 877 bytes y MD5 `3aea69ba720a6508b54999ca5aa42038`. El MD5 y el SHA512 los compara cPanel después de bajar el archivo. Si el repo volviera a privado, `modsec_vendor` recibiría 404: no envía `Authorization`. Este árbol no repitió ese GET para el ZIP 2.1.1.
+La metadata nombra `hostium-2.1.7`. Es el único meta de instalación. Los ZIP anteriores quedan en el directorio y no se reescriben. El 23 de octubre de 2026 un GET sin sesión de la metadata y del ZIP 1.0.0 devolvió 200. Ese ZIP tiene 877 bytes y MD5 `3aea69ba720a6508b54999ca5aa42038`. El MD5 y el SHA512 los compara cPanel después de bajar el archivo. Si el repo volviera a privado, `modsec_vendor` recibiría 404: no envía `Authorization`. Este árbol no repitió ese GET para el ZIP 2.1.1.
 
 ## Orden, cuando alguien publique de verdad
 
